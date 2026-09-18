@@ -423,15 +423,14 @@ fun MapLibreView(
                     map.setMaxZoomPreference(maxZoom)
                 }
 
-                // 仅在首页且 transitionProgress 接近 0 且动画完成时应用边界限制
+                // 仅在首页且 transitionProgress 接近 0 且动画完成时应用边界限制。
+                // 边界固定为铁路网包围盒，不随缩放变化：任何缩放级别下
+                // 相机中心都能拖到任意车站位置。
                 val wantBoundsLimit = transitionProgress < 0.05f && !isMovingToHome && !isMovingToRoute
                 if (wantBoundsLimit != lastAppliedCameraBoundsLimit) {
                     lastAppliedCameraBoundsLimit = wantBoundsLimit
-                if (wantBoundsLimit) {
-                        val cameraTargetBoundsLimit = LatLngBounds.from(
-                            HOME_BOUNDS_NORTH, HOME_BOUNDS_EAST, HOME_BOUNDS_SOUTH, HOME_BOUNDS_WEST
-                        )
-                        map.setLatLngBoundsForCameraTarget(cameraTargetBoundsLimit)
+                    if (wantBoundsLimit) {
+                        map.setLatLngBoundsForCameraTarget(homeCameraBounds())
                     } else {
                         map.setLatLngBoundsForCameraTarget(null)
                     }
@@ -501,6 +500,10 @@ private const val HOME_BOUNDS_WEST = 80.0
 private fun clampToHomeTarget(target: LatLng): LatLng = LatLng(
     target.latitude.coerceIn(HOME_BOUNDS_SOUTH, HOME_BOUNDS_NORTH),
     target.longitude.coerceIn(HOME_BOUNDS_WEST, HOME_BOUNDS_EAST),
+)
+
+private fun homeCameraBounds(): LatLngBounds = LatLngBounds.from(
+    HOME_BOUNDS_NORTH, HOME_BOUNDS_EAST, HOME_BOUNDS_SOUTH, HOME_BOUNDS_WEST
 )
 
 private fun updateMapLayers(
