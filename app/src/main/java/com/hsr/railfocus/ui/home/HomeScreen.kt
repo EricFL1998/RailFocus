@@ -204,6 +204,15 @@ fun HomeScreen(
                 }
             }
 
+            // 启动后预计算当前车站默认时长的目的地（后台进行，不显示加载），
+            // 首次进入路线选择时结果已就绪，避免冷启动后的首次加载等待。
+            // updateStartStation 对同站且有结果的情况会直接返回，重复触发无副作用。
+            LaunchedEffect(uiState.currentStation) {
+                if (phase == HomePhase.None) {
+                    timeSelectionViewModel.updateStartStation(uiState.currentStation)
+                }
+            }
+
             // 进程被杀后恢复：数据库中存在 ACTIVE 旅程时自动回到专注页
             LaunchedEffect(focusUiState.isRestored) {
                 if (focusUiState.isRestored && phase == HomePhase.None) {
