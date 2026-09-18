@@ -74,7 +74,8 @@ fun HomeScreen(
     // 保证每次再进入路线选择都默认是最少时间
     var wasJourneySelection by remember { mutableStateOf(false) }
     LaunchedEffect(phase) {
-        if (wasJourneySelection && phase != HomePhase.JourneySelection) {
+        // 只在返回到首页时重置；进入专注页不重置，保持选中项与正在进行的旅程一致
+        if (wasJourneySelection && phase == HomePhase.None) {
             timeSelectionViewModel.resetToMinimum()
         }
         wasJourneySelection = phase == HomePhase.JourneySelection
@@ -90,6 +91,20 @@ fun HomeScreen(
         animationSpec = tween(600, easing = FastOutSlowInEasing),
         label = "phase_transition"
     )
+
+    // 取消/结束旅程后 focusUiState.path 仍残留上次路线数据，
+    // 若继续传给相机会在退出路线选择时把旧旅程路线重新框选、绘制到首页。
+    // 因此只在专注阶段消费实时路径，退出动画期间用快照，
+    // 稳定回到首页后丢弃快照。
+    var lastFocusPath by remember { mutableStateOf<List<Station>?>(null) }
+    if (phase == HomePhase.FocusSession) {
+        focusUiState.path?.path?.let { lastFocusPath = it }
+    }
+    LaunchedEffect(phase, transitionProgress) {
+        if (phase == HomePhase.None && transitionProgress == 0f) {
+            lastFocusPath = null
+        }
+    }
 
     PredictiveBackHandler(enabled = phase != HomePhase.None) { progressFlow ->
         try {
@@ -112,7 +127,7 @@ fun HomeScreen(
                 startStation = if (phase == HomePhase.JourneySelection) timeSelectionUiState.startStation else uiState.currentStation,
                 selectedDestination = timeSelectionUiState.selectedDestination,
                 phase = phase,
-                focusPath = focusUiState.path?.path
+                focusPath = if (phase == HomePhase.FocusSession) focusUiState.path?.path else lastFocusPath
             )
 
             MapLibreView(
