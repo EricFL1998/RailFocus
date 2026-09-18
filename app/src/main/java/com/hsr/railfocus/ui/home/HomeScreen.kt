@@ -72,18 +72,17 @@ fun HomeScreen(
 
     // 离开路线选择阶段（进入专注页或返回首页）时，把时长重置回最小值，
     // 保证每次再进入路线选择都默认是最少时间
-    var wasJourneySelection by remember { mutableStateOf(false) }
     LaunchedEffect(phase) {
         when {
-            // 离开路线选择返回首页：重置，保证下次进入是最少时间
-            wasJourneySelection && phase == HomePhase.None ->
-                timeSelectionViewModel.resetToMinimum()
-            // 从首页进入路线选择（包括取消旅程后重新进入）：重置
-            // 进入专注页不重置，保持选中项与正在进行的旅程一致
+            // 进入路线选择时重置；进入专注页不重置，保持选中项与正在进行的旅程一致
             phase == HomePhase.JourneySelection ->
                 timeSelectionViewModel.resetToMinimum()
+            // 回到首页时重置（包括取消/结束旅程、退出路线选择）。
+            // 必须在离开旅程的此刻就重置，而不是等下次进入选择页：
+            // 时间选择器首次组合会用旧状态初始化页码并立即回报，覆盖进入时的重置。
+            phase == HomePhase.None ->
+                timeSelectionViewModel.resetToMinimum()
         }
-        wasJourneySelection = phase == HomePhase.JourneySelection
     }
 
     val homeTarget = uiState.currentLocation
