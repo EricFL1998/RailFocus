@@ -1,0 +1,288 @@
+package com.hsr.railfocus.domain.service
+
+import com.hsr.railfocus.domain.model.PathResult
+import com.hsr.railfocus.domain.model.Station
+import com.hsr.railfocus.domain.model.journey.JourneyProgress
+import com.hsr.railfocus.domain.model.journey.JourneyProgressTracker
+import com.hsr.railfocus.domain.model.journey.StationArrivalDetector
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * 旅程计时服务
+ * 
+ * 增强版：集成进度追踪、速度模型和到站检测
+ */
+@Singleton
+class JourneyTimerService @Inject constructor(
+    private val progressTracker: JourneyProgressTracker,
+    private val arrivalDetector: StationArrivalDetector
+) {
+
+    sealed class TimerState {
+        data object Idle : TimerState()
+        data class Running(val remainingSeconds: Int, val totalSeconds: Int) : TimerState()
+        data object Paused : TimerState()
+        data object Completed : TimerState()
+    }
+
+    private var timerJob: Job? = null
+    
+    // 计时器状态
+    private val _state = MutableStateFlow<TimerState>(TimerState.Idle)
+    val state: StateFlow<TimerState> = _state.asStateFlow()
+
+    // 旅程进度（包含位置、速度等）
+    private val _progress = MutableStateFlow<JourneyProgress?>(null)
+    val progress: StateFlow<JourneyProgress?> = _progress.asStateFlow()
+    
+    // 站点到达事件
+    private val _stationArrival = MutableSharedFlow<Station>()
+    val stationArrival: SharedFlow<Station> = _stationArrival.asSharedFlow()
+    
+    // 即将到达事件（提前触发动画）
+    private val _upcomingArrival = MutableSharedFlow<Station>()
+    val upcomingArrival: SharedFlow<Station> = _upcomingArrival.asSharedFlow()
+
+    private var savedRemainingSeconds: Int = 0
+    private var totalSessionSeconds: Int = 0
+    private var currentPath: PathResult? = null
+
+    /**
+     * 启动计时器（基础版本，无进度追踪）
+     */
+    fun start(durationSeconds: Int, scope: CoroutineScope) {
+        startBasic(remainingSeconds = durationSeconds, totalSeconds = durationSeconds, scope = scope)
+    }
+
+    /**
+     * 启动基础计时器，可分别指定剩余时间与总时间，
+     * 以便暂停恢复后保持原始的进度百分比。
+     */
+    private fun startBasic(remainingSeconds: Int, totalSeconds: Int, scope: CoroutineScope) {
+        timerJob?.cancel()
+        totalSessionSeconds = totalSeconds
+        savedRemainingSeconds = remainingSeconds
+        _state.value = TimerState.Running(remainingSeconds, totalSeconds)
+        _progress.value = null
+        currentPath = null
+
+        timerJob = scope.launch {
+            var remaining = remainingSeconds
+            while (remaining > 0 && isActive) {
+                delay(1000)
+                remaining--
+                savedRemainingSeconds = remaining
+                _state.value = TimerState.Running(remaining, totalSeconds)
+            }
+            if (isActive) {
+                _state.value = TimerState.Completed
+            }
+        }
+    }
+    
+    /**
+     * 启动计时器（增强版本，带进度追踪）
+     * 
+     * @param path 旅程路径
+     * @param durationSeconds 总时长（秒）
+     * @param scope 协程作用域
+     */
+    fun startWithProgress(
+        path: PathResult,
+        durationSeconds: Int,
+        scope: CoroutineScope
+    ) {
+        timerJob?.cancel()
+        totalSessionSeconds = durationSeconds
+        savedRemainingSeconds = durationSeconds
+        currentPath = path
+        
+        // 重置到站检测器
+        arrivalDetector.reset()
+        
+        // 标记起始站点为已到达
+        path.path.firstOrNull()?.let { startStation ->
+            arrivalDetector.markAsArrived(startStation.id)
+        }
+
+        _state.value = TimerState.Running(durationSeconds, totalSessionSeconds)
+        // 立即渲染初始位置，避免第一秒内进度为空
+        _progress.value = progressTracker.calculateProgress(
+            path = path,
+            elapsedSeconds = 0,
+            totalSeconds = totalSessionSeconds,
+        )
+
+        timerJob = runProgressLoop(path, remainingSeconds = durationSeconds, scope)
+    }
+
+    fun pause() {
+        // 空闲状态下暂停没有意义，避免之后 resume() 启动一个 0 秒计时器
+        if (_state.value is TimerState.Idle) return
+        timerJob?.cancel()
+        _state.value = TimerState.Paused
+    }
+
+    fun resume(scope: CoroutineScope) {
+        val current = _state.value
+        if (current is TimerState.Paused) {
+            val path = currentPath
+            if (path != null) {
+                // 使用原始总时长和剩余时间继续运行，保持进度连续性
+                resumeWithProgress(path, savedRemainingSeconds, totalSessionSeconds, scope)
+            } else {
+                // 否则使用基础版本，保留原始总时长
+                startBasic(savedRemainingSeconds, totalSessionSeconds, scope)
+            }
+        }
+    }
+
+    private fun resumeWithProgress(
+        path: PathResult,
+        remainingSeconds: Int,
+        totalSeconds: Int,
+        scope: CoroutineScope
+    ) {
+        timerJob?.cancel()
+        _state.value = TimerState.Running(remainingSeconds, totalSeconds)
+
+        timerJob = runProgressLoop(path, remainingSeconds, scope)
+    }
+
+    /**
+     * 统一的进度计时循环，[startWithProgress] 与 [resumeWithProgress] 共用。
+     */
+    private fun runProgressLoop(
+        path: PathResult,
+        remainingSeconds: Int,
+        scope: CoroutineScope,
+    ): Job = scope.launch {
+        val totalSeconds = totalSessionSeconds
+        var remaining = remainingSeconds
+
+        while (remaining > 0 && isActive) {
+            delay(1000)
+            remaining--
+            savedRemainingSeconds = remaining
+
+            // 计算已经过的时间：使用原始总时长，而不是剩余时长
+            val elapsedSeconds = totalSeconds - remaining
+
+            // 更新计时器状态
+            _state.value = TimerState.Running(remaining, totalSeconds)
+
+            // 计算并更新进度
+            val currentProgress = progressTracker.calculateProgress(
+                path = path,
+                elapsedSeconds = elapsedSeconds,
+                totalSeconds = totalSeconds
+            )
+            _progress.value = currentProgress
+
+            // 检测站点到达
+            val arrivedStation = arrivalDetector.checkArrival(currentProgress)
+            if (arrivedStation != null) {
+                _stationArrival.emit(arrivedStation)
+            }
+
+            // 检测即将到达
+            val upcomingStation = arrivalDetector.checkUpcomingArrival(currentProgress)
+            if (upcomingStation != null) {
+                _upcomingArrival.emit(upcomingStation)
+            }
+        }
+
+        if (isActive) {
+            _state.value = TimerState.Completed
+
+            // 完成时的最终进度
+            val finalProgress = progressTracker.calculateProgress(
+                path = path,
+                elapsedSeconds = totalSeconds,
+                totalSeconds = totalSeconds
+            )
+            _progress.value = finalProgress
+        }
+    }
+
+    fun stop() {
+        timerJob?.cancel()
+        _state.value = TimerState.Idle
+        _progress.value = null
+        currentPath = null
+        arrivalDetector.reset()
+    }
+
+    /**
+     * 从持久化检查点恢复旅程。
+     *
+     * 与 [startWithProgress] 不同：总时长与剩余时间独立指定，
+     * 已路过的站点不会对齐重放到达事件。
+     *
+     * @param path 旅程路径
+     * @param totalSeconds 原始总时长（秒）
+     * @param remainingSeconds 检查点记录的剩余时间（秒）
+     * @param scope 协程作用域
+     */
+    fun restoreProgress(
+        path: PathResult,
+        totalSeconds: Int,
+        remainingSeconds: Int,
+        scope: CoroutineScope,
+    ) {
+        timerJob?.cancel()
+        totalSessionSeconds = totalSeconds
+        savedRemainingSeconds = remainingSeconds
+        currentPath = path
+
+        arrivalDetector.reset()
+        path.path.firstOrNull()?.let { arrivalDetector.markAsArrived(it.id) }
+
+        val clampedRemaining = remainingSeconds.coerceIn(0, totalSeconds)
+        val elapsedSeconds = totalSeconds - clampedRemaining
+
+        val initialProgress = progressTracker.calculateProgress(
+            path = path,
+            elapsedSeconds = elapsedSeconds,
+            totalSeconds = totalSeconds,
+        )
+        arrivalDetector.syncToProgress(initialProgress)
+
+        _state.value = if (clampedRemaining > 0) {
+            TimerState.Running(clampedRemaining, totalSeconds)
+        } else {
+            TimerState.Completed
+        }
+        _progress.value = initialProgress
+
+        if (clampedRemaining > 0) {
+            timerJob = runProgressLoop(path, clampedRemaining, scope)
+        }
+    }
+    
+    /**
+     * 获取当前进度（如果有）
+     */
+    fun getCurrentProgress(): JourneyProgress? {
+        return _progress.value
+    }
+    
+    /**
+     * 获取剩余时间（秒）
+     */
+    fun getRemainingSeconds(): Int {
+        return savedRemainingSeconds
+    }
+}

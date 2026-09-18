@@ -1,0 +1,5598 @@
+{
+  "一面坡北": {
+    "target": "尚志",
+    "method": "special"
+  },
+  "七台河西": {
+    "target": "七台河",
+    "method": "special"
+  },
+  "万宁": {
+    "target": "万宁",
+    "method": "exact"
+  },
+  "万安": {
+    "target": "万安",
+    "method": "exact"
+  },
+  "万安县": {
+    "target": "万安",
+    "method": "special"
+  },
+  "万州北": {
+    "target": "万州北",
+    "method": "exact"
+  },
+  "三亚": {
+    "target": "三亚",
+    "method": "exact"
+  },
+  "三岔湖": {
+    "target": "三岔湖",
+    "method": "exact"
+  },
+  "三明": {
+    "target": "三明",
+    "method": "exact"
+  },
+  "三明北": {
+    "target": "三明北",
+    "method": "exact"
+  },
+  "三星堆": {
+    "target": "三星堆",
+    "method": "exact"
+  },
+  "三江南": {
+    "target": "三江",
+    "method": "special"
+  },
+  "三穗": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "三都县": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "三门县": {
+    "target": "三门县",
+    "method": "exact"
+  },
+  "三门峡南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "三阳": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "上杭北": {
+    "target": "上杭北",
+    "method": "exact"
+  },
+  "上海": {
+    "target": "上海",
+    "method": "exact"
+  },
+  "上海东": {
+    "target": "上海东",
+    "method": "exact"
+  },
+  "上海松江": {
+    "target": "上海松江",
+    "method": "exact"
+  },
+  "上海西": {
+    "target": "上海",
+    "method": "special"
+  },
+  "上虞南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "上饶市": {
+    "target": "上饶市",
+    "method": "exact"
+  },
+  "下板城": {
+    "target": "下板城",
+    "method": "exact"
+  },
+  "下花园北": {
+    "target": "下花园北",
+    "method": "exact"
+  },
+  "不冻泉": {
+    "target": "不冻泉",
+    "method": "exact"
+  },
+  "东丰": {
+    "target": "东丰",
+    "method": "exact"
+  },
+  "东升": {
+    "target": "东升",
+    "method": "exact"
+  },
+  "东城南": {
+    "target": "东城南",
+    "method": "exact"
+  },
+  "东孚": {
+    "target": "东孚",
+    "method": "exact"
+  },
+  "东山县": {
+    "target": "东山县",
+    "method": "exact"
+  },
+  "东岔": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "东方": {
+    "target": "东方",
+    "method": "exact"
+  },
+  "东海县": {
+    "target": "东海",
+    "method": "special"
+  },
+  "东花园北": {
+    "target": "东花园北",
+    "method": "exact"
+  },
+  "东莞": {
+    "target": "东莞",
+    "method": "exact"
+  },
+  "东莞南": {
+    "target": "东莞南",
+    "method": "exact"
+  },
+  "东莞港": {
+    "target": "东莞港",
+    "method": "exact"
+  },
+  "东莞滨海湾": {
+    "target": "东莞滨海湾",
+    "method": "exact"
+  },
+  "东莞西": {
+    "target": "东莞西",
+    "method": "exact"
+  },
+  "东营": {
+    "target": "东营",
+    "method": "exact"
+  },
+  "中卫": {
+    "target": "中卫",
+    "method": "exact"
+  },
+  "中卫南": {
+    "target": "中卫南",
+    "method": "exact"
+  },
+  "中堂": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "中宁东": {
+    "target": "中宁东",
+    "method": "exact"
+  },
+  "中山": {
+    "target": "中山",
+    "method": "exact"
+  },
+  "中山北": {
+    "target": "中山",
+    "method": "special"
+  },
+  "丰城东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "丰都": {
+    "target": "丰都",
+    "method": "exact"
+  },
+  "丰镇北": {
+    "target": "丰镇北",
+    "method": "exact"
+  },
+  "丰顺东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "临平南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "临汾": {
+    "target": "临汾",
+    "method": "exact"
+  },
+  "临汾西": {
+    "target": "临汾西",
+    "method": "exact"
+  },
+  "临沂": {
+    "target": "临沂",
+    "method": "exact"
+  },
+  "临沂北": {
+    "target": "临沂",
+    "method": "stripped_北"
+  },
+  "临泉": {
+    "target": "临泉",
+    "method": "exact"
+  },
+  "临泽南": {
+    "target": "临泽南",
+    "method": "exact"
+  },
+  "临海": {
+    "target": "临海",
+    "method": "exact"
+  },
+  "临淄北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "临清东": {
+    "target": "临清东",
+    "method": "exact"
+  },
+  "临澧": {
+    "target": "临澧",
+    "method": "exact"
+  },
+  "临高南": {
+    "target": "临高",
+    "method": "special"
+  },
+  "丹东": {
+    "target": "丹东",
+    "method": "exact"
+  },
+  "丹徒": {
+    "target": "丹徒",
+    "method": "exact"
+  },
+  "丹江口": {
+    "target": "丹江口",
+    "method": "exact"
+  },
+  "丹阳": {
+    "target": "丹阳",
+    "method": "exact"
+  },
+  "义乌": {
+    "target": "义乌",
+    "method": "exact"
+  },
+  "乌兰": {
+    "target": "乌兰",
+    "method": "exact"
+  },
+  "乌兰察布": {
+    "target": "乌兰察布",
+    "method": "exact"
+  },
+  "乌海": {
+    "target": "乌海",
+    "method": "exact"
+  },
+  "乌玛塘": {
+    "target": "乌玛塘",
+    "method": "exact"
+  },
+  "乌鲁木齐": {
+    "target": "乌鲁木齐",
+    "method": "exact"
+  },
+  "乌鲁木齐南": {
+    "target": "乌鲁木齐南",
+    "method": "exact"
+  },
+  "乌龙泉南": {
+    "target": "乌龙泉南",
+    "method": "exact"
+  },
+  "乐东": {
+    "target": "乐东",
+    "method": "exact"
+  },
+  "乐山": {
+    "target": "乐山",
+    "method": "exact"
+  },
+  "乐昌东": {
+    "target": "乐昌东",
+    "method": "exact"
+  },
+  "乐清": {
+    "target": "乐清",
+    "method": "exact"
+  },
+  "乐清东": {
+    "target": "乐清",
+    "method": "stripped_东"
+  },
+  "乐都南": {
+    "target": "乐都南",
+    "method": "exact"
+  },
+  "九华山": {
+    "target": "池州",
+    "method": "special"
+  },
+  "九台南": {
+    "target": "九台南",
+    "method": "exact"
+  },
+  "九江": {
+    "target": "九江",
+    "method": "exact"
+  },
+  "书院": {
+    "target": "书院",
+    "method": "exact"
+  },
+  "乳山南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "乾县": {
+    "target": "乾县",
+    "method": "exact"
+  },
+  "于都": {
+    "target": "于都",
+    "method": "exact"
+  },
+  "云山": {
+    "target": "云山",
+    "method": "exact"
+  },
+  "云梦东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "云浮": {
+    "target": "云浮",
+    "method": "exact"
+  },
+  "云阳": {
+    "target": "云阳",
+    "method": "exact"
+  },
+  "云霄": {
+    "target": "云霄",
+    "method": "exact"
+  },
+  "五华": {
+    "target": "五华",
+    "method": "exact"
+  },
+  "五台县": {
+    "target": "五台县",
+    "method": "exact"
+  },
+  "五台山": {
+    "target": "五台山",
+    "method": "exact"
+  },
+  "五合": {
+    "target": "五合",
+    "method": "exact"
+  },
+  "五塘": {
+    "target": "五塘",
+    "method": "exact"
+  },
+  "五府山": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "五河": {
+    "target": "五河",
+    "method": "exact"
+  },
+  "五象": {
+    "target": "五象",
+    "method": "exact"
+  },
+  "五通": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "五道梁": {
+    "target": "五道梁",
+    "method": "exact"
+  },
+  "五龙背东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "亚布力西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "亚龙湾": {
+    "target": "三亚",
+    "method": "special"
+  },
+  "交河": {
+    "target": "交河",
+    "method": "exact"
+  },
+  "京山南": {
+    "target": "京山南",
+    "method": "exact"
+  },
+  "亳州南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "什邡西": {
+    "target": "什邡西",
+    "method": "exact"
+  },
+  "介休东": {
+    "target": "介休东",
+    "method": "exact"
+  },
+  "从江": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "仙居": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "仙林": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "仙桃西": {
+    "target": "仙桃西",
+    "method": "exact"
+  },
+  "仙游": {
+    "target": "仙游",
+    "method": "exact"
+  },
+  "仲恺": {
+    "target": "仲恺",
+    "method": "exact"
+  },
+  "任丘西": {
+    "target": "任丘西",
+    "method": "exact"
+  },
+  "伊通": {
+    "target": "伊通",
+    "method": "exact"
+  },
+  "会昌北": {
+    "target": "会昌北",
+    "method": "exact"
+  },
+  "余姚北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "余干": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "佛山": {
+    "target": "佛山",
+    "method": "exact"
+  },
+  "佛山西": {
+    "target": "佛山",
+    "method": "stripped_西"
+  },
+  "佛肇": {
+    "target": "佛肇",
+    "method": "exact"
+  },
+  "佳木斯": {
+    "target": "佳木斯",
+    "method": "exact"
+  },
+  "侯马西": {
+    "target": "侯马西",
+    "method": "exact"
+  },
+  "保定": {
+    "target": "保定",
+    "method": "exact"
+  },
+  "保康": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "信丰西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "信阳": {
+    "target": "信阳",
+    "method": "exact"
+  },
+  "修武西": {
+    "target": "修武西",
+    "method": "exact"
+  },
+  "先锋": {
+    "target": "先锋",
+    "method": "exact"
+  },
+  "光明城": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "全椒": {
+    "target": "全椒",
+    "method": "exact"
+  },
+  "八斗": {
+    "target": "八斗",
+    "method": "exact"
+  },
+  "八方山": {
+    "target": "八方山",
+    "method": "exact"
+  },
+  "八达岭长城": {
+    "target": "八达岭长城",
+    "method": "exact"
+  },
+  "六合西": {
+    "target": "六合西",
+    "method": "exact"
+  },
+  "六安": {
+    "target": "六安",
+    "method": "exact"
+  },
+  "六景": {
+    "target": "六景",
+    "method": "exact"
+  },
+  "六枝": {
+    "target": "六枝",
+    "method": "exact"
+  },
+  "六盘水": {
+    "target": "六盘水",
+    "method": "exact"
+  },
+  "兰州": {
+    "target": "兰州",
+    "method": "exact"
+  },
+  "兰州西": {
+    "target": "兰州",
+    "method": "stripped_西"
+  },
+  "兰考南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "共青城": {
+    "target": "共青城",
+    "method": "exact"
+  },
+  "兴业南": {
+    "target": "兴业南",
+    "method": "exact"
+  },
+  "兴化东": {
+    "target": "兴化东",
+    "method": "exact"
+  },
+  "兴和北": {
+    "target": "兴和北",
+    "method": "exact"
+  },
+  "兴国西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "兴宁南": {
+    "target": "兴宁南",
+    "method": "exact"
+  },
+  "兴山": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "兴文": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "兴隆县西": {
+    "target": "兴隆县西",
+    "method": "exact"
+  },
+  "兴隆镇西": {
+    "target": "兴隆镇西",
+    "method": "exact"
+  },
+  "内江东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "内江北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "内黄": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "军粮城北": {
+    "target": "军粮城北",
+    "method": "exact"
+  },
+  "冠豸山": {
+    "target": "冠豸山",
+    "method": "exact"
+  },
+  "凉雾": {
+    "target": "凉雾",
+    "method": "exact"
+  },
+  "凤凰": {
+    "target": "凤凰",
+    "method": "exact"
+  },
+  "凤凰古城": {
+    "target": "凤凰",
+    "method": "prefix"
+  },
+  "凤凰机场": {
+    "target": "凤凰",
+    "method": "stripped_机场"
+  },
+  "凤台南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "凤城东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "凤滩": {
+    "target": "凤滩",
+    "method": "exact"
+  },
+  "凯里": {
+    "target": "凯里",
+    "method": "exact"
+  },
+  "凯里南": {
+    "target": "凯里",
+    "method": "special"
+  },
+  "刚察": {
+    "target": "刚察",
+    "method": "exact"
+  },
+  "利川": {
+    "target": "利川",
+    "method": "exact"
+  },
+  "利辛": {
+    "target": "利辛",
+    "method": "exact"
+  },
+  "前场": {
+    "target": "前场",
+    "method": "exact"
+  },
+  "前山": {
+    "target": "前山",
+    "method": "exact"
+  },
+  "包头": {
+    "target": "包头",
+    "method": "exact"
+  },
+  "化稍营": {
+    "target": "化稍营",
+    "method": "exact"
+  },
+  "北京": {
+    "target": "北京",
+    "method": "exact"
+  },
+  "北京北": {
+    "target": "北京北",
+    "method": "exact"
+  },
+  "北京南": {
+    "target": "北京",
+    "method": "special"
+  },
+  "北京朝阳": {
+    "target": "北京",
+    "method": "special"
+  },
+  "北京通州": {
+    "target": "北京通州",
+    "method": "exact"
+  },
+  "北戴河": {
+    "target": "北戴河",
+    "method": "exact"
+  },
+  "北海": {
+    "target": "北海",
+    "method": "exact"
+  },
+  "北滘": {
+    "target": "佛山",
+    "method": "special"
+  },
+  "北滩": {
+    "target": "北滩",
+    "method": "exact"
+  },
+  "北辰": {
+    "target": "天津",
+    "method": "special"
+  },
+  "十堰": {
+    "target": "十堰",
+    "method": "exact"
+  },
+  "千岛湖": {
+    "target": "杭州",
+    "method": "special"
+  },
+  "华容东": {
+    "target": "华容东",
+    "method": "exact"
+  },
+  "华容南": {
+    "target": "华容南",
+    "method": "exact"
+  },
+  "华山北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "卓资东": {
+    "target": "卓资东",
+    "method": "exact"
+  },
+  "南乐": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "南京": {
+    "target": "南京",
+    "method": "exact"
+  },
+  "南京北": {
+    "target": "南京北",
+    "method": "exact"
+  },
+  "南头": {
+    "target": "南头",
+    "method": "exact"
+  },
+  "南宁": {
+    "target": "南宁",
+    "method": "exact"
+  },
+  "南宁北": {
+    "target": "南宁北",
+    "method": "exact"
+  },
+  "南宁西": {
+    "target": "南宁西",
+    "method": "exact"
+  },
+  "南山口": {
+    "target": "南山口",
+    "method": "exact"
+  },
+  "南川北": {
+    "target": "南川北",
+    "method": "exact"
+  },
+  "南平市": {
+    "target": "南平",
+    "method": "special"
+  },
+  "南昌": {
+    "target": "南昌",
+    "method": "exact"
+  },
+  "南曹": {
+    "target": "南曹",
+    "method": "exact"
+  },
+  "南朗": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "南沙": {
+    "target": "南沙",
+    "method": "exact"
+  },
+  "南溪": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "南溪北": {
+    "target": "南溪北",
+    "method": "exact"
+  },
+  "南漳": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "南翔北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "南芬北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "南通": {
+    "target": "南通",
+    "method": "exact"
+  },
+  "南通西": {
+    "target": "南通",
+    "method": "special"
+  },
+  "南阳": {
+    "target": "南阳",
+    "method": "exact"
+  },
+  "南阳东": {
+    "target": "南阳",
+    "method": "special"
+  },
+  "南阳寨": {
+    "target": "南阳寨",
+    "method": "exact"
+  },
+  "南陵": {
+    "target": "南陵",
+    "method": "exact"
+  },
+  "南靖": {
+    "target": "南靖",
+    "method": "exact"
+  },
+  "博罗": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "博罗北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "博鳌": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "卫辉南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "即墨北": {
+    "target": "即墨北",
+    "method": "exact"
+  },
+  "历城": {
+    "target": "历城",
+    "method": "exact"
+  },
+  "厉家寨": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "厚街": {
+    "target": "厚街",
+    "method": "exact"
+  },
+  "原平西": {
+    "target": "原平西",
+    "method": "exact"
+  },
+  "厦门": {
+    "target": "厦门",
+    "method": "exact"
+  },
+  "厦门北": {
+    "target": "厦门",
+    "method": "special"
+  },
+  "双吉": {
+    "target": "双吉",
+    "method": "exact"
+  },
+  "双堆集": {
+    "target": "双堆集",
+    "method": "exact"
+  },
+  "双水镇": {
+    "target": "双水镇",
+    "method": "exact"
+  },
+  "双洋": {
+    "target": "双洋",
+    "method": "exact"
+  },
+  "双流机场": {
+    "target": "双流机场",
+    "method": "exact"
+  },
+  "双溪": {
+    "target": "双溪",
+    "method": "exact"
+  },
+  "双鸭山西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "叠溪": {
+    "target": "叠溪",
+    "method": "exact"
+  },
+  "古丈西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "古城东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "古浪北": {
+    "target": "古浪北",
+    "method": "exact"
+  },
+  "古田会址": {
+    "target": "古田会址",
+    "method": "exact"
+  },
+  "古田北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "句容": {
+    "target": "句容",
+    "method": "exact"
+  },
+  "句容西": {
+    "target": "句容",
+    "method": "stripped_西"
+  },
+  "台前东": {
+    "target": "台前东",
+    "method": "exact"
+  },
+  "台安": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "台山": {
+    "target": "台山",
+    "method": "exact"
+  },
+  "台州": {
+    "target": "台州",
+    "method": "exact"
+  },
+  "台州西": {
+    "target": "台州",
+    "method": "stripped_西"
+  },
+  "合浦": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "合肥": {
+    "target": "合肥",
+    "method": "exact"
+  },
+  "合肥北城": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "合肥南": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "吉安西": {
+    "target": "吉安",
+    "method": "special"
+  },
+  "吉林": {
+    "target": "吉林",
+    "method": "exact"
+  },
+  "吉水西": {
+    "target": "吉水",
+    "method": "special"
+  },
+  "吉首": {
+    "target": "吉首",
+    "method": "exact"
+  },
+  "吉首东": {
+    "target": "吉首",
+    "method": "special"
+  },
+  "后湖": {
+    "target": "后湖",
+    "method": "exact"
+  },
+  "吐哈": {
+    "target": "哈密",
+    "method": "special"
+  },
+  "吐鲁番北": {
+    "target": "吐鲁番",
+    "method": "special"
+  },
+  "吕梁": {
+    "target": "吕梁",
+    "method": "exact"
+  },
+  "含山": {
+    "target": "含山",
+    "method": "exact"
+  },
+  "含山南": {
+    "target": "含山",
+    "method": "stripped_南"
+  },
+  "吴圩机场": {
+    "target": "吴圩机场",
+    "method": "exact"
+  },
+  "吴堡": {
+    "target": "吴堡",
+    "method": "exact"
+  },
+  "吴川": {
+    "target": "吴川",
+    "method": "exact"
+  },
+  "吴忠": {
+    "target": "吴忠",
+    "method": "exact"
+  },
+  "周口东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "周口西": {
+    "target": "周口西",
+    "method": "exact"
+  },
+  "呼兰北": {
+    "target": "呼兰北",
+    "method": "exact"
+  },
+  "呼和浩特": {
+    "target": "呼和浩特",
+    "method": "exact"
+  },
+  "呼和浩特东": {
+    "target": "呼和浩特东",
+    "method": "exact"
+  },
+  "和平北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "咸丰": {
+    "target": "咸丰",
+    "method": "exact"
+  },
+  "咸宁": {
+    "target": "咸宁",
+    "method": "exact"
+  },
+  "咸宁东": {
+    "target": "咸宁东",
+    "method": "exact"
+  },
+  "咸宁南": {
+    "target": "咸宁南",
+    "method": "exact"
+  },
+  "咸阳北": {
+    "target": "咸阳北",
+    "method": "exact"
+  },
+  "咸阳西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "哈密": {
+    "target": "哈密",
+    "method": "exact"
+  },
+  "哈尔滨": {
+    "target": "哈尔滨",
+    "method": "exact"
+  },
+  "哈尔滨北": {
+    "target": "哈尔滨",
+    "method": "special"
+  },
+  "哈尔盖": {
+    "target": "哈尔盖",
+    "method": "exact"
+  },
+  "唐县": {
+    "target": "唐县",
+    "method": "exact"
+  },
+  "唐古拉": {
+    "target": "唐古拉",
+    "method": "exact"
+  },
+  "唐古拉北": {
+    "target": "唐古拉北",
+    "method": "exact"
+  },
+  "唐古拉南": {
+    "target": "唐古拉南",
+    "method": "exact"
+  },
+  "唐古拉山": {
+    "target": "唐古拉山",
+    "method": "exact"
+  },
+  "唐家湾": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "唐山": {
+    "target": "唐山",
+    "method": "exact"
+  },
+  "唐山西": {
+    "target": "唐山",
+    "method": "special"
+  },
+  "唐河北": {
+    "target": "唐河北",
+    "method": "exact"
+  },
+  "商丘": {
+    "target": "商丘",
+    "method": "exact"
+  },
+  "商丘东": {
+    "target": "商丘",
+    "method": "stripped_东"
+  },
+  "商城": {
+    "target": "商城",
+    "method": "exact"
+  },
+  "喀左": {
+    "target": "喀左",
+    "method": "exact"
+  },
+  "嘉兴": {
+    "target": "嘉兴",
+    "method": "exact"
+  },
+  "嘉兴北": {
+    "target": "嘉兴北",
+    "method": "exact"
+  },
+  "嘉善火车": {
+    "target": "嘉善火车",
+    "method": "exact"
+  },
+  "嘉峪关南": {
+    "target": "嘉峪关",
+    "method": "special"
+  },
+  "嘉祥北": {
+    "target": "嘉祥北",
+    "method": "exact"
+  },
+  "四团": {
+    "target": "四团",
+    "method": "exact"
+  },
+  "四平": {
+    "target": "四平",
+    "method": "exact"
+  },
+  "固始": {
+    "target": "固始",
+    "method": "exact"
+  },
+  "固安东": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "固镇南": {
+    "target": "固镇南",
+    "method": "exact"
+  },
+  "图们北": {
+    "target": "图们",
+    "method": "special"
+  },
+  "土地堂东": {
+    "target": "土地堂东",
+    "method": "exact"
+  },
+  "垫江": {
+    "target": "垫江",
+    "method": "exact"
+  },
+  "城阳": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "塘沽": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "增城": {
+    "target": "增城",
+    "method": "exact"
+  },
+  "复盛": {
+    "target": "复盛",
+    "method": "exact"
+  },
+  "夏日哈": {
+    "target": "夏日哈",
+    "method": "exact"
+  },
+  "夏格庄": {
+    "target": "夏格庄",
+    "method": "exact"
+  },
+  "大丰": {
+    "target": "大丰",
+    "method": "exact"
+  },
+  "大兴机场": {
+    "target": "大兴机场",
+    "method": "exact"
+  },
+  "大冶北": {
+    "target": "大冶北",
+    "method": "exact"
+  },
+  "大厂": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大同南": {
+    "target": "大同南",
+    "method": "exact"
+  },
+  "大名": {
+    "target": "大名",
+    "method": "exact"
+  },
+  "大塘": {
+    "target": "大塘",
+    "method": "exact"
+  },
+  "大庆东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大庆西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大方": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大朗镇": {
+    "target": "大朗镇",
+    "method": "exact"
+  },
+  "大港南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大石头南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大荔": {
+    "target": "大荔",
+    "method": "exact"
+  },
+  "大足南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "大连": {
+    "target": "大连",
+    "method": "exact"
+  },
+  "大连北": {
+    "target": "大连",
+    "method": "special"
+  },
+  "大通西": {
+    "target": "大通西",
+    "method": "exact"
+  },
+  "大邑": {
+    "target": "大邑",
+    "method": "exact"
+  },
+  "天台山": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "天峻": {
+    "target": "天峻",
+    "method": "exact"
+  },
+  "天府": {
+    "target": "天府",
+    "method": "exact"
+  },
+  "天府机场": {
+    "target": "天府",
+    "method": "stripped_机场"
+  },
+  "天水": {
+    "target": "天水",
+    "method": "exact"
+  },
+  "天水南": {
+    "target": "天水",
+    "method": "stripped_南"
+  },
+  "天河机场": {
+    "target": "天河机场",
+    "method": "exact"
+  },
+  "天河街": {
+    "target": "天河街",
+    "method": "exact"
+  },
+  "天津": {
+    "target": "天津",
+    "method": "exact"
+  },
+  "天津西": {
+    "target": "天津西",
+    "method": "exact"
+  },
+  "天祝西": {
+    "target": "天祝西",
+    "method": "exact"
+  },
+  "天镇": {
+    "target": "天镇",
+    "method": "exact"
+  },
+  "天长": {
+    "target": "天长",
+    "method": "exact"
+  },
+  "天门": {
+    "target": "天门",
+    "method": "exact"
+  },
+  "天门南": {
+    "target": "天门南",
+    "method": "exact"
+  },
+  "太仓": {
+    "target": "太仓",
+    "method": "exact"
+  },
+  "太仓南": {
+    "target": "太仓",
+    "method": "stripped_南"
+  },
+  "太原": {
+    "target": "太原",
+    "method": "exact"
+  },
+  "太原东": {
+    "target": "太原东",
+    "method": "exact"
+  },
+  "太原南": {
+    "target": "太原南",
+    "method": "exact"
+  },
+  "太和东": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "太姥山": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "太子城": {
+    "target": "太子城",
+    "method": "exact"
+  },
+  "太湖南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "太湖西": {
+    "target": "太湖西",
+    "method": "exact"
+  },
+  "太谷东": {
+    "target": "太谷东",
+    "method": "exact"
+  },
+  "太谷西": {
+    "target": "太谷西",
+    "method": "exact"
+  },
+  "奉化": {
+    "target": "奉化",
+    "method": "exact"
+  },
+  "奉节": {
+    "target": "奉节",
+    "method": "exact"
+  },
+  "奉贤": {
+    "target": "奉贤",
+    "method": "exact"
+  },
+  "威信": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "威海": {
+    "target": "威海",
+    "method": "exact"
+  },
+  "威海北": {
+    "target": "威海北",
+    "method": "exact"
+  },
+  "威海南海": {
+    "target": "威海",
+    "method": "special"
+  },
+  "威虎岭北": {
+    "target": "敦化",
+    "method": "special"
+  },
+  "威远": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "娄底": {
+    "target": "娄底",
+    "method": "exact"
+  },
+  "婺源": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "孝感": {
+    "target": "孝感",
+    "method": "exact"
+  },
+  "孝感东": {
+    "target": "孝感",
+    "method": "stripped_东"
+  },
+  "孟庄": {
+    "target": "孟庄",
+    "method": "exact"
+  },
+  "宁乡西": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "宁县": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "宁国南": {
+    "target": "宁国南",
+    "method": "exact"
+  },
+  "宁城": {
+    "target": "宁城",
+    "method": "exact"
+  },
+  "宁安": {
+    "target": "宁安",
+    "method": "exact"
+  },
+  "宁强南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "宁德": {
+    "target": "宁德",
+    "method": "exact"
+  },
+  "宁波": {
+    "target": "宁波",
+    "method": "exact"
+  },
+  "宁海": {
+    "target": "宁海",
+    "method": "exact"
+  },
+  "安亭北": {
+    "target": "上海",
+    "method": "special"
+  },
+  "安亭西": {
+    "target": "上海",
+    "method": "special"
+  },
+  "安吉": {
+    "target": "湖州",
+    "method": "special"
+  },
+  "安图西": {
+    "target": "延边",
+    "method": "special"
+  },
+  "安多": {
+    "target": "安多",
+    "method": "exact"
+  },
+  "安州": {
+    "target": "安州",
+    "method": "exact"
+  },
+  "安庆": {
+    "target": "安庆",
+    "method": "exact"
+  },
+  "安庆西": {
+    "target": "安庆",
+    "method": "special"
+  },
+  "安次": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "安江": {
+    "target": "安江",
+    "method": "exact"
+  },
+  "安达": {
+    "target": "安达",
+    "method": "exact"
+  },
+  "安阳": {
+    "target": "安阳",
+    "method": "exact"
+  },
+  "安陆西": {
+    "target": "安陆",
+    "method": "special"
+  },
+  "安靖": {
+    "target": "安靖",
+    "method": "exact"
+  },
+  "安顺": {
+    "target": "安顺",
+    "method": "exact"
+  },
+  "宋城路": {
+    "target": "宋城路",
+    "method": "exact"
+  },
+  "定南南": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "定州": {
+    "target": "定州",
+    "method": "exact"
+  },
+  "定襄北": {
+    "target": "定襄北",
+    "method": "exact"
+  },
+  "定西北": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "定远东": {
+    "target": "定远东",
+    "method": "exact"
+  },
+  "宜兴": {
+    "target": "宜兴",
+    "method": "exact"
+  },
+  "宜宾": {
+    "target": "宜宾",
+    "method": "exact"
+  },
+  "宜宾东": {
+    "target": "宜宾",
+    "method": "stripped_东"
+  },
+  "宜宾南": {
+    "target": "宜宾",
+    "method": "stripped_南"
+  },
+  "宜宾西": {
+    "target": "宜宾",
+    "method": "stripped_西"
+  },
+  "宜昌": {
+    "target": "宜昌",
+    "method": "exact"
+  },
+  "宜昌东": {
+    "target": "宜昌东",
+    "method": "exact"
+  },
+  "宜昌北": {
+    "target": "宜昌北",
+    "method": "exact"
+  },
+  "宜春市": {
+    "target": "宜春市",
+    "method": "exact"
+  },
+  "宝华山": {
+    "target": "镇江",
+    "method": "special"
+  },
+  "宝坻": {
+    "target": "天津",
+    "method": "special"
+  },
+  "宝坻南": {
+    "target": "天津",
+    "method": "special"
+  },
+  "宝应": {
+    "target": "扬州",
+    "method": "special"
+  },
+  "宝鸡南": {
+    "target": "宝鸡",
+    "method": "special"
+  },
+  "宣化北": {
+    "target": "宣化北",
+    "method": "exact"
+  },
+  "宣城": {
+    "target": "宣城",
+    "method": "exact"
+  },
+  "容县南": {
+    "target": "容县南",
+    "method": "exact"
+  },
+  "容桂": {
+    "target": "佛山",
+    "method": "special"
+  },
+  "宽城南": {
+    "target": "宽城南",
+    "method": "exact"
+  },
+  "宾阳": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "宿州": {
+    "target": "宿州",
+    "method": "exact"
+  },
+  "宿州西": {
+    "target": "宿州西",
+    "method": "exact"
+  },
+  "宿松东": {
+    "target": "安庆",
+    "method": "special"
+  },
+  "宿迁": {
+    "target": "宿迁",
+    "method": "exact"
+  },
+  "宿迁东": {
+    "target": "宿迁东",
+    "method": "exact"
+  },
+  "密云": {
+    "target": "密云",
+    "method": "exact"
+  },
+  "富宁": {
+    "target": "富宁",
+    "method": "exact"
+  },
+  "富源北": {
+    "target": "富源北",
+    "method": "exact"
+  },
+  "富阳": {
+    "target": "富阳",
+    "method": "exact"
+  },
+  "富阳西": {
+    "target": "富阳西",
+    "method": "exact"
+  },
+  "富顺": {
+    "target": "自贡",
+    "method": "special"
+  },
+  "察汗诺": {
+    "target": "察汗诺",
+    "method": "exact"
+  },
+  "寮步": {
+    "target": "寮步",
+    "method": "exact"
+  },
+  "寻甸": {
+    "target": "寻甸",
+    "method": "exact"
+  },
+  "寿县": {
+    "target": "寿县",
+    "method": "exact"
+  },
+  "小南川": {
+    "target": "小南川",
+    "method": "exact"
+  },
+  "小榄": {
+    "target": "中山",
+    "method": "special"
+  },
+  "小董西": {
+    "target": "小董西",
+    "method": "exact"
+  },
+  "小金口": {
+    "target": "小金口",
+    "method": "exact"
+  },
+  "尖山": {
+    "target": "尖山",
+    "method": "exact"
+  },
+  "尖峰": {
+    "target": "乐东",
+    "method": "special"
+  },
+  "尚志南": {
+    "target": "尚志",
+    "method": "special"
+  },
+  "山坡东": {
+    "target": "山坡东",
+    "method": "exact"
+  },
+  "山阴南": {
+    "target": "山阴南",
+    "method": "exact"
+  },
+  "岐山": {
+    "target": "宝鸡",
+    "method": "special"
+  },
+  "岑溪东": {
+    "target": "岑溪东",
+    "method": "exact"
+  },
+  "岚山西": {
+    "target": "日照",
+    "method": "special"
+  },
+  "岳西": {
+    "target": "岳西",
+    "method": "exact"
+  },
+  "岳阳": {
+    "target": "岳阳",
+    "method": "exact"
+  },
+  "峡江": {
+    "target": "吉安",
+    "method": "special"
+  },
+  "峦城": {
+    "target": "峦城",
+    "method": "exact"
+  },
+  "峨眉山": {
+    "target": "峨眉山",
+    "method": "exact"
+  },
+  "崇州": {
+    "target": "崇州",
+    "method": "exact"
+  },
+  "崇左南": {
+    "target": "崇左南",
+    "method": "exact"
+  },
+  "崖州": {
+    "target": "三亚",
+    "method": "special"
+  },
+  "嵊州北": {
+    "target": "嵊州",
+    "method": "special"
+  },
+  "嵊州新昌": {
+    "target": "绍兴",
+    "method": "special"
+  },
+  "巢北": {
+    "target": "巢北",
+    "method": "exact"
+  },
+  "巢湖东": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "左岭": {
+    "target": "左岭",
+    "method": "exact"
+  },
+  "巨野北": {
+    "target": "巨野北",
+    "method": "exact"
+  },
+  "巩义南": {
+    "target": "巩义",
+    "method": "special"
+  },
+  "巫山": {
+    "target": "巫山",
+    "method": "exact"
+  },
+  "巴东": {
+    "target": "恩施",
+    "method": "special"
+  },
+  "巴东北": {
+    "target": "巴东北",
+    "method": "exact"
+  },
+  "巴南": {
+    "target": "巴南",
+    "method": "exact"
+  },
+  "巴彦淖尔": {
+    "target": "巴彦淖尔",
+    "method": "exact"
+  },
+  "布强格": {
+    "target": "布强格",
+    "method": "exact"
+  },
+  "布曲": {
+    "target": "布曲",
+    "method": "exact"
+  },
+  "布玛德": {
+    "target": "布玛德",
+    "method": "exact"
+  },
+  "常山": {
+    "target": "衢州",
+    "method": "special"
+  },
+  "常州": {
+    "target": "常州",
+    "method": "exact"
+  },
+  "常平东": {
+    "target": "常平东",
+    "method": "exact"
+  },
+  "常平南": {
+    "target": "常平南",
+    "method": "exact"
+  },
+  "常德": {
+    "target": "常德",
+    "method": "exact"
+  },
+  "常熟": {
+    "target": "常熟",
+    "method": "exact"
+  },
+  "常熟西": {
+    "target": "常熟西",
+    "method": "exact"
+  },
+  "帽儿山西": {
+    "target": "尚志",
+    "method": "special"
+  },
+  "平南南": {
+    "target": "贵港",
+    "method": "special"
+  },
+  "平原东": {
+    "target": "平原东",
+    "method": "exact"
+  },
+  "平庄": {
+    "target": "平庄",
+    "method": "exact"
+  },
+  "平度": {
+    "target": "平度",
+    "method": "exact"
+  },
+  "平果": {
+    "target": "平果",
+    "method": "exact"
+  },
+  "平湖南": {
+    "target": "平湖南",
+    "method": "exact"
+  },
+  "平潭": {
+    "target": "平潭",
+    "method": "exact"
+  },
+  "平遥古城": {
+    "target": "平遥古城",
+    "method": "exact"
+  },
+  "平阳": {
+    "target": "平阳",
+    "method": "exact"
+  },
+  "平顶山南": {
+    "target": "平顶山南",
+    "method": "exact"
+  },
+  "平顶山西": {
+    "target": "平顶山",
+    "method": "special"
+  },
+  "广元": {
+    "target": "广元",
+    "method": "exact"
+  },
+  "广元市": {
+    "target": "广元市",
+    "method": "exact"
+  },
+  "广南县": {
+    "target": "广南县",
+    "method": "exact"
+  },
+  "广宁": {
+    "target": "肇庆",
+    "method": "special"
+  },
+  "广安门": {
+    "target": "广安门",
+    "method": "exact"
+  },
+  "广州": {
+    "target": "广州",
+    "method": "exact"
+  },
+  "广州东": {
+    "target": "广州东",
+    "method": "exact"
+  },
+  "广州白云": {
+    "target": "广州白云",
+    "method": "exact"
+  },
+  "广德南": {
+    "target": "宣城",
+    "method": "special"
+  },
+  "庄寨": {
+    "target": "菏泽",
+    "method": "special"
+  },
+  "庄桥": {
+    "target": "庄桥",
+    "method": "exact"
+  },
+  "庆城": {
+    "target": "庆阳",
+    "method": "special"
+  },
+  "庆安南": {
+    "target": "庆安南",
+    "method": "exact"
+  },
+  "庆盛": {
+    "target": "广州",
+    "method": "special"
+  },
+  "庆阳": {
+    "target": "庆阳",
+    "method": "exact"
+  },
+  "庐山": {
+    "target": "庐山",
+    "method": "exact"
+  },
+  "庐江西": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "应县西": {
+    "target": "应县西",
+    "method": "exact"
+  },
+  "庙山": {
+    "target": "庙山",
+    "method": "exact"
+  },
+  "廊坊": {
+    "target": "廊坊",
+    "method": "exact"
+  },
+  "延吉西": {
+    "target": "延边",
+    "method": "special"
+  },
+  "延安": {
+    "target": "延安",
+    "method": "exact"
+  },
+  "延安新区": {
+    "target": "延安新区",
+    "method": "exact"
+  },
+  "延川": {
+    "target": "延川",
+    "method": "exact"
+  },
+  "延平": {
+    "target": "南平",
+    "method": "special"
+  },
+  "建平": {
+    "target": "建平",
+    "method": "exact"
+  },
+  "建德": {
+    "target": "建德",
+    "method": "exact"
+  },
+  "建桥": {
+    "target": "梅州",
+    "method": "special"
+  },
+  "建湖": {
+    "target": "盐城",
+    "method": "special"
+  },
+  "建瓯西": {
+    "target": "南平",
+    "method": "special"
+  },
+  "开化": {
+    "target": "衢州",
+    "method": "special"
+  },
+  "开封": {
+    "target": "开封",
+    "method": "exact"
+  },
+  "开封北": {
+    "target": "开封",
+    "method": "special"
+  },
+  "开平南": {
+    "target": "江门",
+    "method": "special"
+  },
+  "开福寺": {
+    "target": "开福寺",
+    "method": "exact"
+  },
+  "开远": {
+    "target": "开远",
+    "method": "exact"
+  },
+  "开远南": {
+    "target": "开远南",
+    "method": "exact"
+  },
+  "张家口": {
+    "target": "张家口",
+    "method": "exact"
+  },
+  "张家港": {
+    "target": "张家港",
+    "method": "exact"
+  },
+  "张家界": {
+    "target": "张家界",
+    "method": "exact"
+  },
+  "张家界西": {
+    "target": "张家界",
+    "method": "special"
+  },
+  "张掖": {
+    "target": "张掖",
+    "method": "exact"
+  },
+  "张掖西": {
+    "target": "张掖",
+    "method": "special"
+  },
+  "弥勒": {
+    "target": "弥勒",
+    "method": "exact"
+  },
+  "当阳西": {
+    "target": "当阳西",
+    "method": "exact"
+  },
+  "当雄": {
+    "target": "当雄",
+    "method": "exact"
+  },
+  "彬州东": {
+    "target": "彬州东",
+    "method": "exact"
+  },
+  "彭山北": {
+    "target": "彭山北",
+    "method": "exact"
+  },
+  "彭州": {
+    "target": "彭州",
+    "method": "exact"
+  },
+  "彭水西": {
+    "target": "彭水西",
+    "method": "exact"
+  },
+  "徐州": {
+    "target": "徐州",
+    "method": "exact"
+  },
+  "德令哈": {
+    "target": "德令哈",
+    "method": "exact"
+  },
+  "德兴": {
+    "target": "德兴",
+    "method": "exact"
+  },
+  "德兴东": {
+    "target": "德兴东",
+    "method": "exact"
+  },
+  "德安": {
+    "target": "九江",
+    "method": "special"
+  },
+  "德州": {
+    "target": "德州",
+    "method": "exact"
+  },
+  "德清": {
+    "target": "湖州",
+    "method": "special"
+  },
+  "忻州西": {
+    "target": "忻州西",
+    "method": "exact"
+  },
+  "怀仁东": {
+    "target": "怀仁东",
+    "method": "exact"
+  },
+  "怀化": {
+    "target": "怀化",
+    "method": "exact"
+  },
+  "怀化市": {
+    "target": "怀化市",
+    "method": "exact"
+  },
+  "怀安": {
+    "target": "怀安",
+    "method": "exact"
+  },
+  "怀来": {
+    "target": "怀来",
+    "method": "exact"
+  },
+  "怀柔北": {
+    "target": "怀柔北",
+    "method": "exact"
+  },
+  "怀集": {
+    "target": "肇庆",
+    "method": "special"
+  },
+  "恩平": {
+    "target": "恩平",
+    "method": "exact"
+  },
+  "恭城": {
+    "target": "桂林",
+    "method": "special"
+  },
+  "息县": {
+    "target": "息县",
+    "method": "exact"
+  },
+  "惠东": {
+    "target": "惠州",
+    "method": "special"
+  },
+  "惠东南": {
+    "target": "惠东南",
+    "method": "exact"
+  },
+  "惠安": {
+    "target": "惠安",
+    "method": "exact"
+  },
+  "惠安堡": {
+    "target": "惠安堡",
+    "method": "exact"
+  },
+  "惠山": {
+    "target": "惠山",
+    "method": "exact"
+  },
+  "惠州": {
+    "target": "惠州",
+    "method": "exact"
+  },
+  "惠州北": {
+    "target": "惠州北",
+    "method": "exact"
+  },
+  "惠州南": {
+    "target": "惠州",
+    "method": "special"
+  },
+  "惠来": {
+    "target": "揭阳",
+    "method": "special"
+  },
+  "惠环": {
+    "target": "惠环",
+    "method": "exact"
+  },
+  "惠阳": {
+    "target": "惠阳",
+    "method": "exact"
+  },
+  "慈溪": {
+    "target": "慈溪",
+    "method": "exact"
+  },
+  "成安": {
+    "target": "成安",
+    "method": "exact"
+  },
+  "成都": {
+    "target": "成都",
+    "method": "exact"
+  },
+  "扎加藏布": {
+    "target": "扎加藏布",
+    "method": "exact"
+  },
+  "托居": {
+    "target": "托居",
+    "method": "exact"
+  },
+  "扬州": {
+    "target": "扬州",
+    "method": "exact"
+  },
+  "扬州东": {
+    "target": "扬州",
+    "method": "special"
+  },
+  "扶余北": {
+    "target": "扶余北",
+    "method": "exact"
+  },
+  "扶余西": {
+    "target": "扶余西",
+    "method": "exact"
+  },
+  "扶沟": {
+    "target": "周口",
+    "method": "special"
+  },
+  "扶绥南": {
+    "target": "扶绥南",
+    "method": "exact"
+  },
+  "承德": {
+    "target": "承德",
+    "method": "exact"
+  },
+  "抚州": {
+    "target": "抚州",
+    "method": "exact"
+  },
+  "拉萨": {
+    "target": "拉萨",
+    "method": "exact"
+  },
+  "拐河北": {
+    "target": "拐河北",
+    "method": "exact"
+  },
+  "招远": {
+    "target": "招远",
+    "method": "exact"
+  },
+  "措那湖": {
+    "target": "措那湖",
+    "method": "exact"
+  },
+  "揭阳": {
+    "target": "揭阳",
+    "method": "exact"
+  },
+  "揭阳机场": {
+    "target": "揭阳",
+    "method": "special"
+  },
+  "敦化": {
+    "target": "敦化",
+    "method": "exact"
+  },
+  "敦化南": {
+    "target": "敦化南",
+    "method": "exact"
+  },
+  "敦煌": {
+    "target": "敦煌",
+    "method": "exact"
+  },
+  "文庙": {
+    "target": "文庙",
+    "method": "exact"
+  },
+  "文昌": {
+    "target": "文昌",
+    "method": "exact"
+  },
+  "文水": {
+    "target": "文水",
+    "method": "exact"
+  },
+  "文登东": {
+    "target": "威海",
+    "method": "special"
+  },
+  "文登南": {
+    "target": "威海",
+    "method": "special"
+  },
+  "新乡": {
+    "target": "新乡",
+    "method": "exact"
+  },
+  "新乡南": {
+    "target": "新乡",
+    "method": "special"
+  },
+  "新余": {
+    "target": "新余",
+    "method": "exact"
+  },
+  "新兴南": {
+    "target": "新兴南",
+    "method": "exact"
+  },
+  "新化": {
+    "target": "新化",
+    "method": "exact"
+  },
+  "新县北": {
+    "target": "新县北",
+    "method": "exact"
+  },
+  "新塘": {
+    "target": "广州",
+    "method": "special"
+  },
+  "新塘南": {
+    "target": "广州",
+    "method": "special"
+  },
+  "新干东": {
+    "target": "吉安",
+    "method": "special"
+  },
+  "新晃西": {
+    "target": "怀化",
+    "method": "special"
+  },
+  "新民": {
+    "target": "新民",
+    "method": "exact"
+  },
+  "新沂南": {
+    "target": "徐州",
+    "method": "special"
+  },
+  "新津": {
+    "target": "新津",
+    "method": "exact"
+  },
+  "新津南": {
+    "target": "新津南",
+    "method": "exact"
+  },
+  "新洲东": {
+    "target": "新洲东",
+    "method": "exact"
+  },
+  "新郑机场": {
+    "target": "新郑机场",
+    "method": "exact"
+  },
+  "新都": {
+    "target": "新都",
+    "method": "exact"
+  },
+  "新香坊北": {
+    "target": "新香坊北",
+    "method": "exact"
+  },
+  "方城": {
+    "target": null,
+    "method": "unmatched"
+  },
+  "旌德": {
+    "target": "旌德",
+    "method": "exact"
+  },
+  "旗下营南": {
+    "target": "旗下营南",
+    "method": "exact"
+  },
+  "无为": {
+    "target": "无为",
+    "method": "exact"
+  },
+  "无锡": {
+    "target": "无锡",
+    "method": "exact"
+  },
+  "日照": {
+    "target": "日照",
+    "method": "exact"
+  },
+  "日照西": {
+    "target": "日照",
+    "method": "special"
+  },
+  "昆山": {
+    "target": "昆山",
+    "method": "exact"
+  },
+  "昆明": {
+    "target": "昆明",
+    "method": "exact"
+  },
+  "昌吉": {
+    "target": "昌吉",
+    "method": "special"
+  },
+  "昌图西": {
+    "target": "昌图西",
+    "method": "exact"
+  },
+  "昌平": {
+    "target": "昌平",
+    "method": "exact"
+  },
+  "昌邑": {
+    "target": "昌邑",
+    "method": "exact"
+  },
+  "明光西": {
+    "target": "明光西",
+    "method": "exact"
+  },
+  "明珠": {
+    "target": "大连",
+    "method": "special"
+  },
+  "昭山": {
+    "target": "昭山",
+    "method": "exact"
+  },
+  "晋中": {
+    "target": "晋中",
+    "method": "exact"
+  },
+  "晋城东": {
+    "target": "晋城东",
+    "method": "exact"
+  },
+  "晋江": {
+    "target": "晋江",
+    "method": "exact"
+  },
+  "普宁": {
+    "target": "普宁",
+    "method": "exact"
+  },
+  "普安县": {
+    "target": "普安县",
+    "method": "exact"
+  },
+  "普湾": {
+    "target": "大连",
+    "method": "special"
+  },
+  "普者黑": {
+    "target": "普者黑",
+    "method": "exact"
+  },
+  "景州": {
+    "target": "景州",
+    "method": "exact"
+  },
+  "景德镇北": {
+    "target": "景德镇北",
+    "method": "exact"
+  },
+  "暮云": {
+    "target": "暮云",
+    "method": "exact"
+  },
+  "曲子": {
+    "target": "曲子",
+    "method": "exact"
+  },
+  "曲阜": {
+    "target": "曲阜",
+    "method": "exact"
+  },
+  "曲阜南": {
+    "target": "曲阜南",
+    "method": "exact"
+  },
+  "曲阳": {
+    "target": "曲阳",
+    "method": "exact"
+  },
+  "曲靖": {
+    "target": "曲靖",
+    "method": "exact"
+  },
+  "曹县西": {
+    "target": "曹县西",
+    "method": "exact"
+  },
+  "朋普": {
+    "target": "红河",
+    "method": "special"
+  },
+  "朔州东": {
+    "target": "朔州东",
+    "method": "exact"
+  },
+  "望昆": {
+    "target": "望昆",
+    "method": "exact"
+  },
+  "望牛墩": {
+    "target": "望牛墩",
+    "method": "exact"
+  },
+  "望都北": {
+    "target": "望都北",
+    "method": "exact"
+  },
+  "朝天": {
+    "target": "广元",
+    "method": "special"
+  },
+  "朝阳": {
+    "target": "朝阳",
+    "method": "exact"
+  },
+  "本溪": {
+    "target": "本溪",
+    "method": "exact"
+  },
+  "本溪新城": {
+    "target": "本溪",
+    "method": "special"
+  },
+  "朱砂古镇": {
+    "target": "朱砂古镇",
+    "method": "exact"
+  },
+  "杏林": {
+    "target": "杏林",
+    "method": "exact"
+  },
+  "杜尔伯特": {
+    "target": "杜尔伯特",
+    "method": "exact"
+  },
+  "来凤": {
+    "target": "来凤",
+    "method": "exact"
+  },
+  "来宾北": {
+    "target": "来宾北",
+    "method": "exact"
+  },
+  "杨陵南": {
+    "target": "咸阳",
+    "method": "special"
+  },
+  "杭州": {
+    "target": "杭州",
+    "method": "exact"
+  },
+  "杭州东": {
+    "target": "杭州",
+    "method": "special"
+  },
+  "杭州西": {
+    "target": "杭州",
+    "method": "special"
+  },
+  "松山湖": {
+    "target": "东莞",
+    "method": "special"
+  },
+  "松山湖北": {
+    "target": "松山湖北",
+    "method": "exact"
+  },
+  "松木": {
+    "target": "松木",
+    "method": "exact"
+  },
+  "板塘": {
+    "target": "板塘",
+    "method": "exact"
+  },
+  "林口南": {
+    "target": "牡丹江",
+    "method": "special"
+  },
+  "枝江北": {
+    "target": "枝江北",
+    "method": "exact"
+  },
+  "枣庄": {
+    "target": "枣庄",
+    "method": "exact"
+  },
+  "枣强南": {
+    "target": "枣强南",
+    "method": "exact"
+  },
+  "枣阳": {
+    "target": "枣阳",
+    "method": "exact"
+  },
+  "枫林": {
+    "target": "枫林",
+    "method": "exact"
+  },
+  "柘皋": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "柯柯": {
+    "target": "柯柯",
+    "method": "exact"
+  },
+  "柳州": {
+    "target": "柳州",
+    "method": "exact"
+  },
+  "柳林南": {
+    "target": "柳林南",
+    "method": "exact"
+  },
+  "柳沟南": {
+    "target": "柳沟南",
+    "method": "exact"
+  },
+  "树木岭": {
+    "target": "树木岭",
+    "method": "exact"
+  },
+  "株洲": {
+    "target": "株洲",
+    "method": "exact"
+  },
+  "株洲南": {
+    "target": "株洲南",
+    "method": "exact"
+  },
+  "格尔木": {
+    "target": "格尔木",
+    "method": "exact"
+  },
+  "桂平": {
+    "target": "桂平",
+    "method": "exact"
+  },
+  "桂林": {
+    "target": "桂林",
+    "method": "exact"
+  },
+  "桂林西": {
+    "target": "桂林",
+    "method": "special"
+  },
+  "桃村北": {
+    "target": "桃村北",
+    "method": "exact"
+  },
+  "桃源": {
+    "target": "桃源",
+    "method": "exact"
+  },
+  "桐城东": {
+    "target": "安庆",
+    "method": "special"
+  },
+  "桐庐": {
+    "target": "杭州",
+    "method": "special"
+  },
+  "桐庐东": {
+    "target": "杭州",
+    "method": "special"
+  },
+  "桐柏北": {
+    "target": "桐柏北",
+    "method": "exact"
+  },
+  "桦南东": {
+    "target": "佳木斯",
+    "method": "special"
+  },
+  "梁山": {
+    "target": "梁山",
+    "method": "exact"
+  },
+  "梁平南": {
+    "target": "梁平南",
+    "method": "exact"
+  },
+  "梅州": {
+    "target": "梅州",
+    "method": "exact"
+  },
+  "梅州西": {
+    "target": "梅州",
+    "method": "special"
+  },
+  "梅河口": {
+    "target": "梅河口",
+    "method": "exact"
+  },
+  "梧州南": {
+    "target": "梧州",
+    "method": "special"
+  },
+  "棋子湾": {
+    "target": "昌江",
+    "method": "special"
+  },
+  "楚玛尔河": {
+    "target": "楚玛尔河",
+    "method": "exact"
+  },
+  "楠溪江": {
+    "target": "温州",
+    "method": "special"
+  },
+  "榆中": {
+    "target": "兰州",
+    "method": "special"
+  },
+  "榆林南": {
+    "target": "榆林南",
+    "method": "exact"
+  },
+  "榆社西": {
+    "target": "榆社西",
+    "method": "exact"
+  },
+  "榕江": {
+    "target": "黔东南",
+    "method": "special"
+  },
+  "樟木头东": {
+    "target": "樟木头东",
+    "method": "exact"
+  },
+  "樟树东": {
+    "target": "宜春",
+    "method": "special"
+  },
+  "横州": {
+    "target": "横州",
+    "method": "exact"
+  },
+  "横店": {
+    "target": "金华",
+    "method": "special"
+  },
+  "横栏": {
+    "target": "横栏",
+    "method": "exact"
+  },
+  "横沟桥东": {
+    "target": "横沟桥东",
+    "method": "exact"
+  },
+  "横琴": {
+    "target": "珠海",
+    "method": "special"
+  },
+  "横道河子东": {
+    "target": "牡丹江",
+    "method": "special"
+  },
+  "歙县北": {
+    "target": "黄山",
+    "method": "special"
+  },
+  "武乡": {
+    "target": "长治",
+    "method": "special"
+  },
+  "武夷山北": {
+    "target": "南平",
+    "method": "special"
+  },
+  "武威": {
+    "target": "武威",
+    "method": "exact"
+  },
+  "武威东": {
+    "target": "武威东",
+    "method": "exact"
+  },
+  "武平": {
+    "target": "武平",
+    "method": "exact"
+  },
+  "武当山西": {
+    "target": "十堰",
+    "method": "special"
+  },
+  "武昌南": {
+    "target": "武昌南",
+    "method": "exact"
+  },
+  "武汉": {
+    "target": "武汉",
+    "method": "exact"
+  },
+  "武穴北": {
+    "target": "黄冈",
+    "method": "special"
+  },
+  "武进": {
+    "target": "常州",
+    "method": "special"
+  },
+  "武邑": {
+    "target": "武邑",
+    "method": "exact"
+  },
+  "武陟": {
+    "target": "武陟",
+    "method": "exact"
+  },
+  "武隆南": {
+    "target": "武隆南",
+    "method": "exact"
+  },
+  "毕节": {
+    "target": "毕节",
+    "method": "exact"
+  },
+  "毛陈": {
+    "target": "毛陈",
+    "method": "exact"
+  },
+  "民乐": {
+    "target": "张掖",
+    "method": "special"
+  },
+  "民和东": {
+    "target": "民和东",
+    "method": "exact"
+  },
+  "民权北": {
+    "target": "商丘",
+    "method": "special"
+  },
+  "水家湖": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "水江西": {
+    "target": "水江西",
+    "method": "exact"
+  },
+  "水沙坪": {
+    "target": "水沙坪",
+    "method": "exact"
+  },
+  "永修": {
+    "target": "九江",
+    "method": "special"
+  },
+  "永城北": {
+    "target": "商丘",
+    "method": "special"
+  },
+  "永安南": {
+    "target": "永安南",
+    "method": "exact"
+  },
+  "永安镇": {
+    "target": "永安镇",
+    "method": "exact"
+  },
+  "永寿西": {
+    "target": "永寿西",
+    "method": "exact"
+  },
+  "永川东": {
+    "target": "重庆",
+    "method": "special"
+  },
+  "永庆": {
+    "target": "永庆",
+    "method": "exact"
+  },
+  "永济北": {
+    "target": "永济北",
+    "method": "exact"
+  },
+  "永清东": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "汉中": {
+    "target": "汉中",
+    "method": "exact"
+  },
+  "汉中市": {
+    "target": "汉中市",
+    "method": "exact"
+  },
+  "汉口": {
+    "target": "武汉",
+    "method": "special"
+  },
+  "汉寿": {
+    "target": "常德",
+    "method": "special"
+  },
+  "汉川": {
+    "target": "汉川",
+    "method": "exact"
+  },
+  "汉川北": {
+    "target": "汉川北",
+    "method": "exact"
+  },
+  "汕头": {
+    "target": "汕头",
+    "method": "exact"
+  },
+  "汕头南": {
+    "target": "汕头",
+    "method": "special"
+  },
+  "汕尾": {
+    "target": "汕尾",
+    "method": "exact"
+  },
+  "江口": {
+    "target": "江口",
+    "method": "exact"
+  },
+  "江宁": {
+    "target": "南京",
+    "method": "special"
+  },
+  "江油": {
+    "target": "江油",
+    "method": "exact"
+  },
+  "江浦": {
+    "target": "江浦",
+    "method": "exact"
+  },
+  "江门": {
+    "target": "江门",
+    "method": "exact"
+  },
+  "江阴": {
+    "target": "江阴",
+    "method": "exact"
+  },
+  "池州": {
+    "target": "池州",
+    "method": "exact"
+  },
+  "汤逊湖": {
+    "target": "汤逊湖",
+    "method": "exact"
+  },
+  "汨罗": {
+    "target": "汨罗",
+    "method": "exact"
+  },
+  "汾阳": {
+    "target": "汾阳",
+    "method": "exact"
+  },
+  "沈丘北": {
+    "target": "周口",
+    "method": "special"
+  },
+  "沈阳": {
+    "target": "沈阳",
+    "method": "exact"
+  },
+  "沈阳南": {
+    "target": "沈阳",
+    "method": "special"
+  },
+  "沈阳市": {
+    "target": "沈阳市",
+    "method": "exact"
+  },
+  "沙井西": {
+    "target": "沙井西",
+    "method": "exact"
+  },
+  "沙坪坝": {
+    "target": "重庆",
+    "method": "special"
+  },
+  "沙河": {
+    "target": "北京",
+    "method": "special"
+  },
+  "沙洋西": {
+    "target": "沙洋西",
+    "method": "exact"
+  },
+  "沥林北": {
+    "target": "沥林北",
+    "method": "exact"
+  },
+  "沧州": {
+    "target": "沧州",
+    "method": "exact"
+  },
+  "沧州东": {
+    "target": "沧州东",
+    "method": "exact"
+  },
+  "沱沱河": {
+    "target": "沱沱河",
+    "method": "exact"
+  },
+  "河东机场": {
+    "target": "河东机场",
+    "method": "exact"
+  },
+  "河池西": {
+    "target": "河池西",
+    "method": "exact"
+  },
+  "河源": {
+    "target": "河源",
+    "method": "exact"
+  },
+  "河源东": {
+    "target": "河源",
+    "method": "special"
+  },
+  "河源北": {
+    "target": "河源",
+    "method": "special"
+  },
+  "沿滩": {
+    "target": "自贡",
+    "method": "special"
+  },
+  "泉州": {
+    "target": "泉州",
+    "method": "exact"
+  },
+  "泉州南": {
+    "target": "泉州南",
+    "method": "exact"
+  },
+  "泉港": {
+    "target": "泉港",
+    "method": "exact"
+  },
+  "泊头西": {
+    "target": "泊头西",
+    "method": "exact"
+  },
+  "泌阳": {
+    "target": "泌阳",
+    "method": "exact"
+  },
+  "泗县东": {
+    "target": "泗县东",
+    "method": "exact"
+  },
+  "泗水南": {
+    "target": "济宁",
+    "method": "special"
+  },
+  "泗阳": {
+    "target": "宿迁",
+    "method": "special"
+  },
+  "泰兴东": {
+    "target": "泰兴东",
+    "method": "exact"
+  },
+  "泰和": {
+    "target": "吉安",
+    "method": "special"
+  },
+  "泰安": {
+    "target": "泰安",
+    "method": "exact"
+  },
+  "泰州南": {
+    "target": "泰州南",
+    "method": "exact"
+  },
+  "泰康": {
+    "target": "大庆",
+    "method": "special"
+  },
+  "泸县": {
+    "target": "泸县",
+    "method": "exact"
+  },
+  "泸州": {
+    "target": "泸州",
+    "method": "exact"
+  },
+  "泾县": {
+    "target": "泾县",
+    "method": "exact"
+  },
+  "洋河口": {
+    "target": "汉中",
+    "method": "special"
+  },
+  "洛阳": {
+    "target": "洛阳",
+    "method": "exact"
+  },
+  "洛阳龙门": {
+    "target": "洛阳",
+    "method": "special"
+  },
+  "洞井": {
+    "target": "洞井",
+    "method": "exact"
+  },
+  "洞口": {
+    "target": "洞口",
+    "method": "exact"
+  },
+  "洪梅": {
+    "target": "洪梅",
+    "method": "exact"
+  },
+  "洪泽": {
+    "target": "洪泽",
+    "method": "exact"
+  },
+  "洪洞西": {
+    "target": "洪洞西",
+    "method": "exact"
+  },
+  "济南": {
+    "target": "济南",
+    "method": "exact"
+  },
+  "济南东": {
+    "target": "济南",
+    "method": "special"
+  },
+  "济宁东": {
+    "target": "济宁",
+    "method": "special"
+  },
+  "济宁北": {
+    "target": "济宁",
+    "method": "special"
+  },
+  "浠水南": {
+    "target": "黄冈",
+    "method": "special"
+  },
+  "浦江": {
+    "target": "金华",
+    "method": "special"
+  },
+  "海东西": {
+    "target": "海东西",
+    "method": "exact"
+  },
+  "海口": {
+    "target": "海口",
+    "method": "exact"
+  },
+  "海口东": {
+    "target": "海口",
+    "method": "special"
+  },
+  "海城": {
+    "target": "海城",
+    "method": "exact"
+  },
+  "海城西": {
+    "target": "鞍山",
+    "method": "special"
+  },
+  "海头": {
+    "target": "海头",
+    "method": "exact"
+  },
+  "海宁": {
+    "target": "海宁",
+    "method": "exact"
+  },
+  "海宁西": {
+    "target": "嘉兴",
+    "method": "special"
+  },
+  "海宁观潮": {
+    "target": "海宁观潮",
+    "method": "exact"
+  },
+  "海拉尔": {
+    "target": "海拉尔",
+    "method": "exact"
+  },
+  "海晏": {
+    "target": "海晏",
+    "method": "exact"
+  },
+  "海林北": {
+    "target": "牡丹江",
+    "method": "special"
+  },
+  "海盐西": {
+    "target": "海盐西",
+    "method": "exact"
+  },
+  "海阳": {
+    "target": "海阳",
+    "method": "exact"
+  },
+  "海阳北": {
+    "target": "海阳北",
+    "method": "exact"
+  },
+  "涉县南": {
+    "target": "涉县南",
+    "method": "exact"
+  },
+  "涟水": {
+    "target": "淮安",
+    "method": "special"
+  },
+  "涪陵北": {
+    "target": "涪陵北",
+    "method": "exact"
+  },
+  "涵江": {
+    "target": "涵江",
+    "method": "exact"
+  },
+  "涿州": {
+    "target": "涿州",
+    "method": "exact"
+  },
+  "淄博": {
+    "target": "淄博",
+    "method": "exact"
+  },
+  "淄博北": {
+    "target": "淄博",
+    "method": "special"
+  },
+  "淮北北": {
+    "target": "淮北北",
+    "method": "exact"
+  },
+  "淮北西": {
+    "target": "淮北西",
+    "method": "exact"
+  },
+  "淮南南": {
+    "target": "淮南",
+    "method": "special"
+  },
+  "淮安": {
+    "target": "淮安",
+    "method": "exact"
+  },
+  "淮安东": {
+    "target": "淮安",
+    "method": "special"
+  },
+  "淮滨东": {
+    "target": "淮滨东",
+    "method": "exact"
+  },
+  "淮阳南": {
+    "target": "周口",
+    "method": "special"
+  },
+  "深井": {
+    "target": "深井",
+    "method": "exact"
+  },
+  "深圳": {
+    "target": "深圳",
+    "method": "exact"
+  },
+  "深圳北": {
+    "target": "深圳",
+    "method": "special"
+  },
+  "深圳坪山": {
+    "target": "深圳坪山",
+    "method": "exact"
+  },
+  "深圳机场": {
+    "target": "深圳",
+    "method": "special"
+  },
+  "深圳机场东": {
+    "target": "深圳机场东",
+    "method": "exact"
+  },
+  "深圳机场北": {
+    "target": "深圳机场北",
+    "method": "exact"
+  },
+  "深圳西丽": {
+    "target": "深圳西丽",
+    "method": "exact"
+  },
+  "深州东": {
+    "target": "深州东",
+    "method": "exact"
+  },
+  "深汕": {
+    "target": "深圳",
+    "method": "special"
+  },
+  "清徐南": {
+    "target": "清徐南",
+    "method": "exact"
+  },
+  "清水北": {
+    "target": "清水北",
+    "method": "exact"
+  },
+  "清河": {
+    "target": "清河",
+    "method": "exact"
+  },
+  "清河西": {
+    "target": "清河西",
+    "method": "exact"
+  },
+  "清泉南": {
+    "target": "清泉南",
+    "method": "exact"
+  },
+  "清涧北": {
+    "target": "清涧北",
+    "method": "exact"
+  },
+  "清镇西": {
+    "target": "贵阳",
+    "method": "special"
+  },
+  "渑池南": {
+    "target": "三门峡",
+    "method": "special"
+  },
+  "渠旧南": {
+    "target": "渠旧南",
+    "method": "exact"
+  },
+  "渤海新区": {
+    "target": "渤海新区",
+    "method": "exact"
+  },
+  "渤海新区西": {
+    "target": "渤海新区西",
+    "method": "exact"
+  },
+  "温岭": {
+    "target": "温岭",
+    "method": "exact"
+  },
+  "温州": {
+    "target": "温州",
+    "method": "exact"
+  },
+  "温州北": {
+    "target": "温州",
+    "method": "special"
+  },
+  "温州南": {
+    "target": "温州",
+    "method": "special"
+  },
+  "温江": {
+    "target": "温江",
+    "method": "exact"
+  },
+  "渭南北": {
+    "target": "渭南",
+    "method": "special"
+  },
+  "港区北": {
+    "target": "港区北",
+    "method": "exact"
+  },
+  "湖口": {
+    "target": "九江",
+    "method": "special"
+  },
+  "湖州": {
+    "target": "湖州",
+    "method": "exact"
+  },
+  "湖州东": {
+    "target": "湖州",
+    "method": "special"
+  },
+  "湖州南浔": {
+    "target": "湖州",
+    "method": "special"
+  },
+  "湘府路": {
+    "target": "湘府路",
+    "method": "exact"
+  },
+  "湘潭": {
+    "target": "湘潭",
+    "method": "exact"
+  },
+  "湛江": {
+    "target": "湛江",
+    "method": "exact"
+  },
+  "湛江北": {
+    "target": "湛江北",
+    "method": "exact"
+  },
+  "湛江西": {
+    "target": "湛江",
+    "method": "special"
+  },
+  "湟源": {
+    "target": "湟源",
+    "method": "exact"
+  },
+  "湾沚南": {
+    "target": "芜湖",
+    "method": "special"
+  },
+  "溧水": {
+    "target": "南京",
+    "method": "special"
+  },
+  "溧水西": {
+    "target": "溧水西",
+    "method": "exact"
+  },
+  "溧阳": {
+    "target": "溧阳",
+    "method": "exact"
+  },
+  "滁州": {
+    "target": "滁州",
+    "method": "exact"
+  },
+  "滑浚": {
+    "target": "鹤壁",
+    "method": "special"
+  },
+  "滕州": {
+    "target": "滕州",
+    "method": "exact"
+  },
+  "满洲里": {
+    "target": "满洲里",
+    "method": "exact"
+  },
+  "滦河": {
+    "target": "滦河",
+    "method": "exact"
+  },
+  "滨海": {
+    "target": "盐城",
+    "method": "special"
+  },
+  "滨海北": {
+    "target": "滨海北",
+    "method": "exact"
+  },
+  "滨海西": {
+    "target": "天津",
+    "method": "special"
+  },
+  "漯河": {
+    "target": "漯河",
+    "method": "exact"
+  },
+  "漳州": {
+    "target": "漳州",
+    "method": "exact"
+  },
+  "漳平西": {
+    "target": "漳平西",
+    "method": "exact"
+  },
+  "漳浦": {
+    "target": "漳浦",
+    "method": "exact"
+  },
+  "潍坊": {
+    "target": "潍坊",
+    "method": "exact"
+  },
+  "潍坊北": {
+    "target": "潍坊",
+    "method": "special"
+  },
+  "潜山": {
+    "target": "潜山",
+    "method": "exact"
+  },
+  "潜江": {
+    "target": "潜江",
+    "method": "exact"
+  },
+  "潞城": {
+    "target": "潞城",
+    "method": "exact"
+  },
+  "潢川南": {
+    "target": "潢川南",
+    "method": "exact"
+  },
+  "潢川西": {
+    "target": "潢川西",
+    "method": "exact"
+  },
+  "潮南": {
+    "target": "汕头",
+    "method": "special"
+  },
+  "潮州": {
+    "target": "潮州",
+    "method": "exact"
+  },
+  "潮汕": {
+    "target": "潮州",
+    "method": "special"
+  },
+  "潮阳": {
+    "target": "汕头",
+    "method": "special"
+  },
+  "濮阳东": {
+    "target": "濮阳",
+    "method": "special"
+  },
+  "灌云": {
+    "target": "连云港",
+    "method": "special"
+  },
+  "灌南": {
+    "target": "连云港",
+    "method": "special"
+  },
+  "灰埠": {
+    "target": "潍坊",
+    "method": "special"
+  },
+  "灵宝西": {
+    "target": "三门峡",
+    "method": "special"
+  },
+  "灵武北": {
+    "target": "灵武北",
+    "method": "exact"
+  },
+  "灵石东": {
+    "target": "灵石东",
+    "method": "exact"
+  },
+  "烟台": {
+    "target": "烟台",
+    "method": "exact"
+  },
+  "烟台南": {
+    "target": "烟台",
+    "method": "special"
+  },
+  "烟台西": {
+    "target": "烟台",
+    "method": "special"
+  },
+  "焦作": {
+    "target": "焦作",
+    "method": "exact"
+  },
+  "焦作西": {
+    "target": "焦作西",
+    "method": "exact"
+  },
+  "燕郊": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "牙克石": {
+    "target": "牙克石",
+    "method": "exact"
+  },
+  "牛河梁": {
+    "target": "牛河梁",
+    "method": "exact"
+  },
+  "牛车河": {
+    "target": "牛车河",
+    "method": "exact"
+  },
+  "牟平": {
+    "target": "牟平",
+    "method": "exact"
+  },
+  "牡丹江": {
+    "target": "牡丹江",
+    "method": "exact"
+  },
+  "犀浦": {
+    "target": "犀浦",
+    "method": "exact"
+  },
+  "犍为": {
+    "target": "乐山",
+    "method": "special"
+  },
+  "独山东": {
+    "target": "独山东",
+    "method": "exact"
+  },
+  "玉山": {
+    "target": "玉山",
+    "method": "exact"
+  },
+  "玉林": {
+    "target": "玉林",
+    "method": "exact"
+  },
+  "玉林北": {
+    "target": "玉林北",
+    "method": "exact"
+  },
+  "玉珠峰": {
+    "target": "玉珠峰",
+    "method": "exact"
+  },
+  "玉田南": {
+    "target": "唐山",
+    "method": "special"
+  },
+  "玉门": {
+    "target": "玉门",
+    "method": "exact"
+  },
+  "环县": {
+    "target": "庆阳",
+    "method": "special"
+  },
+  "环江": {
+    "target": "环江",
+    "method": "exact"
+  },
+  "珏山所": {
+    "target": "珏山所",
+    "method": "exact"
+  },
+  "珠三角枢纽机场": {
+    "target": "珠三角枢纽机场",
+    "method": "exact"
+  },
+  "珠海": {
+    "target": "珠海",
+    "method": "exact"
+  },
+  "珠海北": {
+    "target": "珠海",
+    "method": "special"
+  },
+  "珠海机场": {
+    "target": "珠海",
+    "method": "special"
+  },
+  "珠琳": {
+    "target": "珠琳",
+    "method": "exact"
+  },
+  "珲春": {
+    "target": "珲春",
+    "method": "exact"
+  },
+  "琼海": {
+    "target": "琼海",
+    "method": "exact"
+  },
+  "瑞安": {
+    "target": "瑞安",
+    "method": "exact"
+  },
+  "瑞昌西": {
+    "target": "瑞昌西",
+    "method": "exact"
+  },
+  "瑞金": {
+    "target": "瑞金",
+    "method": "exact"
+  },
+  "璧山": {
+    "target": "重庆",
+    "method": "special"
+  },
+  "瓦屋山": {
+    "target": "眉山",
+    "method": "special"
+  },
+  "瓦房店西": {
+    "target": "大连",
+    "method": "special"
+  },
+  "甘南": {
+    "target": "甘南",
+    "method": "exact"
+  },
+  "甘隆": {
+    "target": "甘隆",
+    "method": "exact"
+  },
+  "甜水堡": {
+    "target": "甜水堡",
+    "method": "exact"
+  },
+  "田东北": {
+    "target": "田东北",
+    "method": "exact"
+  },
+  "田心东": {
+    "target": "田心东",
+    "method": "exact"
+  },
+  "田阳": {
+    "target": "田阳",
+    "method": "exact"
+  },
+  "电白": {
+    "target": "茂名",
+    "method": "special"
+  },
+  "界首南": {
+    "target": "阜阳",
+    "method": "special"
+  },
+  "畲江北": {
+    "target": "梅州",
+    "method": "special"
+  },
+  "白沙铺": {
+    "target": "白沙铺",
+    "method": "exact"
+  },
+  "白银": {
+    "target": "白银",
+    "method": "exact"
+  },
+  "白银南": {
+    "target": "白银南",
+    "method": "exact"
+  },
+  "白马井": {
+    "target": "儋州",
+    "method": "special"
+  },
+  "白马北": {
+    "target": "儋州",
+    "method": "special"
+  },
+  "百色": {
+    "target": "百色",
+    "method": "exact"
+  },
+  "益阳": {
+    "target": "益阳",
+    "method": "exact"
+  },
+  "益阳南": {
+    "target": "益阳",
+    "method": "special"
+  },
+  "盐城": {
+    "target": "盐城",
+    "method": "exact"
+  },
+  "盖州西": {
+    "target": "营口",
+    "method": "special"
+  },
+  "盘州": {
+    "target": "盘州",
+    "method": "exact"
+  },
+  "盘锦北": {
+    "target": "盘锦",
+    "method": "special"
+  },
+  "盛泽": {
+    "target": "苏州",
+    "method": "special"
+  },
+  "眉山东": {
+    "target": "眉山",
+    "method": "special"
+  },
+  "睢宁": {
+    "target": "徐州",
+    "method": "special"
+  },
+  "石嘴山": {
+    "target": "石嘴山",
+    "method": "exact"
+  },
+  "石大关": {
+    "target": "石大关",
+    "method": "exact"
+  },
+  "石家庄": {
+    "target": "石家庄",
+    "method": "exact"
+  },
+  "石家庄东": {
+    "target": "石家庄东",
+    "method": "exact"
+  },
+  "石林西": {
+    "target": "石林西",
+    "method": "exact"
+  },
+  "石柱县": {
+    "target": "石柱县",
+    "method": "exact"
+  },
+  "石门县北": {
+    "target": "石门县北",
+    "method": "exact"
+  },
+  "砀山南": {
+    "target": "宿州",
+    "method": "special"
+  },
+  "磁县": {
+    "target": "磁县",
+    "method": "exact"
+  },
+  "磐安": {
+    "target": "金华",
+    "method": "special"
+  },
+  "礼泉南": {
+    "target": "礼泉南",
+    "method": "exact"
+  },
+  "祁县东": {
+    "target": "祁县东",
+    "method": "exact"
+  },
+  "神农架": {
+    "target": "神农架",
+    "method": "special"
+  },
+  "禄口机场": {
+    "target": "禄口机场",
+    "method": "exact"
+  },
+  "福安": {
+    "target": "福安",
+    "method": "exact"
+  },
+  "福山": {
+    "target": "烟台",
+    "method": "special"
+  },
+  "福山镇": {
+    "target": "澄迈",
+    "method": "special"
+  },
+  "福州": {
+    "target": "福州",
+    "method": "exact"
+  },
+  "福州南": {
+    "target": "福州",
+    "method": "special"
+  },
+  "福海西": {
+    "target": "福海西",
+    "method": "exact"
+  },
+  "福清": {
+    "target": "福清",
+    "method": "exact"
+  },
+  "福清西": {
+    "target": "福清西",
+    "method": "exact"
+  },
+  "福田": {
+    "target": "深圳",
+    "method": "special"
+  },
+  "福鼎": {
+    "target": "福鼎",
+    "method": "exact"
+  },
+  "禹城东": {
+    "target": "禹城东",
+    "method": "exact"
+  },
+  "禹州": {
+    "target": "禹州",
+    "method": "exact"
+  },
+  "离堆公园": {
+    "target": "离堆公园",
+    "method": "exact"
+  },
+  "秀水河": {
+    "target": "秀水河",
+    "method": "exact"
+  },
+  "秦安": {
+    "target": "天水",
+    "method": "special"
+  },
+  "秦王川": {
+    "target": "秦王川",
+    "method": "exact"
+  },
+  "秦皇岛": {
+    "target": "秦皇岛",
+    "method": "exact"
+  },
+  "章丘北": {
+    "target": "济南",
+    "method": "special"
+  },
+  "章丘南": {
+    "target": "章丘南",
+    "method": "exact"
+  },
+  "竹园": {
+    "target": "红河",
+    "method": "special"
+  },
+  "简阳南": {
+    "target": "成都",
+    "method": "special"
+  },
+  "米脂北": {
+    "target": "米脂北",
+    "method": "exact"
+  },
+  "红光镇": {
+    "target": "红光镇",
+    "method": "exact"
+  },
+  "红安东": {
+    "target": "红安东",
+    "method": "exact"
+  },
+  "红寺堡北": {
+    "target": "红寺堡北",
+    "method": "exact"
+  },
+  "红岛": {
+    "target": "青岛",
+    "method": "special"
+  },
+  "红河": {
+    "target": "红河",
+    "method": "special"
+  },
+  "红碱淖": {
+    "target": "红碱淖",
+    "method": "exact"
+  },
+  "纳赤台": {
+    "target": "纳赤台",
+    "method": "exact"
+  },
+  "纸坊东": {
+    "target": "纸坊东",
+    "method": "exact"
+  },
+  "练塘": {
+    "target": "上海",
+    "method": "special"
+  },
+  "绅坊": {
+    "target": "绅坊",
+    "method": "exact"
+  },
+  "绍兴": {
+    "target": "绍兴",
+    "method": "exact"
+  },
+  "绍兴东": {
+    "target": "绍兴东",
+    "method": "exact"
+  },
+  "绍兴北": {
+    "target": "绍兴",
+    "method": "special"
+  },
+  "绍兴市": {
+    "target": "绍兴市",
+    "method": "exact"
+  },
+  "绥化南": {
+    "target": "绥化南",
+    "method": "exact"
+  },
+  "绥德西": {
+    "target": "绥德西",
+    "method": "exact"
+  },
+  "绩溪北": {
+    "target": "宣城",
+    "method": "special"
+  },
+  "绵竹": {
+    "target": "绵竹",
+    "method": "exact"
+  },
+  "绵竹南": {
+    "target": "绵竹南",
+    "method": "exact"
+  },
+  "绵阳": {
+    "target": "绵阳",
+    "method": "exact"
+  },
+  "绿博园": {
+    "target": "绿博园",
+    "method": "exact"
+  },
+  "罗定北": {
+    "target": "罗定北",
+    "method": "exact"
+  },
+  "罗山南": {
+    "target": "罗山南",
+    "method": "exact"
+  },
+  "罗江东": {
+    "target": "德阳",
+    "method": "special"
+  },
+  "罗浮山": {
+    "target": "惠州",
+    "method": "special"
+  },
+  "罗源": {
+    "target": "罗源",
+    "method": "exact"
+  },
+  "羊八井": {
+    "target": "羊八井",
+    "method": "exact"
+  },
+  "羊马": {
+    "target": "羊马",
+    "method": "exact"
+  },
+  "美兰": {
+    "target": "海口",
+    "method": "special"
+  },
+  "老城镇": {
+    "target": "澄迈",
+    "method": "special"
+  },
+  "耒阳": {
+    "target": "耒阳",
+    "method": "exact"
+  },
+  "聊城": {
+    "target": "聊城",
+    "method": "exact"
+  },
+  "聊城西": {
+    "target": "聊城",
+    "method": "special"
+  },
+  "肃宁东": {
+    "target": "肃宁东",
+    "method": "exact"
+  },
+  "肇东": {
+    "target": "肇东",
+    "method": "exact"
+  },
+  "肇庆": {
+    "target": "肇庆",
+    "method": "exact"
+  },
+  "肇庆东": {
+    "target": "肇庆",
+    "method": "special"
+  },
+  "肥东": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "肥西": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "胜芳": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "胶州北": {
+    "target": "青岛",
+    "method": "special"
+  },
+  "自贡": {
+    "target": "自贡",
+    "method": "exact"
+  },
+  "自贡东": {
+    "target": "自贡",
+    "method": "special"
+  },
+  "舒城东": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "舞阳北": {
+    "target": "舞阳北",
+    "method": "exact"
+  },
+  "舟山": {
+    "target": "舟山",
+    "method": "exact"
+  },
+  "芙蓉南": {
+    "target": "芙蓉南",
+    "method": "exact"
+  },
+  "芙蓉镇": {
+    "target": "湘西",
+    "method": "special"
+  },
+  "芜湖": {
+    "target": "芜湖",
+    "method": "exact"
+  },
+  "芜湖北": {
+    "target": "芜湖",
+    "method": "special"
+  },
+  "芝罘": {
+    "target": "芝罘",
+    "method": "exact"
+  },
+  "芦庙": {
+    "target": "亳州",
+    "method": "special"
+  },
+  "花山南": {
+    "target": "花山南",
+    "method": "exact"
+  },
+  "花湖": {
+    "target": "花湖",
+    "method": "exact"
+  },
+  "花溪南": {
+    "target": "花溪南",
+    "method": "exact"
+  },
+  "苇河西": {
+    "target": "尚志",
+    "method": "special"
+  },
+  "苍南": {
+    "target": "温州",
+    "method": "special"
+  },
+  "苏州": {
+    "target": "苏州",
+    "method": "exact"
+  },
+  "苏州南": {
+    "target": "苏州",
+    "method": "special"
+  },
+  "英德": {
+    "target": "英德",
+    "method": "exact"
+  },
+  "茂县": {
+    "target": "茂县",
+    "method": "exact"
+  },
+  "茂名": {
+    "target": "茂名",
+    "method": "exact"
+  },
+  "茂名南": {
+    "target": "茂名南",
+    "method": "exact"
+  },
+  "茌平南": {
+    "target": "聊城",
+    "method": "special"
+  },
+  "荆州": {
+    "target": "荆州",
+    "method": "exact"
+  },
+  "荆门": {
+    "target": "荆门",
+    "method": "exact"
+  },
+  "荆门西": {
+    "target": "荆门西",
+    "method": "exact"
+  },
+  "荔波": {
+    "target": "荔波",
+    "method": "exact"
+  },
+  "荣成": {
+    "target": "荣成",
+    "method": "exact"
+  },
+  "荣昌北": {
+    "target": "重庆",
+    "method": "special"
+  },
+  "荷塘": {
+    "target": "荷塘",
+    "method": "exact"
+  },
+  "莆田": {
+    "target": "莆田",
+    "method": "exact"
+  },
+  "莒南北": {
+    "target": "临沂",
+    "method": "special"
+  },
+  "莘县": {
+    "target": "聊城",
+    "method": "special"
+  },
+  "莱州": {
+    "target": "莱州",
+    "method": "exact"
+  },
+  "莱芜北": {
+    "target": "莱芜北",
+    "method": "exact"
+  },
+  "莱西": {
+    "target": "莱西",
+    "method": "exact"
+  },
+  "莱阳": {
+    "target": "莱阳",
+    "method": "exact"
+  },
+  "获鹿所": {
+    "target": "获鹿所",
+    "method": "exact"
+  },
+  "菏泽东": {
+    "target": "菏泽",
+    "method": "special"
+  },
+  "萍乡": {
+    "target": "萍乡",
+    "method": "exact"
+  },
+  "营口": {
+    "target": "营口",
+    "method": "exact"
+  },
+  "营口东": {
+    "target": "营口",
+    "method": "special"
+  },
+  "萧县北": {
+    "target": "徐州",
+    "method": "special"
+  },
+  "萧山机场": {
+    "target": "萧山机场",
+    "method": "exact"
+  },
+  "葛店南": {
+    "target": "葛店南",
+    "method": "exact"
+  },
+  "董家口": {
+    "target": "青岛",
+    "method": "special"
+  },
+  "葫芦岛": {
+    "target": "葫芦岛",
+    "method": "exact"
+  },
+  "葵潭": {
+    "target": "葵潭",
+    "method": "exact"
+  },
+  "蒙城": {
+    "target": "蒙城",
+    "method": "exact"
+  },
+  "蒙山": {
+    "target": "临沂",
+    "method": "special"
+  },
+  "蒲江": {
+    "target": "蒲江",
+    "method": "exact"
+  },
+  "蓟县": {
+    "target": "蓟县",
+    "method": "exact"
+  },
+  "蓬莱": {
+    "target": "蓬莱",
+    "method": "exact"
+  },
+  "蕲春南": {
+    "target": "黄冈",
+    "method": "special"
+  },
+  "藁城南": {
+    "target": "藁城南",
+    "method": "exact"
+  },
+  "藤县": {
+    "target": "梧州",
+    "method": "special"
+  },
+  "虎门": {
+    "target": "东莞",
+    "method": "special"
+  },
+  "虎门东": {
+    "target": "虎门东",
+    "method": "exact"
+  },
+  "虎门北": {
+    "target": "虎门北",
+    "method": "exact"
+  },
+  "蚌埠": {
+    "target": "蚌埠",
+    "method": "exact"
+  },
+  "蛟河西": {
+    "target": "吉林",
+    "method": "special"
+  },
+  "衡水": {
+    "target": "衡水",
+    "method": "exact"
+  },
+  "衡水北": {
+    "target": "衡水北",
+    "method": "exact"
+  },
+  "衡水南": {
+    "target": "衡水南",
+    "method": "exact"
+  },
+  "衡阳": {
+    "target": "衡阳",
+    "method": "exact"
+  },
+  "衢州": {
+    "target": "衢州",
+    "method": "exact"
+  },
+  "襄垣东": {
+    "target": "襄垣东",
+    "method": "exact"
+  },
+  "襄汾西": {
+    "target": "襄汾西",
+    "method": "exact"
+  },
+  "襄阳": {
+    "target": "襄阳",
+    "method": "exact"
+  },
+  "襄阳东": {
+    "target": "襄阳",
+    "method": "special"
+  },
+  "西九龙": {
+    "target": "西九龙",
+    "method": "exact"
+  },
+  "西华": {
+    "target": "周口",
+    "method": "special"
+  },
+  "西宁": {
+    "target": "西宁",
+    "method": "exact"
+  },
+  "西安": {
+    "target": "西安",
+    "method": "exact"
+  },
+  "西平西": {
+    "target": "驻马店",
+    "method": "special"
+  },
+  "西来": {
+    "target": "西来",
+    "method": "exact"
+  },
+  "西渡": {
+    "target": "西渡",
+    "method": "exact"
+  },
+  "西湖东": {
+    "target": "西湖东",
+    "method": "exact"
+  },
+  "观沙岭": {
+    "target": "观沙岭",
+    "method": "exact"
+  },
+  "观音机场": {
+    "target": "徐州",
+    "method": "special"
+  },
+  "角美": {
+    "target": "角美",
+    "method": "exact"
+  },
+  "许昌": {
+    "target": "许昌",
+    "method": "exact"
+  },
+  "诏安": {
+    "target": "诏安",
+    "method": "exact"
+  },
+  "诏安南": {
+    "target": "诏安南",
+    "method": "exact"
+  },
+  "谷城北": {
+    "target": "襄阳",
+    "method": "special"
+  },
+  "谷山": {
+    "target": "谷山",
+    "method": "exact"
+  },
+  "贵定南": {
+    "target": "贵定南",
+    "method": "exact"
+  },
+  "贵定县": {
+    "target": "黔南",
+    "method": "special"
+  },
+  "贵港": {
+    "target": "贵港",
+    "method": "exact"
+  },
+  "贵溪": {
+    "target": "贵溪",
+    "method": "exact"
+  },
+  "贵阳": {
+    "target": "贵阳",
+    "method": "exact"
+  },
+  "费县北": {
+    "target": "临沂",
+    "method": "special"
+  },
+  "贺州": {
+    "target": "贺州",
+    "method": "exact"
+  },
+  "贺胜桥东": {
+    "target": "贺胜桥东",
+    "method": "exact"
+  },
+  "贾鲁河": {
+    "target": "贾鲁河",
+    "method": "exact"
+  },
+  "资中西": {
+    "target": "资中西",
+    "method": "exact"
+  },
+  "资阳北": {
+    "target": "资阳",
+    "method": "special"
+  },
+  "资阳西": {
+    "target": "资阳",
+    "method": "special"
+  },
+  "赣县北": {
+    "target": "赣州",
+    "method": "special"
+  },
+  "赣州": {
+    "target": "赣州",
+    "method": "exact"
+  },
+  "赣州西": {
+    "target": "赣州西",
+    "method": "exact"
+  },
+  "赣榆": {
+    "target": "连云港",
+    "method": "special"
+  },
+  "赤峰": {
+    "target": "赤峰",
+    "method": "exact"
+  },
+  "辛泰": {
+    "target": "辛泰",
+    "method": "exact"
+  },
+  "辛集南": {
+    "target": "辛集南",
+    "method": "exact"
+  },
+  "辽中": {
+    "target": "辽中",
+    "method": "exact"
+  },
+  "辽源": {
+    "target": "辽源",
+    "method": "exact"
+  },
+  "辽阳": {
+    "target": "辽阳",
+    "method": "exact"
+  },
+  "达琼果": {
+    "target": "达琼果",
+    "method": "exact"
+  },
+  "运城": {
+    "target": "运城",
+    "method": "exact"
+  },
+  "运城北": {
+    "target": "运城北",
+    "method": "exact"
+  },
+  "运粮河": {
+    "target": "运粮河",
+    "method": "exact"
+  },
+  "进德": {
+    "target": "进德",
+    "method": "exact"
+  },
+  "进贤北": {
+    "target": "进贤北",
+    "method": "exact"
+  },
+  "连云港": {
+    "target": "连云港",
+    "method": "exact"
+  },
+  "连江": {
+    "target": "连江",
+    "method": "exact"
+  },
+  "通化": {
+    "target": "通化",
+    "method": "exact"
+  },
+  "通天河": {
+    "target": "通天河",
+    "method": "exact"
+  },
+  "通渭": {
+    "target": "定西",
+    "method": "special"
+  },
+  "通辽": {
+    "target": "通辽",
+    "method": "exact"
+  },
+  "通远堡西": {
+    "target": "丹东",
+    "method": "special"
+  },
+  "道滘": {
+    "target": "道滘",
+    "method": "exact"
+  },
+  "遵义": {
+    "target": "遵义",
+    "method": "exact"
+  },
+  "遵化西": {
+    "target": "遵化西",
+    "method": "exact"
+  },
+  "邓州东": {
+    "target": "南阳",
+    "method": "special"
+  },
+  "邛崃": {
+    "target": "邛崃",
+    "method": "exact"
+  },
+  "邢台": {
+    "target": "邢台",
+    "method": "exact"
+  },
+  "邯郸": {
+    "target": "邯郸",
+    "method": "exact"
+  },
+  "邯郸东": {
+    "target": "邯郸",
+    "method": "special"
+  },
+  "邯郸南": {
+    "target": "邯郸南",
+    "method": "exact"
+  },
+  "邳州东": {
+    "target": "徐州",
+    "method": "special"
+  },
+  "邵东": {
+    "target": "邵东",
+    "method": "exact"
+  },
+  "邵阳": {
+    "target": "邵阳",
+    "method": "exact"
+  },
+  "邵阳西": {
+    "target": "邵阳西",
+    "method": "exact"
+  },
+  "邹平": {
+    "target": "滨州",
+    "method": "special"
+  },
+  "郎溪南": {
+    "target": "宣城",
+    "method": "special"
+  },
+  "郏县": {
+    "target": "平顶山",
+    "method": "special"
+  },
+  "郑州": {
+    "target": "郑州",
+    "method": "exact"
+  },
+  "郑州南": {
+    "target": "郑州南",
+    "method": "exact"
+  },
+  "郑州航空港": {
+    "target": "郑州",
+    "method": "special"
+  },
+  "郑州西": {
+    "target": "郑州",
+    "method": "special"
+  },
+  "郑蒲港": {
+    "target": "郑蒲港",
+    "method": "exact"
+  },
+  "郓城": {
+    "target": "郓城",
+    "method": "exact"
+  },
+  "郫县西": {
+    "target": "郫县西",
+    "method": "exact"
+  },
+  "郴州": {
+    "target": "郴州",
+    "method": "exact"
+  },
+  "都兰": {
+    "target": "都兰",
+    "method": "exact"
+  },
+  "都匀东": {
+    "target": "黔南",
+    "method": "special"
+  },
+  "都安": {
+    "target": "都安",
+    "method": "exact"
+  },
+  "都昌": {
+    "target": "九江",
+    "method": "special"
+  },
+  "都江堰": {
+    "target": "都江堰",
+    "method": "exact"
+  },
+  "鄂尔多斯": {
+    "target": "鄂尔多斯",
+    "method": "exact"
+  },
+  "鄂州": {
+    "target": "鄂州",
+    "method": "exact"
+  },
+  "鄂州东": {
+    "target": "鄂州东",
+    "method": "exact"
+  },
+  "鄢陵": {
+    "target": "许昌",
+    "method": "special"
+  },
+  "鄯善北": {
+    "target": "吐鲁番",
+    "method": "special"
+  },
+  "鄱阳": {
+    "target": "上饶",
+    "method": "special"
+  },
+  "酒泉南": {
+    "target": "酒泉南",
+    "method": "exact"
+  },
+  "醴陵": {
+    "target": "醴陵",
+    "method": "exact"
+  },
+  "重庆": {
+    "target": "重庆",
+    "method": "exact"
+  },
+  "重庆西": {
+    "target": "重庆",
+    "method": "special"
+  },
+  "金华": {
+    "target": "金华",
+    "method": "exact"
+  },
+  "金坛": {
+    "target": "常州",
+    "method": "special"
+  },
+  "金山": {
+    "target": "金山",
+    "method": "exact"
+  },
+  "金山卫西": {
+    "target": "金山卫西",
+    "method": "exact"
+  },
+  "金月湾": {
+    "target": "东方",
+    "method": "special"
+  },
+  "金湖": {
+    "target": "金湖",
+    "method": "exact"
+  },
+  "金银潭": {
+    "target": "金银潭",
+    "method": "exact"
+  },
+  "钟山西": {
+    "target": "贺州",
+    "method": "special"
+  },
+  "钟祥南": {
+    "target": "钟祥南",
+    "method": "exact"
+  },
+  "钢城": {
+    "target": "钢城",
+    "method": "exact"
+  },
+  "钦州东": {
+    "target": "钦州东",
+    "method": "exact"
+  },
+  "钱塘": {
+    "target": "钱塘",
+    "method": "exact"
+  },
+  "铁力": {
+    "target": "铁力",
+    "method": "exact"
+  },
+  "铁岭": {
+    "target": "铁岭",
+    "method": "exact"
+  },
+  "铜仁": {
+    "target": "铜仁",
+    "method": "exact"
+  },
+  "铜仁南": {
+    "target": "铜仁",
+    "method": "special"
+  },
+  "铜陵北": {
+    "target": "铜陵",
+    "method": "special"
+  },
+  "银川": {
+    "target": "银川",
+    "method": "exact"
+  },
+  "银川东": {
+    "target": "银川东",
+    "method": "exact"
+  },
+  "银滩": {
+    "target": "威海",
+    "method": "special"
+  },
+  "银瓶": {
+    "target": "银瓶",
+    "method": "exact"
+  },
+  "锦州": {
+    "target": "锦州",
+    "method": "exact"
+  },
+  "镇江": {
+    "target": "镇江",
+    "method": "exact"
+  },
+  "镇江关": {
+    "target": "镇江关",
+    "method": "exact"
+  },
+  "镇雄": {
+    "target": "昭通",
+    "method": "special"
+  },
+  "镜泊湖": {
+    "target": "镜泊湖",
+    "method": "exact"
+  },
+  "长临河": {
+    "target": "合肥",
+    "method": "special"
+  },
+  "长乐": {
+    "target": "长乐",
+    "method": "exact"
+  },
+  "长乐东": {
+    "target": "长乐东",
+    "method": "exact"
+  },
+  "长乐南": {
+    "target": "长乐南",
+    "method": "exact"
+  },
+  "长兴": {
+    "target": "湖州",
+    "method": "special"
+  },
+  "长宁": {
+    "target": "宜宾",
+    "method": "special"
+  },
+  "长安": {
+    "target": "长安",
+    "method": "exact"
+  },
+  "长安西": {
+    "target": "长安西",
+    "method": "exact"
+  },
+  "长寿北": {
+    "target": "长寿北",
+    "method": "exact"
+  },
+  "长春": {
+    "target": "长春",
+    "method": "exact"
+  },
+  "长汀南": {
+    "target": "长汀南",
+    "method": "exact"
+  },
+  "长沙": {
+    "target": "长沙",
+    "method": "exact"
+  },
+  "长沙西": {
+    "target": "长沙西",
+    "method": "exact"
+  },
+  "长治东": {
+    "target": "长治东",
+    "method": "exact"
+  },
+  "长治南": {
+    "target": "长治南",
+    "method": "exact"
+  },
+  "长清": {
+    "target": "济南",
+    "method": "special"
+  },
+  "长白山": {
+    "target": "长白山",
+    "method": "exact"
+  },
+  "长葛北": {
+    "target": "许昌",
+    "method": "special"
+  },
+  "长风街所": {
+    "target": "长风街所",
+    "method": "exact"
+  },
+  "门源": {
+    "target": "海北",
+    "method": "special"
+  },
+  "闵集": {
+    "target": "闵集",
+    "method": "exact"
+  },
+  "闻喜西": {
+    "target": "闻喜西",
+    "method": "exact"
+  },
+  "闽清北": {
+    "target": "福州",
+    "method": "special"
+  },
+  "阜南东": {
+    "target": "阜南东",
+    "method": "exact"
+  },
+  "阜城南": {
+    "target": "阜城南",
+    "method": "exact"
+  },
+  "阜宁南": {
+    "target": "盐城",
+    "method": "special"
+  },
+  "阜平": {
+    "target": "阜平",
+    "method": "exact"
+  },
+  "阜新": {
+    "target": "阜新",
+    "method": "exact"
+  },
+  "阜阳": {
+    "target": "阜阳",
+    "method": "exact"
+  },
+  "阜阳北": {
+    "target": "阜阳北",
+    "method": "exact"
+  },
+  "阜阳西": {
+    "target": "阜阳西",
+    "method": "exact"
+  },
+  "阳东": {
+    "target": "阳江",
+    "method": "special"
+  },
+  "阳原": {
+    "target": "阳原",
+    "method": "exact"
+  },
+  "阳新": {
+    "target": "阳新",
+    "method": "exact"
+  },
+  "阳春东": {
+    "target": "阳春东",
+    "method": "exact"
+  },
+  "阳曲西": {
+    "target": "阳曲西",
+    "method": "exact"
+  },
+  "阳朔": {
+    "target": "桂林",
+    "method": "special"
+  },
+  "阳江": {
+    "target": "阳江",
+    "method": "exact"
+  },
+  "阳江北": {
+    "target": "阳江北",
+    "method": "exact"
+  },
+  "阳泉北": {
+    "target": "阳泉",
+    "method": "special"
+  },
+  "阳西": {
+    "target": "阳江",
+    "method": "special"
+  },
+  "阳谷东": {
+    "target": "阳谷东",
+    "method": "exact"
+  },
+  "阳高南": {
+    "target": "阳高南",
+    "method": "exact"
+  },
+  "阿城北": {
+    "target": "哈尔滨",
+    "method": "special"
+  },
+  "阿荣旗": {
+    "target": "阿荣旗",
+    "method": "exact"
+  },
+  "陆丰": {
+    "target": "陆丰",
+    "method": "exact"
+  },
+  "陆丰东": {
+    "target": "汕尾",
+    "method": "special"
+  },
+  "陆丰南": {
+    "target": "汕尾",
+    "method": "special"
+  },
+  "陈江南": {
+    "target": "陈江南",
+    "method": "exact"
+  },
+  "陵水": {
+    "target": "陵水",
+    "method": "exact"
+  },
+  "隆回": {
+    "target": "隆回",
+    "method": "exact"
+  },
+  "隆安东": {
+    "target": "隆安东",
+    "method": "exact"
+  },
+  "隆昌北": {
+    "target": "内江",
+    "method": "special"
+  },
+  "随州南": {
+    "target": "随州",
+    "method": "special"
+  },
+  "雁石南": {
+    "target": "雁石南",
+    "method": "exact"
+  },
+  "雁石坪": {
+    "target": "雁石坪",
+    "method": "exact"
+  },
+  "雁荡山": {
+    "target": "温州",
+    "method": "special"
+  },
+  "雁门关": {
+    "target": "雁门关",
+    "method": "exact"
+  },
+  "雄安": {
+    "target": "保定",
+    "method": "special"
+  },
+  "雄安西": {
+    "target": "雄安西",
+    "method": "exact"
+  },
+  "雅安": {
+    "target": "雅安",
+    "method": "exact"
+  },
+  "雪野": {
+    "target": "雪野",
+    "method": "exact"
+  },
+  "霍山": {
+    "target": "霍山",
+    "method": "exact"
+  },
+  "霍州东": {
+    "target": "霍州东",
+    "method": "exact"
+  },
+  "霞浦": {
+    "target": "宁德",
+    "method": "special"
+  },
+  "霸州北": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "青城山": {
+    "target": "青城山",
+    "method": "exact"
+  },
+  "青岛": {
+    "target": "青岛",
+    "method": "exact"
+  },
+  "青岛北": {
+    "target": "青岛",
+    "method": "special"
+  },
+  "青岛机场": {
+    "target": "青岛",
+    "method": "special"
+  },
+  "青岛西": {
+    "target": "青岛",
+    "method": "special"
+  },
+  "青州市北": {
+    "target": "潍坊",
+    "method": "special"
+  },
+  "青白江东": {
+    "target": "成都",
+    "method": "special"
+  },
+  "青神": {
+    "target": "青神",
+    "method": "exact"
+  },
+  "靖江": {
+    "target": "靖江",
+    "method": "exact"
+  },
+  "靖远北": {
+    "target": "靖远北",
+    "method": "exact"
+  },
+  "鞍山": {
+    "target": "鞍山",
+    "method": "exact"
+  },
+  "鞍山西": {
+    "target": "鞍山",
+    "method": "special"
+  },
+  "韶关": {
+    "target": "韶关",
+    "method": "exact"
+  },
+  "韶山": {
+    "target": "韶山",
+    "method": "exact"
+  },
+  "顺义西": {
+    "target": "北京",
+    "method": "special"
+  },
+  "顺德": {
+    "target": "佛山",
+    "method": "special"
+  },
+  "颍上北": {
+    "target": "阜阳",
+    "method": "special"
+  },
+  "风火山": {
+    "target": "风火山",
+    "method": "exact"
+  },
+  "饶平": {
+    "target": "潮州",
+    "method": "special"
+  },
+  "饶平南": {
+    "target": "饶平南",
+    "method": "exact"
+  },
+  "香日德": {
+    "target": "香日德",
+    "method": "exact"
+  },
+  "香樟路": {
+    "target": "香樟路",
+    "method": "exact"
+  },
+  "香河": {
+    "target": "廊坊",
+    "method": "special"
+  },
+  "香港西九龙": {
+    "target": "香港",
+    "method": "special"
+  },
+  "马坑": {
+    "target": "马坑",
+    "method": "exact"
+  },
+  "马山县": {
+    "target": "马山县",
+    "method": "exact"
+  },
+  "马皇": {
+    "target": "马皇",
+    "method": "exact"
+  },
+  "马踏": {
+    "target": "茂名",
+    "method": "special"
+  },
+  "马鞍山东": {
+    "target": "马鞍山东",
+    "method": "exact"
+  },
+  "马鞍山南": {
+    "target": "马鞍山南",
+    "method": "exact"
+  },
+  "驻马店": {
+    "target": "驻马店",
+    "method": "exact"
+  },
+  "高台南": {
+    "target": "高台南",
+    "method": "exact"
+  },
+  "高密北": {
+    "target": "潍坊",
+    "method": "special"
+  },
+  "高川": {
+    "target": "高川",
+    "method": "exact"
+  },
+  "高平东": {
+    "target": "高平东",
+    "method": "exact"
+  },
+  "高明": {
+    "target": "高明",
+    "method": "exact"
+  },
+  "高明珠三角枢纽机场": {
+    "target": "高明珠三角枢纽机场",
+    "method": "exact"
+  },
+  "高淳": {
+    "target": "高淳",
+    "method": "exact"
+  },
+  "高碑店西": {
+    "target": "高碑店西",
+    "method": "exact"
+  },
+  "高邑": {
+    "target": "高邑",
+    "method": "exact"
+  },
+  "高邮": {
+    "target": "高邮",
+    "method": "exact"
+  },
+  "高邮北": {
+    "target": "扬州",
+    "method": "special"
+  },
+  "魏县": {
+    "target": "魏县",
+    "method": "exact"
+  },
+  "鲅鱼圈": {
+    "target": "营口",
+    "method": "special"
+  },
+  "鲘门": {
+    "target": "鲘门",
+    "method": "exact"
+  },
+  "鳌江": {
+    "target": "鳌江",
+    "method": "exact"
+  },
+  "鸟岛": {
+    "target": "鸟岛",
+    "method": "exact"
+  },
+  "鸡西": {
+    "target": "鸡西",
+    "method": "exact"
+  },
+  "鸡西西": {
+    "target": "鸡西西",
+    "method": "exact"
+  },
+  "鸣李": {
+    "target": "鸣李",
+    "method": "exact"
+  },
+  "鹤壁": {
+    "target": "鹤壁",
+    "method": "exact"
+  },
+  "鹤山西": {
+    "target": "鹤山西",
+    "method": "exact"
+  },
+  "鹰潭": {
+    "target": "鹰潭",
+    "method": "exact"
+  },
+  "麓谷": {
+    "target": "麓谷",
+    "method": "exact"
+  },
+  "麻元": {
+    "target": "麻元",
+    "method": "exact"
+  },
+  "麻城西": {
+    "target": "麻城西",
+    "method": "exact"
+  },
+  "麻阳西": {
+    "target": "怀化",
+    "method": "special"
+  },
+  "黄冈": {
+    "target": "黄冈",
+    "method": "exact"
+  },
+  "黄冈东": {
+    "target": "黄冈",
+    "method": "special"
+  },
+  "黄冈西": {
+    "target": "黄冈西",
+    "method": "exact"
+  },
+  "黄尾": {
+    "target": "黄尾",
+    "method": "exact"
+  },
+  "黄山北": {
+    "target": "黄山",
+    "method": "special"
+  },
+  "黄山西": {
+    "target": "黄山",
+    "method": "special"
+  },
+  "黄梅东": {
+    "target": "黄冈",
+    "method": "special"
+  },
+  "黄梅南": {
+    "target": "黄梅南",
+    "method": "exact"
+  },
+  "黄河景区": {
+    "target": "黄河景区",
+    "method": "exact"
+  },
+  "黄流": {
+    "target": "乐东",
+    "method": "special"
+  },
+  "黄石": {
+    "target": "黄石",
+    "method": "exact"
+  },
+  "黄石北": {
+    "target": "黄石北",
+    "method": "exact"
+  },
+  "黄骅新": {
+    "target": "黄骅新",
+    "method": "exact"
+  },
+  "黎城": {
+    "target": "黎城",
+    "method": "exact"
+  },
+  "黑山": {
+    "target": "黑山",
+    "method": "exact"
+  },
+  "黑松驿": {
+    "target": "黑松驿",
+    "method": "exact"
+  },
+  "黔江": {
+    "target": "黔江",
+    "method": "exact"
+  },
+  "黔西": {
+    "target": "毕节",
+    "method": "special"
+  },
+  "黟县东": {
+    "target": "黄山",
+    "method": "special"
+  },
+  "齐河": {
+    "target": "齐河",
+    "method": "exact"
+  },
+  "齐齐哈尔": {
+    "target": "齐齐哈尔",
+    "method": "exact"
+  },
+  "齐齐哈尔南": {
+    "target": "齐齐哈尔",
+    "method": "special"
+  },
+  "龙丰": {
+    "target": "龙丰",
+    "method": "exact"
+  },
+  "龙南东": {
+    "target": "赣州",
+    "method": "special"
+  },
+  "龙口市": {
+    "target": "烟台",
+    "method": "special"
+  },
+  "龙嘉": {
+    "target": "长春",
+    "method": "special"
+  },
+  "龙山北": {
+    "target": "龙山北",
+    "method": "exact"
+  },
+  "龙山镇": {
+    "target": "龙山镇",
+    "method": "exact"
+  },
+  "龙岩": {
+    "target": "龙岩",
+    "method": "exact"
+  },
+  "龙川西": {
+    "target": "河源",
+    "method": "special"
+  },
+  "龙洞堡": {
+    "target": "贵阳",
+    "method": "special"
+  },
+  "龙游": {
+    "target": "龙游",
+    "method": "exact"
+  },
+  "龙里北": {
+    "target": "黔南",
+    "method": "special"
+  }
+}
