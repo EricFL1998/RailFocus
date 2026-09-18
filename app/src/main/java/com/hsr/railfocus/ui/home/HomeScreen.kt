@@ -74,9 +74,14 @@ fun HomeScreen(
     // 保证每次再进入路线选择都默认是最少时间
     var wasJourneySelection by remember { mutableStateOf(false) }
     LaunchedEffect(phase) {
-        // 只在返回到首页时重置；进入专注页不重置，保持选中项与正在进行的旅程一致
-        if (wasJourneySelection && phase == HomePhase.None) {
-            timeSelectionViewModel.resetToMinimum()
+        when {
+            // 离开路线选择返回首页：重置，保证下次进入是最少时间
+            wasJourneySelection && phase == HomePhase.None ->
+                timeSelectionViewModel.resetToMinimum()
+            // 从首页进入路线选择（包括取消旅程后重新进入）：重置
+            // 进入专注页不重置，保持选中项与正在进行的旅程一致
+            phase == HomePhase.JourneySelection ->
+                timeSelectionViewModel.resetToMinimum()
         }
         wasJourneySelection = phase == HomePhase.JourneySelection
     }
