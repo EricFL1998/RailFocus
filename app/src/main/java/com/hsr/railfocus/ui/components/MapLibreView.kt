@@ -45,6 +45,9 @@ import org.maplibre.android.style.sources.GeoJsonSource
 fun MapLibreView(
     modifier: Modifier = Modifier,
     initialPosition: LatLng = LatLng(35.8617, 104.1954),
+    // 非空时，“我的位置”标记临时画在该点（如路线选择中手动指定的起点），
+    // 相机目标等逻辑仍以 initialPosition 为准；返回后调用方传回 null 即恢复。
+    locationMarkerPosition: LatLng? = null,
     initialZoom: Double = 4.0,
     transitionProgress: Float = 0f,
     minZoom: Double = 3.5,
@@ -123,6 +126,10 @@ fun MapLibreView(
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var lastAnimatedPosition by remember { mutableStateOf<LatLng?>(null) }
     var lastAnimatedZoom by remember { mutableStateOf<Double?>(null) }
+    var lastAppliedPaddingPx by remember { mutableStateOf<List<Int>?>(null) }
+    var lastAppliedGestures by remember { mutableStateOf<Boolean?>(null) }
+    var lastAppliedCameraBoundsLimit by remember { mutableStateOf<Boolean?>(null) }
+    var minMaxZoomApplied by remember { mutableStateOf<Pair<Double, Double>?>(null) }
 
     var latchedBounds by remember { mutableStateOf<List<LatLng>>(emptyList()) }
     var latchedStations by remember { mutableStateOf<List<Station>>(emptyList()) }
@@ -136,13 +143,23 @@ fun MapLibreView(
         val map = mapInstance ?: return@LaunchedEffect
         val density = context.resources.displayMetrics.density
         // 只有在进入路线或完全处于路线中时才应用 Padding。在退出过程中，我们为了动画稳定暂时不更新 Padding
+        // 注意：native 调用只在 padding 真正变化时下发，避免打断进行中的相机动画
         val factor = if (transitionProgress > 0.05f) (1f - transitionProgress).coerceIn(0f, 1f) else 1f
-        map.applyContentPadding(
-            left = (cameraInsetLeftDp * density * factor).toInt(),
-            top = (cameraInsetTopDp * density * factor).toInt(),
-            right = (cameraInsetRightDp * density * factor).toInt(),
-            bottom = (cameraInsetBottomDp * density * factor).toInt(),
+        val paddingPx = listOf(
+            (cameraInsetLeftDp * density * factor).toInt(),
+            (cameraInsetTopDp * density * factor).toInt(),
+            (cameraInsetRightDp * density * factor).toInt(),
+            (cameraInsetBottomDp * density * factor).toInt(),
         )
+        if (paddingPx != lastAppliedPaddingPx) {
+            lastAppliedPaddingPx = paddingPx
+            map.applyContentPadding(
+                left = paddingPx[0],
+                top = paddingPx[1],
+                right = paddingPx[2],
+                bottom = paddingPx[3],
+            )
+        }
     }
 
     LaunchedEffect(mapInstance, latchedBounds, cameraInsetLeftDp, cameraInsetTopDp, cameraInsetRightDp, cameraInsetBottomDp) {
@@ -220,6 +237,7 @@ fun MapLibreView(
     LaunchedEffect(
         mapInstance,
         transitionProgress,
+        cameraTargetBounds,
         latchedBounds,
         targetCameraState,
         contentReadyForCamera,
@@ -232,7 +250,11 @@ fun MapLibreView(
     ) {
         val map = mapInstance ?: return@LaunchedEffect
         val currentTime = System.currentTimeMillis()
-        val homeTarget = initialPosition
+        // 目标位置需要夹在首页相机边界内：像双鸭山西这样位于边界之外的车站，
+        // 相机实际上无法居中到它，而是停靠在边界边缘。如果直接用未夹取的车站坐标
+        // 作为动画终点，相机会先移过去、待边界重新生效时再跳变回来。
+        // 夹取后，返回动画会平滑地上下左右平移到最终停靠位置。
+        val homeTarget = clampToHomeTarget(initialPosition)
         val currentMapPos = map.cameraPosition
 
         // 核心相机指挥部：进入/退出路线或专注时各自只触发一次平滑动画
@@ -253,9 +275,14 @@ fun MapLibreView(
             isMovingToRoute = false
             isMovingToHome = false
             wasRouteActive = false
-            latchedBounds = emptyList()
-            latchedStations = emptyList()
-            targetCameraState = null
+            // 关键修正：只有在当前确实没有路线数据（真正回到首页）时才清空 latched 数据。
+            // 重新进入路线选择时，上一帧 latch 效应可能已经写入了新的路线 bounds，
+            // 而转场进度此时仍是 0f；若在这里无条件清空，地图会永远卡在首页默认视角。
+            if (cameraTargetBounds.isEmpty()) {
+                latchedBounds = emptyList()
+                latchedStations = emptyList()
+                targetCameraState = null
+            }
             previousTransitionProgress = transitionProgress
             return@LaunchedEffect
         }
@@ -289,7 +316,7 @@ fun MapLibreView(
             isMovingToRoute = false
             wasRouteActive = true
 
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, initialZoom), 500)
+            map.easeCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, initialZoom), 500)
             previousTransitionProgress = transitionProgress
             return@LaunchedEffect
         }
@@ -377,24 +404,36 @@ fun MapLibreView(
         update = { view ->
             view.getMapAsync { map ->
                 mapInstance = map
-                map.uiSettings.apply {
-                    isRotateGesturesEnabled = false
-                    isTiltGesturesEnabled = false
-                    isScrollGesturesEnabled = enableGestures
-                    isZoomGesturesEnabled = enableGestures
-                    isCompassEnabled = false
-                    isLogoEnabled = false
-                    isAttributionEnabled = false
+                if (enableGestures != lastAppliedGestures) {
+                    lastAppliedGestures = enableGestures
+                    map.uiSettings.apply {
+                        isRotateGesturesEnabled = false
+                        isTiltGesturesEnabled = false
+                        isScrollGesturesEnabled = enableGestures
+                        isZoomGesturesEnabled = enableGestures
+                        isCompassEnabled = false
+                        isLogoEnabled = false
+                        isAttributionEnabled = false
+                    }
                 }
-                map.setMinZoomPreference(minZoom)
-                map.setMaxZoomPreference(maxZoom)
+                if (minMaxZoomApplied != (minZoom to maxZoom)) {
+                    minMaxZoomApplied = minZoom to maxZoom
+                    map.setMinZoomPreference(minZoom)
+                    map.setMaxZoomPreference(maxZoom)
+                }
 
                 // 仅在首页且 transitionProgress 接近 0 且动画完成时应用边界限制
-                if (transitionProgress < 0.05f && !isMovingToHome && !isMovingToRoute) {
-                    val cameraTargetBoundsLimit = LatLngBounds.from(41.0, 131.0, 22.0, 80.0)
-                    map.setLatLngBoundsForCameraTarget(cameraTargetBoundsLimit)
-                } else {
-                    map.setLatLngBoundsForCameraTarget(null)
+                val wantBoundsLimit = transitionProgress < 0.05f && !isMovingToHome && !isMovingToRoute
+                if (wantBoundsLimit != lastAppliedCameraBoundsLimit) {
+                    lastAppliedCameraBoundsLimit = wantBoundsLimit
+                if (wantBoundsLimit) {
+                        val cameraTargetBoundsLimit = LatLngBounds.from(
+                            HOME_BOUNDS_NORTH, HOME_BOUNDS_EAST, HOME_BOUNDS_SOUTH, HOME_BOUNDS_WEST
+                        )
+                        map.setLatLngBoundsForCameraTarget(cameraTargetBoundsLimit)
+                    } else {
+                        map.setLatLngBoundsForCameraTarget(null)
+                    }
                 }
 
                 val currentStyle = map.style
@@ -411,7 +450,7 @@ fun MapLibreView(
                         updateMapLayers(
                             style = style,
                             context = context,
-                            initialPosition = initialPosition,
+                            initialPosition = locationMarkerPosition ?: initialPosition,
                             stations = stations,
                             showStationMarkers = showStationMarkers,
                             latchedStations = latchedStations,
@@ -422,7 +461,6 @@ fun MapLibreView(
                             primaryArgb = primaryArgb,
                             onMapLoaded = onMapLoaded,
                             transitionProgress = transitionProgress,
-                            isExiting = isMovingToHome // 传递退出状态
                         )
                         onMapReady(map)
                     }
@@ -430,7 +468,7 @@ fun MapLibreView(
                     updateMapLayers(
                         style = currentStyle,
                         context = context,
-                        initialPosition = initialPosition,
+                        initialPosition = locationMarkerPosition ?: initialPosition,
                         stations = stations,
                         showStationMarkers = showStationMarkers,
                         latchedStations = latchedStations,
@@ -441,7 +479,6 @@ fun MapLibreView(
                         primaryArgb = primaryArgb,
                         onMapLoaded = onMapLoaded,
                         transitionProgress = transitionProgress,
-                        isExiting = isMovingToHome // 传递退出状态
                     )
                     onMapReady(map)
                 }
@@ -449,6 +486,21 @@ fun MapLibreView(
         }
     )
 }
+
+/** 首页相机目标的可行范围（大致覆盖中国） */
+private const val HOME_BOUNDS_NORTH = 41.0
+private const val HOME_BOUNDS_EAST = 131.0
+private const val HOME_BOUNDS_SOUTH = 22.0
+private const val HOME_BOUNDS_WEST = 80.0
+
+/**
+ * 把目标位置夹取到首页相机边界内。超出边界的车站（如双鸭山西）无法被相机居中，
+ * 相机最终停靠在边界边缘，动画也应以该夹取位置为终点，避免结束时跳变。
+ */
+private fun clampToHomeTarget(target: LatLng): LatLng = LatLng(
+    target.latitude.coerceIn(HOME_BOUNDS_SOUTH, HOME_BOUNDS_NORTH),
+    target.longitude.coerceIn(HOME_BOUNDS_WEST, HOME_BOUNDS_EAST),
+)
 
 private fun updateMapLayers(
     style: Style,
@@ -464,13 +516,12 @@ private fun updateMapLayers(
     primaryArgb: Int,
     onMapLoaded: () -> Unit,
     transitionProgress: Float = 1.0f,
-    isExiting: Boolean = false // 新增参数
 ) {
-    // 关键修正：退出动画期间不要让内容透明
-    // 如果正在退出，强制透明度为 1.0，确保路线在相机移动过程中全程可见
-    val contentOpacity = if (isExiting) 1.0f else transitionProgress.coerceIn(0f, 1f)
+    // 透明度始终跟随转场进度：进入时淡入，返回时随缩放一起渐出，
+    // 这样路线和站点元素会在动画过程中慢慢消失，而不是在结束时瞬间消失。
+    val contentOpacity = transitionProgress.coerceIn(0f, 1f)
     
-    android.util.Log.d("MapLayers", "RENDER: opacity=$contentOpacity, isExiting=$isExiting")
+    android.util.Log.d("MapLayers", "RENDER: opacity=$contentOpacity")
     if (latchedStations.size >= 2) {
         addRoutePolyline(style, latchedStations, primaryArgb, contentOpacity)
     } else {

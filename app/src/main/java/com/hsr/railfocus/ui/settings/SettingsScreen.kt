@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hsr.railfocus.R
+import com.hsr.railfocus.data.repository.UpdateCheckResult
+import com.hsr.railfocus.ui.components.UpdateAvailableDialog
 import java.util.Locale
 
 /**
@@ -53,6 +55,41 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showClearDataDialog by remember { mutableStateOf(false) }
+    val updateCheck by viewModel.updateCheckState.collectAsState()
+    val pendingUpdate by viewModel.pendingUpdate.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    val appVersion = remember {
+        try {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    // 打开设置页时自动静默检查一次更新；有新版本时弹窗提示
+    LaunchedEffect(Unit) {
+        viewModel.checkForUpdate(appVersion, silent = true)
+    }
+
+    // 手动检查的结果通过 snackbar 反馈（有新版本时走弹窗，不在这里提示）
+    val msgUpToDate = stringResource(R.string.settings_update_up_to_date)
+    val msgNoRelease = stringResource(R.string.settings_update_no_release)
+    val msgCheckFailed = stringResource(R.string.settings_update_failed)
+    LaunchedEffect(updateCheck) {
+        val result = (updateCheck as? UpdateCheckState.Done)?.result ?: return@LaunchedEffect
+        val message = when (result) {
+            is UpdateCheckResult.UpToDate -> msgUpToDate
+            is UpdateCheckResult.NoRelease -> msgNoRelease
+            is UpdateCheckResult.Failure -> msgCheckFailed
+            is UpdateCheckResult.UpdateAvailable -> null
+        }
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.resetUpdateCheck()
+        }
+    }
 
     var permissionCheckKey by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val locationGranted = remember(permissionCheckKey) {
@@ -154,6 +191,26 @@ fun SettingsScreen(
             SettingsSection(
                 modifier = Modifier.padding(horizontal = 16.dp),
             ) {
+                val checkingUpdate = updateCheck is UpdateCheckState.Checking
+                val updateAvailable = pendingUpdate != null
+                SettingsClickableItem(
+                    icon = Icons.Default.SystemUpdateAlt,
+                    title = stringResource(R.string.settings_check_update),
+                    summary = when {
+                        checkingUpdate -> stringResource(R.string.settings_checking_update)
+                        updateAvailable -> stringResource(
+                            R.string.settings_update_found,
+                            pendingUpdate!!.version,
+                        )
+                        else -> stringResource(R.string.settings_current_version, appVersion)
+                    },
+                    summaryColor = if (updateAvailable) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    onClick = { viewModel.checkForUpdate(appVersion) },
+                )
                 SettingsClickableItem(
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.settings_about),
@@ -198,6 +255,19 @@ fun SettingsScreen(
                         Text(stringResource(R.string.settings_cancel))
                     }
                 }
+            )
+        }
+
+        val updateInfo =
+            ((updateCheck as? UpdateCheckState.Done)?.result as? UpdateCheckResult.UpdateAvailable)?.info
+        var dismissedUpdateVersion by remember { mutableStateOf<String?>(null) }
+        if (updateInfo != null && dismissedUpdateVersion != updateInfo.version) {
+            UpdateAvailableDialog(
+                info = updateInfo,
+                onDismissed = {
+                    dismissedUpdateVersion = updateInfo.version
+                    viewModel.dismissPendingUpdate()
+                },
             )
         }
     }
@@ -474,6 +544,7 @@ private fun SettingsClickableItem(
     icon: ImageVector,
     title: String,
     summary: String,
+    summaryColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     onClick: () -> Unit
 ) {
     Row(
@@ -499,7 +570,7 @@ private fun SettingsClickableItem(
             Text(
                 text = summary,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = summaryColor
             )
         }
         Icon(

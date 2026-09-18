@@ -33,6 +33,7 @@ import com.hsr.railfocus.domain.service.DestinationOption
 import com.hsr.railfocus.service.FocusTimerService
 import com.hsr.railfocus.ui.components.BulletTrainIcon
 import com.hsr.railfocus.ui.components.MapLibreView
+import com.hsr.railfocus.ui.components.UpdateAvailableDialog
 import com.hsr.railfocus.ui.focus.FocusSessionScreen
 import com.hsr.railfocus.ui.focus.FocusSessionViewModel
 import com.hsr.railfocus.ui.focus.FocusTypeSelectionPopup
@@ -105,6 +106,11 @@ fun HomeScreen(
             MapLibreView(
                 modifier = Modifier.fillMaxSize(),
                 initialPosition = homeTarget,
+                // 路线选择中手动搜索换了起点时，“我的位置”标记临时放到起点站；
+                // 返回后传回 null，标记恢复到家基地（首次为真实定位，之后为最近到达的站点）。
+                locationMarkerPosition = if (phase == HomePhase.JourneySelection) {
+                    timeSelectionUiState.startStation.let { LatLng(it.lat, it.lng) }
+                } else null,
                 initialZoom = 4.0,
                 transitionProgress = transitionProgress,
                 stations = emptyList(),
@@ -234,6 +240,21 @@ fun HomeScreen(
                         pendingDestination = null
                     }
                 )
+            }
+
+            // 启动时自动检查更新：发现新版本弹出提示，忽略同一版本后不再打扰
+            val pendingUpdate by viewModel.pendingUpdate.collectAsState()
+            var dismissedUpdateVersion by remember { mutableStateOf<String?>(null) }
+            pendingUpdate?.let { updateInfo ->
+                if (dismissedUpdateVersion != updateInfo.version) {
+                    UpdateAvailableDialog(
+                        info = updateInfo,
+                        onDismissed = {
+                            dismissedUpdateVersion = updateInfo.version
+                            viewModel.dismissPendingUpdate()
+                        },
+                    )
+                }
             }
         }
     }

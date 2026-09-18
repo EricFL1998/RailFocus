@@ -1,12 +1,17 @@
 package com.hsr.railfocus.ui.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hsr.railfocus.data.location.LocationManager
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
+import com.hsr.railfocus.data.repository.AppUpdateInfo
+import com.hsr.railfocus.data.repository.AppUpdateRepository
+import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.domain.model.Station
 import com.hsr.railfocus.data.repository.StationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,11 +25,23 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val stationRepository: StationRepository,
     private val locationManager: LocationManager,
     private val preferencesRepository: UserPreferencesRepository,
     private val focusTypeRepository: com.hsr.railfocus.data.repository.FocusTypeRepository,
+    private val appUpdateRepository: AppUpdateRepository,
 ) : ViewModel() {
+
+    private val _pendingUpdate = MutableStateFlow<AppUpdateInfo?>(null)
+
+    /** 启动时发现的新版本，用于首页弹出更新提示 */
+    val pendingUpdate = _pendingUpdate.asStateFlow()
+
+    /** 用户已处理（下载或忽略）某个版本的更新提示后，清除弹窗 */
+    fun dismissPendingUpdate() {
+        _pendingUpdate.value = null
+    }
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -39,6 +56,31 @@ class HomeViewModel @Inject constructor(
     init {
         checkLocationPermission()
         loadNearbyStations()
+        checkForUpdateOnLaunch()
+    }
+
+    /**
+     * 打开应用时自动检查一次 GitHub 最新发布，发现新版本时弹出更新提示。
+     */
+    private fun checkForUpdateOnLaunch() {
+        viewModelScope.launch {
+            try {
+                val currentVersion = getAppVersionName() ?: return@launch
+                val result = appUpdateRepository.checkForUpdate(currentVersion)
+                if (result is UpdateCheckResult.UpdateAvailable) {
+                    _pendingUpdate.value = result.info
+                }
+            } catch (_: Exception) {
+                // 检查失败不影响正常使用
+            }
+        }
+    }
+
+    private fun getAppVersionName(): String? = try {
+        @Suppress("DEPRECATION")
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    } catch (_: Exception) {
+        null
     }
 
     private fun loadNearbyStations() {
