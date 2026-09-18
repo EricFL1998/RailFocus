@@ -52,14 +52,20 @@ abstract class RailDatabase : RoomDatabase() {
             val prefs = appContext.getSharedPreferences("rail_db_prefs", Context.MODE_PRIVATE)
             val lastCopiedVersion = prefs.getLong("last_asset_version", 0L)
             val currentAppVersion = try {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                     appContext.packageManager.getPackageInfo(
                         appContext.packageName,
                         android.content.pm.PackageManager.PackageInfoFlags.of(0),
-                    ).longVersionCode
+                    )
                 } else {
                     @Suppress("DEPRECATION")
-                    appContext.packageManager.getPackageInfo(appContext.packageName, 0).longVersionCode
+                    appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+                }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    packageInfo.longVersionCode
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageInfo.versionCode.toLong()
                 }
             } catch (_: Exception) {
                 0L
