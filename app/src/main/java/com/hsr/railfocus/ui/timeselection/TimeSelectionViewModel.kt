@@ -109,7 +109,7 @@ class TimeSelectionViewModel @Inject constructor(
     }
 
     /**
-     * 选择时长后，计算可达目的地，并重置选中目的地到列表第一个
+     * 选择时长后，计算可达目的地，并默认选中旅行时长最接近所选时间的目的地
      */
     fun onDurationSelected(duration: Int) {
         calculationJob?.cancel()
@@ -141,10 +141,16 @@ class TimeSelectionViewModel @Inject constructor(
                     durationMinutes = duration
                 )
 
+                // 默认选中旅行时长最接近所选时间的目的地（并列时取列表中较早的一个）
+                val closestIndex = destinations.indices.minByOrNull { index ->
+                    kotlin.math.abs(destinations[index].travelTimeMinutes - duration)
+                } ?: 0
+
                 _uiState.update {
                     it.copy(
                         destinations = destinations,
-                        selectedDestination = destinations.getOrNull(0),
+                        selectedDestinationIndex = closestIndex,
+                        selectedDestination = destinations.getOrNull(closestIndex),
                         isCalculating = false
                     )
                 }
