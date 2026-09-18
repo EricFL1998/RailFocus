@@ -106,7 +106,7 @@ fun JourneySelectionContent(
                 initialPosition = startLatLng,
                 initialZoom = 7.0,
                 minZoom = 5.0,
-                maxZoom = 11.0,
+                maxZoom = 12.0,
                 stations = routeStations.drop(1),
                 cameraTargetBounds = cameraTargetBounds,
                 routeStations = routeStations,

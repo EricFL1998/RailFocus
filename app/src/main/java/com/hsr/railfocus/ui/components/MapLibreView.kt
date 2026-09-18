@@ -51,7 +51,8 @@ fun MapLibreView(
     initialZoom: Double = 4.0,
     transitionProgress: Float = 0f,
     minZoom: Double = 3.5,
-    maxZoom: Double = 10.0,
+    // 矢量底图只生成到 z10，靠 overzoom 保持高缩放下的清晰度，因此允许放得更深
+    maxZoom: Double = 12.0,
     stations: List<Station> = emptyList(),
     showStationMarkers: Boolean = true,
     cameraTargetBounds: List<LatLng> = emptyList(),
@@ -996,21 +997,74 @@ private fun createPillBitmap(
 }
 
 private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
+    // 矢量底图（OSM 数据经 Planetiler 生成，z4-10，asset 离线打包）。
+    // 亮色为米色纸感：浅蓝水系、浅灰道路、深灰铁路；暗色整体压暗。
     val bgColor = if (isDarkMode) "#1a1a1a" else "#f5f0e8"
-    val rasterOpacity = if (isDarkMode) 0.6 else 1.0
-    val rasterSaturation = if (isDarkMode) -0.5 else -0.3
+    val waterColor = if (isDarkMode) "#16303c" else "#c8dfe8"
+    val waterwayColor = if (isDarkMode) "#234a5c" else "#a8c8d8"
+    val roadColor = if (isDarkMode) "#3a3a3a" else "#e2dbd0"
+    val railColor = if (isDarkMode) "#8a8a8a" else "#969696"
     return JSONObject().apply {
         put("version", 8)
         put("sources", JSONObject().apply {
-            put("local-tiles", JSONObject().apply {
-                put("type", "raster")
-                put("tiles", JSONArray().apply { put("asset://tiles/{z}/{x}/{y}.png") })
-                put("tileSize", 256); put("minzoom", 4); put("maxzoom", 14)
+            put("base", JSONObject().apply {
+                put("type", "vector")
+                put("tiles", JSONArray().apply { put("asset://tiles_vector/{z}/{x}/{y}.pbf") })
+                put("minzoom", 4); put("maxzoom", 10)
             })
         })
         put("layers", JSONArray().apply {
             put(JSONObject().apply { put("id", "background"); put("type", "background"); put("paint", JSONObject().apply { put("background-color", bgColor) }) })
-            put(JSONObject().apply { put("id", "local-tiles-layer"); put("type", "raster"); put("source", "local-tiles"); put("paint", JSONObject().apply { put("raster-opacity", rasterOpacity); put("raster-saturation", rasterSaturation); if (isDarkMode) { put("raster-brightness-min", 0.1); put("raster-brightness-max", 0.6); put("raster-contrast", 0.3) } }) })
+            put(JSONObject().apply {
+                put("id", "water"); put("type", "fill"); put("source", "base"); put("source-layer", "water")
+                put("paint", JSONObject().apply { put("fill-color", waterColor) })
+            })
+            put(JSONObject().apply {
+                put("id", "waterway"); put("type", "line"); put("source", "base"); put("source-layer", "waterway")
+                put("filter", JSONArray().apply {
+                    put("any")
+                    put(JSONArray().apply { put("=="); put("class"); put("river") })
+                    put(JSONArray().apply { put("=="); put("class"); put("canal") })
+                })
+                put("paint", JSONObject().apply {
+                    put("line-color", waterwayColor)
+                    put("line-width", if (isDarkMode) 1.2 else 1.0)
+                })
+            })
+            put(JSONObject().apply {
+                put("id", "road"); put("type", "line"); put("source", "base"); put("source-layer", "transportation")
+                put("filter", JSONArray().apply {
+                    put("all")
+                    put(JSONArray().apply { put("!="); put("class"); put("rail") })
+                    put(JSONArray().apply { put("!="); put("class"); put("transit") })
+                })
+                put("paint", JSONObject().apply {
+                    put("line-color", roadColor)
+                    put("line-width", JSONObject().apply {
+                        put("base", 1.4)
+                        put("stops", JSONArray().apply {
+                            put(JSONArray().apply { put(4); put(0.4) })
+                            put(JSONArray().apply { put(8); put(0.8) })
+                            put(JSONArray().apply { put(12); put(2.0) })
+                        })
+                    })
+                })
+            })
+            put(JSONObject().apply {
+                put("id", "rail"); put("type", "line"); put("source", "base"); put("source-layer", "transportation")
+                put("filter", JSONArray().apply { put("=="); put("class"); put("rail") })
+                put("paint", JSONObject().apply {
+                    put("line-color", railColor)
+                    put("line-width", JSONObject().apply {
+                        put("base", 1.2)
+                        put("stops", JSONArray().apply {
+                            put(JSONArray().apply { put(4); put(0.5) })
+                            put(JSONArray().apply { put(8); put(1.0) })
+                            put(JSONArray().apply { put(12); put(1.6) })
+                        })
+                    })
+                })
+            })
         })
     }.toString()
 }

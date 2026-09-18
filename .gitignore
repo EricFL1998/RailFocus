@@ -16,3 +16,6 @@ keystore.properties
 .vscode/
 
 .kotlin/
+
+# 本地 OSM 数据与生成工具产物（体积巨大，不入库）
+scripts/osm_data/
