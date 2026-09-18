@@ -45,13 +45,30 @@ class UserPreferencesRepository @Inject constructor(
         val FOCUS_STREAK = intPreferencesKey("focus_streak")
         val LAST_GOAL_DATE = stringPreferencesKey("last_goal_date")
         val AMBIENT_SOUND_ENABLED = booleanPreferencesKey("ambient_sound_enabled")
+        val STATION_ANNOUNCEMENT_ENABLED = booleanPreferencesKey("station_announcement_enabled")
     }
 
     /**
-     * 专注时是否播放车厢环境音
+     * 列车进出站时是否播放站台播报
+     */
+    val stationAnnouncementEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[Keys.STATION_ANNOUNCEMENT_ENABLED] ?: true
+    }
+
+    /**
+     * 设置站台播报开关
+     */
+    suspend fun setStationAnnouncementEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.STATION_ANNOUNCEMENT_ENABLED] = enabled
+        }
+    }
+
+    /**
+     * 专注时是否播放车厢环境音（白噪音）
      */
     val ambientSoundEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[Keys.AMBIENT_SOUND_ENABLED] ?: false
+        preferences[Keys.AMBIENT_SOUND_ENABLED] ?: true
     }
 
     /**

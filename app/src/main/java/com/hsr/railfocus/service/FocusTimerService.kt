@@ -55,6 +55,9 @@ class FocusTimerService : Service() {
 
         const val EXTRA_DESTINATION_JSON = "destination_json"
 
+        private const val AMBIENT_NORMAL_VOLUME = 0.3f
+        private const val AMBIENT_DUCK_VOLUME = 0.1f
+
         fun createStartIntent(context: Context, destinationJson: String): Intent {
             return Intent(context, FocusTimerService::class.java).apply {
                 action = ACTION_START
@@ -88,6 +91,15 @@ class FocusTimerService : Service() {
 
     // 车厢环境音播放器
     private var ambientPlayer: MediaPlayer? = null
+
+    // 站台播报播放器（进出站广播音）
+    private var announcementPlayer: MediaPlayer? = null
+
+    // 站台播报开关（由偏好流量持续同步，开关后无需重启旅程即生效）
+    @Volatile
+    private var stationAnnouncementEnabled = false
+
+    private var preferenceJob: Job? = null
 
     private var lastWidgetUpdateMs: Long = 0L
 
@@ -168,15 +180,63 @@ class FocusTimerService : Service() {
             }
         }
 
+        observeStationAnnouncementPreference()
         observeTimer()
+    }
+
+    private fun observeStationAnnouncementPreference() {
+        preferenceJob?.cancel()
+        preferenceJob = serviceScope.launch {
+            // 旅程开始即视为从始发站发车
+            if (preferencesRepository.stationAnnouncementEnabled.first()) {
+                stationAnnouncementEnabled = true
+                playStationAnnouncement(R.raw.train_departure_announcement)
+            }
+            // 持续同步开关，旅程中途切换立即生效
+            preferencesRepository.stationAnnouncementEnabled.collect { enabled ->
+                stationAnnouncementEnabled = enabled
+            }
+        }
+    }
+
+    /**
+     * 播放站台广播音。
+     *
+     * 播报期间压低车厢环境音避免互相掩盖，播放结束恢复音量。
+     * [onComplete] 在广播音自然播放完成后回调（被打断时不回调）。
+     */
+    private fun playStationAnnouncement(soundRes: Int, onComplete: (() -> Unit)? = null) {
+        if (!stationAnnouncementEnabled) return
+        runCatching {
+            announcementPlayer?.let { player ->
+                player.setOnCompletionListener(null)
+                runCatching { player.stop() }
+                runCatching { player.release() }
+            }
+            ambientPlayer?.setVolume(AMBIENT_DUCK_VOLUME, AMBIENT_DUCK_VOLUME)
+            val player = MediaPlayer.create(this, soundRes)
+            if (player != null) {
+                player.setOnCompletionListener {
+                    announcementPlayer = null
+                    runCatching { it.release() }
+                    ambientPlayer?.setVolume(AMBIENT_NORMAL_VOLUME, AMBIENT_NORMAL_VOLUME)
+                    onComplete?.invoke()
+                }
+                player.start()
+                announcementPlayer = player
+            } else {
+                // 创建失败时恢复环境音音量
+                ambientPlayer?.setVolume(AMBIENT_NORMAL_VOLUME, AMBIENT_NORMAL_VOLUME)
+            }
+        }
     }
 
     private fun startAmbience() {
         if (ambientPlayer != null) return
         runCatching {
-            ambientPlayer = MediaPlayer.create(this, R.raw.train_ambience)?.apply {
+            ambientPlayer = MediaPlayer.create(this, R.raw.hsr_whitenoise)?.apply {
                 isLooping = true
-                setVolume(0.4f, 0.4f)
+                setVolume(AMBIENT_NORMAL_VOLUME, AMBIENT_NORMAL_VOLUME)
                 start()
             }
         }
@@ -223,13 +283,21 @@ class FocusTimerService : Service() {
             }
             .launchIn(serviceScope)
 
-        val arrivalJob = timerService.stationArrival
-            .onEach { station ->
-                announce("\u5df2\u5230\u8fbe\uff1a" + station.name, vibrate = true)
+       val arrivalJob = timerService.stationArrival
+           .onEach { station ->
+              announce("\u5df2\u5230\u8fbe\uff1a" + station.name, vibrate = true)
+                // 进站停车广播；发车广播由停靠结束事件触发
+                playStationAnnouncement(R.raw.train_arrival_announcement)
             }
             .launchIn(serviceScope)
 
-        observationJobs = listOf(stateJob, progressJob, upcomingJob, arrivalJob)
+        val departureJob = timerService.stationDeparture
+            .onEach {
+                playStationAnnouncement(R.raw.train_departure_announcement)
+            }
+            .launchIn(serviceScope)
+
+        observationJobs = listOf(stateJob, progressJob, upcomingJob, arrivalJob, departureJob)
     }
 
     private fun announce(text: String, vibrate: Boolean) {
@@ -409,6 +477,10 @@ class FocusTimerService : Service() {
         runCatching { ambientPlayer?.stop() }
         ambientPlayer?.release()
         ambientPlayer = null
+        runCatching { announcementPlayer?.stop() }
+        announcementPlayer?.release()
+        announcementPlayer = null
+        preferenceJob?.cancel()
         announcementClearJob?.cancel()
         observationJobs.forEach { it.cancel() }
         timerService.stop()

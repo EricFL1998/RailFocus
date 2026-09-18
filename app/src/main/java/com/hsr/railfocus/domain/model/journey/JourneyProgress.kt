@@ -77,4 +77,10 @@ data class JourneyProgress(
      * 当前段的总距离 (km)
      */
     val currentSegmentTotalDistance: Float,
+
+    /**
+     * 是否正在站点停靠（停站期间速度为 0）
+     * 停靠在 currentSegmentStartStation，停靠结束后发车
+     */
+    val isDwelling: Boolean = false,
 )

@@ -74,7 +74,9 @@ fun HomeScreen(
     val initialZoom = 4.0
 
     val transitionProgress by animateFloatAsState(
-        targetValue = if (phase == HomePhase.None) 0f else 1f,
+        // 只有路线相关阶段才驱动转场进度；打开"我的/数据"面板时进度保持 0，
+        // 避免相机把上次遗留的路线数据当作"进入路线"来框选。
+        targetValue = if (phase == HomePhase.JourneySelection || phase == HomePhase.FocusSession) 1f else 0f,
         animationSpec = tween(600, easing = FastOutSlowInEasing),
         label = "phase_transition"
     )

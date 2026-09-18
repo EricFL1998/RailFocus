@@ -50,7 +50,8 @@ class RailGraphTest {
         val speedModel = TrainSpeedModel()
         val abTime = speedModel.computeTravelTimeMinutes(100f)
         val bcTime = speedModel.computeTravelTimeMinutes(50f)
-        val expectedTotal = abTime + bcTime + RailGraph.INTERMEDIATE_DWELL_MIN
+        // 途经站 B 随机停靠 1-2 分钟（按车站 ID 确定）
+        val expectedTotal = abTime + bcTime + RailGraph.dwellMinutesFor("B")
 
         assertEquals(expectedTotal, result!!.totalDurationMin)
         assertEquals(150.0, result.totalDistanceKm, 0.0)

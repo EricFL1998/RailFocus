@@ -56,7 +56,8 @@ class HistoryViewModel @Inject constructor(
             .onEach { records ->
                 val tickets = records
                     .asSequence()
-                    .filter { it.status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED }
+                    // 排除进行中的旅程；完成的和取消的（未完成车票）都展示
+                    .filter { it.status != com.hsr.railfocus.domain.model.JourneyStatus.ACTIVE }
                     .map { it.toTrainTicketModel() }
                     .toList()
 

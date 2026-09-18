@@ -72,7 +72,14 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = false,
+            initialValue = true,
+        )
+
+    val stationAnnouncementEnabled = userPreferencesRepository.stationAnnouncementEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = true,
         )
 
     private val _pendingUpdate = MutableStateFlow<AppUpdateInfo?>(null)
@@ -96,6 +103,12 @@ class SettingsViewModel @Inject constructor(
     fun setAmbientSoundEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setAmbientSoundEnabled(enabled)
+        }
+    }
+
+    fun setStationAnnouncementEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setStationAnnouncementEnabled(enabled)
         }
     }
 

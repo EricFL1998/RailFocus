@@ -39,6 +39,7 @@ fun FocusSessionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showStopConfirm by remember { mutableStateOf(false) }
 
     // 启动前台服务，确保后台运行
     LaunchedEffect(destinationJson) {
@@ -142,10 +143,7 @@ fun FocusSessionScreen(
                         isPaused = uiState.isPaused,
                         onPause = viewModel::pause,
                         onResume = viewModel::resume,
-                        onStop = {
-                            viewModel.stop()
-                            onBackHome()
-                        },
+                        onStop = { showStopConfirm = true },
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
                 }
@@ -181,6 +179,19 @@ fun FocusSessionScreen(
                 onBackHome = onBackHome
             )
         }
+        // 取消后的"未完成"车票
+        if (uiState.isStopped && !uiState.isCompleted) {
+            CompletionOverlay(
+                startStation = uiState.startStation.name,
+                endStation = uiState.endStation.name,
+                city = uiState.endStation.city,
+                duration = ((uiState.totalSeconds - uiState.remainingSeconds) / 60).coerceAtLeast(1),
+                focusType = uiState.focusType,
+                stationFact = null,
+                completed = false,
+                onBackHome = onBackHome
+            )
+        }
 
         // 错误提示
         uiState.error?.let { error ->
@@ -193,6 +204,32 @@ fun FocusSessionScreen(
                 },
                 title = { Text(stringResource(R.string.focus_error_title)) },
                 text = { Text(error) }
+            )
+        }
+        // 取消旅程确认弹窗
+        if (showStopConfirm) {
+            AlertDialog(
+                onDismissRequest = { showStopConfirm = false },
+                title = { Text(stringResource(R.string.focus_stop_confirm_title)) },
+                text = { Text(stringResource(R.string.focus_stop_confirm_text)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showStopConfirm = false
+                            viewModel.stop()
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Text(stringResource(R.string.focus_stop_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showStopConfirm = false }) {
+                        Text(stringResource(R.string.focus_stop_keep))
+                    }
+                },
             )
         }
     }

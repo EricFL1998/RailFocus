@@ -52,6 +52,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val ambientEnabled by viewModel.ambientSoundEnabled.collectAsState()
+    val stationAnnouncementEnabled by viewModel.stationAnnouncementEnabled.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showClearDataDialog by remember { mutableStateOf(false) }
@@ -182,9 +183,21 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
-            AmbientSoundSection(
+            SoundToggleSection(
+                icon = Icons.Default.VolumeUp,
+                titleRes = R.string.settings_ambient_sound,
+                summaryRes = R.string.settings_ambient_sound_summary,
                 enabled = ambientEnabled,
                 onToggle = viewModel::setAmbientSoundEnabled,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+
+            SoundToggleSection(
+                icon = Icons.Default.Notifications,
+                titleRes = R.string.settings_station_announcement,
+                summaryRes = R.string.settings_station_announcement_summary,
+                enabled = stationAnnouncementEnabled,
+                onToggle = viewModel::setStationAnnouncementEnabled,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
@@ -417,7 +430,10 @@ private fun ClearDataSection(
 }
 
 @Composable
-private fun AmbientSoundSection(
+private fun SoundToggleSection(
+    icon: ImageVector,
+    @androidx.annotation.StringRes titleRes: Int,
+    @androidx.annotation.StringRes summaryRes: Int,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -438,19 +454,19 @@ private fun AmbientSoundSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Icon(
-                imageVector = Icons.Default.VolumeUp,
+                imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.settings_ambient_sound),
+                    text = stringResource(titleRes),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = stringResource(R.string.settings_ambient_sound_summary),
+                    text = stringResource(summaryRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )

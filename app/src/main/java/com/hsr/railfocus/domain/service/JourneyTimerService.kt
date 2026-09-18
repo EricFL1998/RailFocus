@@ -51,6 +51,10 @@ class JourneyTimerService @Inject constructor(
     private val _stationArrival = MutableSharedFlow<Station>()
     val stationArrival: SharedFlow<Station> = _stationArrival.asSharedFlow()
     
+    // 站点发车事件（停靠结束、驶离站台）
+    private val _stationDeparture = MutableSharedFlow<Station>()
+    val stationDeparture: SharedFlow<Station> = _stationDeparture.asSharedFlow()
+
     // 即将到达事件（提前触发动画）
     private val _upcomingArrival = MutableSharedFlow<Station>()
     val upcomingArrival: SharedFlow<Station> = _upcomingArrival.asSharedFlow()
@@ -184,12 +188,21 @@ class JourneyTimerService @Inject constructor(
             _state.value = TimerState.Running(remaining, totalSeconds)
 
             // 计算并更新进度
+            val previousProgress = _progress.value
             val currentProgress = progressTracker.calculateProgress(
                 path = path,
                 elapsedSeconds = elapsedSeconds,
                 totalSeconds = totalSeconds
             )
             _progress.value = currentProgress
+
+            // 检测停靠结束（发车）：上一秒还在停靠，本秒开始行驶
+            if (previousProgress != null &&
+                previousProgress.isDwelling &&
+                !currentProgress.isDwelling
+            ) {
+                previousProgress.currentSegmentStartStation?.let { _stationDeparture.emit(it) }
+            }
 
             // 检测站点到达
             val arrivedStation = arrivalDetector.checkArrival(currentProgress)

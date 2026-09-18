@@ -7,8 +7,11 @@ import javax.inject.Singleton
 /**
  * 旅程进度追踪器
  * 
- * 负责根据时间计算火车在路径上的精确位置
- * 结合真实的高铁速度模型（加速、巡航、减速）
+ * 负责根据时间计算火车在路径上的精确位置。
+ *
+ * 将旅程视为一条时间轴：每段线路有真实运行时间（加速→巡航→减速），
+ * 到达每个中间站后停靠 1-2 分钟（见 [TrainSpeedModel.dwellMinutesFor]），
+ * 停靠期间速度为 0，与路线时间计算保持一致。
  */
 @Singleton
 class JourneyProgressTracker @Inject constructor() {
@@ -41,89 +44,125 @@ class JourneyProgressTracker @Inject constructor() {
             return createCompletedProgress(path)
         }
         
-        // 计算总距离
         val totalDistance = path.totalDistanceKm.toFloat()
+        val timeRatio = (elapsedSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+        val segmentCount = path.path.size - 1
 
-        // 计算时间比例
-        val timeRatio = elapsedSeconds.toFloat() / totalSeconds.toFloat()
+        // 各段行驶时间（秒），与路线时间计算使用同一数据源
+        val segmentTimes = resolveSegmentTimes(path, totalSeconds)
 
-        // 将时间映射到距离（考虑加减速）
-        val targetDistance = timeRatio * totalDistance
-
-        // 找到当前所在的段和段内位置
-        val segmentInfo = findCurrentSegment(path, targetDistance)
-
-        // 计算当前速度
-        val currentSpeed = speedModel.calculateSpeed(
-            distanceInSegment = segmentInfo.distanceInSegment,
-            segmentTotalDistance = segmentInfo.segmentDistance,
-            elapsedSeconds = elapsedSeconds,
-        )
-        
-        // 判断是否接近站点
-        val isApproaching = speedModel.isApproachingStation(
-            distanceInSegment = segmentInfo.distanceInSegment,
-            segmentTotalDistance = segmentInfo.segmentDistance,
-        )
-        
-        // 构建进度对象
-        return JourneyProgress(
-            currentSegmentIndex = segmentInfo.segmentIndex,
-            progressInSegment = segmentInfo.progressInSegment,
-            currentSpeed = currentSpeed,
-            distanceTraveled = targetDistance,
-            totalDistance = totalDistance,
-            overallProgress = timeRatio,
-            nextStation = path.path.getOrNull(segmentInfo.segmentIndex + 1),
-            completedStations = path.path.take(segmentInfo.segmentIndex + 1),
-            isApproachingStation = isApproaching,
-            currentSegmentStartStation = path.path.getOrNull(segmentInfo.segmentIndex),
-            currentSegmentEndStation = path.path.getOrNull(segmentInfo.segmentIndex + 1),
-            distanceInCurrentSegment = segmentInfo.distanceInSegment,
-            currentSegmentTotalDistance = segmentInfo.segmentDistance,
-        )
-    }
-    
-    /**
-     * 根据目标距离找到当前所在的段
-     */
-    private fun findCurrentSegment(path: PathResult, targetDistance: Float): SegmentInfo {
+        var remaining = elapsedSeconds
         var accumulatedDistance = 0f
-        
-        // 遍历所有段
-        for (i in 0 until (path.path.size - 1)) {
+
+        for (i in 0 until segmentCount) {
             val segmentDistance = getSegmentDistance(path, i)
-            
-            // 检查目标距离是否在当前段内
-            if (targetDistance <= (accumulatedDistance + segmentDistance)) {
-                val distanceInSegment = targetDistance - accumulatedDistance
-                val progressInSegment = if (segmentDistance > 0) {
-                    (distanceInSegment / segmentDistance).coerceIn(0f, 1f)
-                } else {
-                    0f
-                }
-                
-                return SegmentInfo(
-                    segmentIndex = i,
+            val segmentTime = segmentTimes[i]
+
+            // 正在第 i 段行驶
+            if (remaining < segmentTime) {
+                val fraction = if (segmentTime > 0) remaining.toFloat() / segmentTime else 0f
+                val distanceInSegment = fraction * segmentDistance
+                val currentSpeed = speedModel.calculateSpeed(
                     distanceInSegment = distanceInSegment,
-                    segmentDistance = segmentDistance,
-                    progressInSegment = progressInSegment,
+                    segmentTotalDistance = segmentDistance,
+                    elapsedSeconds = elapsedSeconds,
+                )
+                val isApproaching = speedModel.isApproachingStation(
+                    distanceInSegment = distanceInSegment,
+                    segmentTotalDistance = segmentDistance,
+                )
+                return JourneyProgress(
+                    currentSegmentIndex = i,
+                    progressInSegment = fraction.coerceIn(0f, 1f),
+                    currentSpeed = currentSpeed,
+                    distanceTraveled = accumulatedDistance + distanceInSegment,
+                    totalDistance = totalDistance,
+                    overallProgress = timeRatio,
+                    nextStation = path.path.getOrNull(i + 1),
+                    completedStations = path.path.take(i + 1),
+                    isApproachingStation = isApproaching,
+                    currentSegmentStartStation = path.path.getOrNull(i),
+                    currentSegmentEndStation = path.path.getOrNull(i + 1),
+                    distanceInCurrentSegment = distanceInSegment,
+                    currentSegmentTotalDistance = segmentDistance,
                 )
             }
-            
+            remaining -= segmentTime
             accumulatedDistance += segmentDistance
+
+            // 到达站点 i+1；除终点外需停靠一段时间
+            if (i + 1 < segmentCount) {
+                val dwell = dwellSeconds(path.path[i + 1].id)
+                if (remaining < dwell) {
+                    return JourneyProgress(
+                        currentSegmentIndex = i + 1,
+                        progressInSegment = 0f,
+                        currentSpeed = 0f,
+                        distanceTraveled = accumulatedDistance,
+                        totalDistance = totalDistance,
+                        overallProgress = timeRatio,
+                        nextStation = path.path.getOrNull(i + 2),
+                        completedStations = path.path.take(i + 2),
+                        isApproachingStation = false,
+                        currentSegmentStartStation = path.path.getOrNull(i + 1),
+                        currentSegmentEndStation = path.path.getOrNull(i + 2),
+                        distanceInCurrentSegment = 0f,
+                        currentSegmentTotalDistance = getSegmentDistance(path, i + 1),
+                        isDwelling = true,
+                    )
+                }
+                remaining -= dwell
+            }
         }
-        
-        // 如果超出范围，返回最后一段
-        val lastSegmentIndex = (path.path.size - 2).coerceAtLeast(0)
-        val lastSegmentDistance = getSegmentDistance(path, lastSegmentIndex)
-        
-        return SegmentInfo(
-            segmentIndex = lastSegmentIndex,
-            distanceInSegment = lastSegmentDistance,
-            segmentDistance = lastSegmentDistance,
-            progressInSegment = 1f,
-        )
+
+        // 超出时间轴（理论上等于 totalSeconds，含舍入误差），视为已到达终点
+        return createCompletedProgress(path)
+    }
+
+    /** 单个车站的停靠时长（秒） */
+    private fun dwellSeconds(stationId: String): Int =
+        TrainSpeedModel.dwellMinutesFor(stationId) * 60
+
+    /**
+     * 计算每段行驶时间（秒）。
+     *
+     * 优先使用边数据中的真实运行时间；旧数据缺少边时长时，
+     * 把扣除停靠时间后的总时长按各段距离比例分配。
+     */
+    private fun resolveSegmentTimes(path: PathResult, totalSeconds: Int): IntArray {
+        val segmentCount = path.path.size - 1
+        val times = IntArray(segmentCount)
+
+        var totalDwell = 0
+        for (i in 1 until path.path.size - 1) {
+            totalDwell += dwellSeconds(path.path[i].id)
+        }
+
+        var knownTotal = 0
+        for (i in 0 until segmentCount) {
+            val minutes = path.edges.getOrNull(i)?.durationMin ?: 0
+            if (minutes > 0) {
+                times[i] = minutes * 60
+                knownTotal += times[i]
+            }
+        }
+
+        val fallbackTotal = (totalSeconds - totalDwell).coerceAtLeast(1)
+        if (knownTotal >= fallbackTotal) return times
+
+        // 将剩余时间按距离比例分配给缺少时长的段
+        val totalDistance = path.totalDistanceKm.toFloat()
+        for (i in 0 until segmentCount) {
+            if (times[i] == 0) {
+                val share = if (totalDistance > 0f) {
+                    getSegmentDistance(path, i) / totalDistance
+                } else {
+                    1f / segmentCount
+                }
+                times[i] = ((fallbackTotal - knownTotal) * share).toInt().coerceAtLeast(1)
+            }
+        }
+        return times
     }
     
     /**
@@ -211,13 +250,4 @@ class JourneyProgressTracker @Inject constructor() {
         )
     }
     
-    /**
-     * 段信息（内部使用）
-     */
-    private data class SegmentInfo(
-        val segmentIndex: Int,
-        val distanceInSegment: Float,
-        val segmentDistance: Float,
-        val progressInSegment: Float,
-    )
 }

@@ -48,8 +48,8 @@ class RailGraph @Inject constructor(
     private val speedModel = TrainSpeedModel()
 
     companion object {
-        /** 除起点、终点外，每个途经站停留 1 分钟。 */
-        const val INTERMEDIATE_DWELL_MIN = 1
+        /** 除起点、终点外，每个途经站随机停靠 1-2 分钟（见 [TrainSpeedModel.dwellMinutesFor]）。 */
+        fun dwellMinutesFor(stationId: String): Int = TrainSpeedModel.dwellMinutesFor(stationId)
     }
 
     /**
@@ -249,7 +249,7 @@ class RailGraph @Inject constructor(
 
             adjList[currentId]?.forEach { edge ->
                 if (edge.toStationId !in visited) {
-                    val dwell = if (currentId == fromId) 0 else INTERMEDIATE_DWELL_MIN
+                    val dwell = if (currentId == fromId) 0 else dwellMinutesFor(currentId)
                     val newDuration = currentDuration + edge.durationMin + dwell
                     val oldDuration = (durations[edge.toStationId] ?: Int.MAX_VALUE)
 
@@ -313,7 +313,7 @@ class RailGraph @Inject constructor(
 
             adjList[currentId]?.forEach { edge ->
                 if (edge.toStationId !in visited) {
-                    val dwell = if (currentId == fromId) 0 else INTERMEDIATE_DWELL_MIN
+                    val dwell = if (currentId == fromId) 0 else dwellMinutesFor(currentId)
                     val newDuration = currentDuration + edge.durationMin + dwell
                     val oldDuration = (durations[edge.toStationId] ?: Int.MAX_VALUE)
 
@@ -367,7 +367,7 @@ class RailGraph @Inject constructor(
 
             adjList[currentId]?.forEach { edge ->
                 if (edge.toStationId !in visited) {
-                    val dwell = if (currentId == fromId) 0 else INTERMEDIATE_DWELL_MIN
+                    val dwell = if (currentId == fromId) 0 else dwellMinutesFor(currentId)
                     val newDuration = currentDuration + edge.durationMin + dwell
                     val oldDuration = (durations[edge.toStationId] ?: Int.MAX_VALUE)
 
@@ -482,7 +482,7 @@ class RailGraph @Inject constructor(
             // 松弛操作：按时间累加
             adjList[currentId]?.forEach { edge ->
                 if (edge.toStationId !in visited) {
-                    val dwell = if (currentId == fromId) 0 else INTERMEDIATE_DWELL_MIN
+                    val dwell = if (currentId == fromId) 0 else dwellMinutesFor(currentId)
                     val newDuration = currentDuration + edge.durationMin + dwell
                     val oldDuration = (durations[edge.toStationId] ?: Int.MAX_VALUE)
 
@@ -531,7 +531,7 @@ class RailGraph @Inject constructor(
                 totalDistance += edge.distanceKm
                 totalDuration += edge.durationMin
                 if (i > 0) {
-                    totalDuration += INTERMEDIATE_DWELL_MIN
+                    totalDuration += dwellMinutesFor(path[i])
                 }
             }
         }

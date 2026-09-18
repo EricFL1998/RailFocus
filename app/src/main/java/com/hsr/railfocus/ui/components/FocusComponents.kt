@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -149,6 +150,7 @@ fun CompletionOverlay(
     duration: Int,
     focusType: FocusType?,
     stationFact: StationFact?,
+    completed: Boolean = true,
     onBackHome: () -> Unit
 ) {
     var showCard by remember { mutableStateOf(false) }
@@ -196,7 +198,11 @@ fun CompletionOverlay(
                         Surface(
                             modifier = Modifier.size(80.dp),
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer
+                            color = if (completed) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.errorContainer
+                            }
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_bullet_train),
@@ -204,7 +210,11 @@ fun CompletionOverlay(
                                 modifier = Modifier
                                     .padding(16.dp)
                                     .size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = if (completed) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
                             )
                         }
                         
@@ -226,19 +236,34 @@ fun CompletionOverlay(
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = stringResource(R.string.completion_welcome),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = city,
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        if (completed) {
+                            Text(
+                                text = stringResource(R.string.completion_welcome),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = city,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.completion_journey_ended),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = endStation,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
 
+                    Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -301,8 +326,28 @@ fun CompletionOverlay(
                             }
                         }
                     }
+                        if (!completed) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 10.dp, y = (-10).dp)
+                                    .graphicsLayer { rotationZ = -12f },
+                                shape = RoundedCornerShape(8.dp),
+                                color = androidx.compose.ui.graphics.Color.Transparent,
+                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.error),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.completion_not_completed),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
 
-                    if (stationFact != null) {
+                    if (completed && stationFact != null) {
                         val categoryIcon = when (stationFact.category) {
                             "美食" -> Icons.Default.Restaurant
                             "历史" -> Icons.Default.HistoryEdu
@@ -353,8 +398,8 @@ fun CompletionOverlay(
                         shape = RoundedCornerShape(28.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
-                        Text(
-                            stringResource(R.string.completion_finish),
+                            Text(
+                                stringResource(if (completed) R.string.completion_finish else R.string.completion_back_home),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )

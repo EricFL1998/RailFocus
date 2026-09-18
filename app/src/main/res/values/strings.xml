@@ -35,14 +35,21 @@
     <string name="focus_pause">暂停</string>
     <string name="focus_resume">继续</string>
     <string name="focus_stop">结束旅程</string>
+    <string name="focus_stop_confirm_title">结束这段旅程？</string>
+    <string name="focus_stop_confirm_text">提前结束会生成一张未完成的旅程车票，已专注的时长会记录在上面。</string>
+    <string name="focus_stop_confirm">结束旅程</string>
+    <string name="focus_stop_keep">继续专注</string>
     <string name="focus_error_title">出错了</string>
     <string name="focus_ok">确定</string>
 
     <!-- Completion Overlay -->
     <string name="completion_welcome">欢迎来到</string>
+    <string name="completion_journey_ended">旅程已结束</string>
+    <string name="completion_not_completed">未完成</string>
     <string name="completion_duration_label">专注时长</string>
     <string name="completion_type_label">专注类型</string>
     <string name="completion_finish">完成旅程</string>
+    <string name="completion_back_home">返回首页</string>
     <string name="completion_type_default">通用</string>
 
     <!-- History / My Journeys -->
@@ -58,7 +65,7 @@
     <string name="history_sort_earliest">最早</string>
     <string name="history_sort_latest_first">最新优先</string>
     <string name="history_sort_earliest_first">最早优先</string>
-    <string name="history_empty_title">还没有完成的旅程</string>
+    <string name="history_empty_title">还没有旅程</string>
     <string name="history_empty_desc">还没有旅程，开始一场专注的旅行吧</string>
     <string name="history_departure">出发</string>
     <string name="history_arrival">到达</string>
@@ -99,6 +106,8 @@
     <string name="ticket_share">分享车票</string>
     <string name="settings_ambient_sound">车厢环境音</string>
     <string name="settings_ambient_sound_summary">专注时播放行驶中的车厢背景声</string>
+    <string name="settings_station_announcement">到站发车提示音</string>
+    <string name="settings_station_announcement_summary">列车到站、发车时播放提示音</string>
     <string name="widget_focus_timer_desc">展示进行中的专注旅程与剩余时间</string>
     <string name="data_no_data">暂无数据</string>
     <string name="data_arrival_count">%1$d次到达</string>
@@ -111,7 +120,7 @@
     <string name="settings_theme_light">浅色模式</string>
     <string name="settings_theme_dark">深色模式</string>
     <string name="settings_about">关于此应用</string>
-    <string name="settings_version">版本 1.0</string>
+    <string name="settings_version">版本 1.2</string>
     <string name="settings_check_update">检查更新</string>
     <string name="settings_checking_update">正在检查更新…</string>
     <string name="settings_current_version">当前版本 %1$s</string>

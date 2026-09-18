@@ -43,7 +43,28 @@ class TrainSpeedModel {
         
         /** 接近站点的阈值距离 (km) - 用于触发到站动画 */
         const val APPROACHING_STATION_THRESHOLD = 10f
-        
+
+        // ===== 停站参数 =====
+        /** 每个途经站的最短停靠时间（分钟） */
+        const val DWELL_MIN_MINUTES = 1
+
+        /** 每个途经站的最长停靠时间（分钟） */
+        const val DWELL_MAX_MINUTES = 2
+
+        /**
+         * 计算指定车站的停靠时长（分钟）。
+         *
+         * 每个途经站随机停靠 [DWELL_MIN_MINUTES] ~ [DWELL_MAX_MINUTES] 分钟，
+         * 时长由车站 ID 哈希确定：同一车站在路径搜索、时间估算和
+         * 旅程模拟中保持一致，避免 Dijkstra 松弛与缓存结果不稳定。
+         */
+        fun dwellMinutesFor(stationId: String): Int {
+            var hash = 0
+            for (ch in stationId) hash = hash * 31 + ch.code
+            val span = DWELL_MAX_MINUTES - DWELL_MIN_MINUTES + 1
+            return DWELL_MIN_MINUTES + (hash and Int.MAX_VALUE) % span
+        }
+
         // ===== 波动参数 =====
         /** 速度波动周期（秒）- 控制波动频率 */
         const val VARIATION_PERIOD = 30f
