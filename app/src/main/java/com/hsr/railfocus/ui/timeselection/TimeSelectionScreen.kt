@@ -1,6 +1,7 @@
 package com.hsr.railfocus.ui.timeselection
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -30,6 +31,12 @@ fun TimeSelectionScreen(
             progressFlow.collect { _ -> }
             onBack()
         } catch (_: Exception) {}
+    }
+
+    // 离开本页（如进入专注页后返回）时重置到最小时长，
+    // 保证每次重新进入选择页都默认是最少时间
+    DisposableEffect(Unit) {
+        onDispose { viewModel.resetToMinimum() }
     }
 
     JourneySelectionContent(
