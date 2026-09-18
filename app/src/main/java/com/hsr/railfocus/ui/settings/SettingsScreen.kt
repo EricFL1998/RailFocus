@@ -225,12 +225,6 @@ fun SettingsScreen(
                     onClick = { viewModel.checkForUpdate(appVersion) },
                 )
                 SettingsClickableItem(
-                    icon = Icons.Default.Info,
-                    title = stringResource(R.string.settings_about),
-                    summary = stringResource(R.string.settings_version),
-                    onClick = { /* TODO */ },
-                )
-                SettingsClickableItem(
                     icon = Icons.Default.Policy,
                     title = stringResource(R.string.settings_privacy),
                     summary = stringResource(R.string.settings_privacy),
