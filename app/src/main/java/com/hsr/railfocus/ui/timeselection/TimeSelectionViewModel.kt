@@ -116,10 +116,11 @@ class TimeSelectionViewModel @Inject constructor(
         calculationJob = null
 
         // 立即更新 UI 中的选中数值，但不清除目的地列表，防止地图变白。
+        // 同时不要重置 selectedDestinationIndex：计算期间保持当前选中项，
+        // 否则新结果出来前会先跳到第一个，再跳到最接近时间的那个，造成闪烁。
         _uiState.update {
             it.copy(
                 selectedDuration = duration,
-                selectedDestinationIndex = 0,
                 // selectedDestination = null, // 关键：不要在这里清除，保持旧路径直到新结果出来
                 // isCalculating = true // 关键：不要立即触发 loading 导致的 UI 震荡
             )
