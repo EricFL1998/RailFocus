@@ -88,8 +88,9 @@ fun DataContent(
     onGoalSelected: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // 数据统计只计入完成的旅程；取消的未完成车票不参与统计
     val stats = remember(uiState.tickets) {
-        calculateDataStats(uiState.tickets.map { it.record })
+        calculateDataStats(uiState.tickets.filter { it.isCompleted }.map { it.record })
     }
 
     Column(

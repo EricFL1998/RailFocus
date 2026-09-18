@@ -78,13 +78,35 @@ class HistoryViewModelTest {
     }
 
     @Test
-    fun `incomplete journeys are filtered out`() = runTest {
-        val incomplete = createCompletedJourney().copy(
-            completedAt = null,
+    fun `cancelled journeys show as unfinished tickets`() = runTest {
+        val cancelled = createCompletedJourney().copy(
             status = com.hsr.railfocus.domain.model.JourneyStatus.CANCELLED
         )
         getJourneyHistoryUseCase = mockk()
-        every { getJourneyHistoryUseCase.invoke() } returns flowOf(listOf(incomplete))
+        every { getJourneyHistoryUseCase.invoke() } returns flowOf(listOf(cancelled))
+
+        val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertFalse(state.isEmpty)
+        assertEquals(1, state.tickets.size)
+
+        val ticket = state.tickets.first()
+        assertFalse(ticket.isCompleted)
+        assertEquals("已取消", ticket.completionStatus)
+        assertEquals("专注未达成", ticket.focusState)
+    }
+
+    @Test
+    fun `active journeys are filtered out`() = runTest {
+        val active = createCompletedJourney().copy(
+            completedAt = null,
+            status = com.hsr.railfocus.domain.model.JourneyStatus.ACTIVE
+        )
+        getJourneyHistoryUseCase = mockk()
+        every { getJourneyHistoryUseCase.invoke() } returns flowOf(listOf(active))
 
         val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
         advanceUntilIdle()
