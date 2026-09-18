@@ -70,6 +70,16 @@ fun HomeScreen(
     val searchQuery by timeSelectionViewModel.searchQuery.collectAsState()
     val searchResults by timeSelectionViewModel.searchResults.collectAsState()
 
+    // 离开路线选择阶段（进入专注页或返回首页）时，把时长重置回最小值，
+    // 保证每次再进入路线选择都默认是最少时间
+    var wasJourneySelection by remember { mutableStateOf(false) }
+    LaunchedEffect(phase) {
+        if (wasJourneySelection && phase != HomePhase.JourneySelection) {
+            timeSelectionViewModel.resetToMinimum()
+        }
+        wasJourneySelection = phase == HomePhase.JourneySelection
+    }
+
     val homeTarget = uiState.currentLocation
     val initialZoom = 4.0
 
