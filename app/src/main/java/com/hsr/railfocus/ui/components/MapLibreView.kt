@@ -252,18 +252,18 @@ fun MapLibreView(
                         )
                         val lat = t.latitude.coerceIn(latRange.first, latRange.second)
                         val lng = t.longitude.coerceIn(lngRange.first, lngRange.second)
-                        val clamped = lat != t.latitude || lng != t.longitude
-                        if (clamped) {
+                        if (lat != t.latitude || lng != t.longitude) {
                             map.moveCamera(
                                 CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), map.cameraPosition.zoom)
                             )
                         }
-                        // 缩放支点：定位点没被边界卡住时用它的屏幕位置，卡住时用屏幕中心继续
+                        // 缩放支点始终跟随"我的位置"标点的屏幕位置（即使相机被边界卡住，
+                        // 标点仍可见时围绕它缩放）；标点移出屏幕时退回屏幕中心。
                         val userPos = locationMarkerPosition ?: initialPosition
                         val dot = map.projection.toScreenLocation(userPos)
                         val dotOnScreen = dot.x >= 0f && dot.x <= mapView.width && dot.y >= 0f && dot.y <= mapView.height
                         map.uiSettings.setFocalPoint(
-                            if (!clamped && dotOnScreen) PointF(dot.x, dot.y)
+                            if (dotOnScreen) PointF(dot.x, dot.y)
                             else PointF(mapView.width / 2f, mapView.height / 2f)
                         )
                     }
