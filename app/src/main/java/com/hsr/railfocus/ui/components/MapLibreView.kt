@@ -129,7 +129,6 @@ fun MapLibreView(
     var lastAnimatedZoom by remember { mutableStateOf<Double?>(null) }
     var lastAppliedPaddingPx by remember { mutableStateOf<List<Int>?>(null) }
     var lastAppliedGestures by remember { mutableStateOf<Boolean?>(null) }
-    var lastAppliedCameraBoundsLimit by remember { mutableStateOf<Boolean?>(null) }
     var minMaxZoomApplied by remember { mutableStateOf<Pair<Double, Double>?>(null) }
 
     var latchedBounds by remember { mutableStateOf<List<LatLng>>(emptyList()) }
@@ -233,6 +232,32 @@ fun MapLibreView(
     var isMovingToHome by remember { mutableStateOf(false) }
     var previousTransitionProgress by remember { mutableFloatStateOf(0f) }
     var wasRouteActive by remember { mutableStateOf(false) }
+
+    // 首页边界约束：相机中心不允许离开 HOME_BOUNDS，拖动/惯性到边界即硬停。
+    // 边界固定、不随缩放变化；夹取后中心落在边界内，监听器不会递归触发。
+    DisposableEffect(mapInstance) {
+        val map = mapInstance
+        if (map == null) {
+            onDispose { }
+        } else {
+            val listener = MapLibreMap.OnCameraMoveListener {
+                if (transitionProgress < 0.05f && !isMovingToHome && !isMovingToRoute) {
+                    val t = map.cameraPosition.target
+                    if (t != null) {
+                        val lat = t.latitude.coerceIn(HOME_BOUNDS_SOUTH, HOME_BOUNDS_NORTH)
+                        val lng = t.longitude.coerceIn(HOME_BOUNDS_WEST, HOME_BOUNDS_EAST)
+                        if (lat != t.latitude || lng != t.longitude) {
+                            map.moveCamera(
+                                CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), map.cameraPosition.zoom)
+                            )
+                        }
+                    }
+                }
+            }
+            map.addOnCameraMoveListener(listener)
+            onDispose { map.removeOnCameraMoveListener(listener) }
+        }
+    }
 
     // 2. 核心相机指挥部：进入/退出路线或专注时各自只触发一次平滑动画
     LaunchedEffect(
@@ -423,18 +448,9 @@ fun MapLibreView(
                     map.setMaxZoomPreference(maxZoom)
                 }
 
-                // 仅在首页且 transitionProgress 接近 0 且动画完成时应用边界限制。
-                // 边界固定为铁路网包围盒，不随缩放变化：任何缩放级别下
-                // 相机中心都能拖到任意车站位置。
-                val wantBoundsLimit = transitionProgress < 0.05f && !isMovingToHome && !isMovingToRoute
-                if (wantBoundsLimit != lastAppliedCameraBoundsLimit) {
-                    lastAppliedCameraBoundsLimit = wantBoundsLimit
-                    if (wantBoundsLimit) {
-                        map.setLatLngBoundsForCameraTarget(homeCameraBounds())
-                    } else {
-                        map.setLatLngBoundsForCameraTarget(null)
-                    }
-                }
+                // 首页边界不用 setLatLngBoundsForCameraTarget：
+                // 惯性滑动（fling）会走 easeTo 的视口约束，屏幕大于边界时
+                // 会强制放大并把相机锁死在边界中心。改为手动夹取（见下方监听器）。
 
                 val currentStyle = map.style
                 val needsStyleReload = currentStyle == null || 
@@ -500,10 +516,6 @@ private const val HOME_BOUNDS_WEST = 80.0
 private fun clampToHomeTarget(target: LatLng): LatLng = LatLng(
     target.latitude.coerceIn(HOME_BOUNDS_SOUTH, HOME_BOUNDS_NORTH),
     target.longitude.coerceIn(HOME_BOUNDS_WEST, HOME_BOUNDS_EAST),
-)
-
-private fun homeCameraBounds(): LatLngBounds = LatLngBounds.from(
-    HOME_BOUNDS_NORTH, HOME_BOUNDS_EAST, HOME_BOUNDS_SOUTH, HOME_BOUNDS_WEST
 )
 
 private fun updateMapLayers(
