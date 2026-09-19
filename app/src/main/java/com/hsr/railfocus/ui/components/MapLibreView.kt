@@ -92,7 +92,10 @@ fun MapLibreView(
     }
 
     val mapView = remember {
-        MapView(context, org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(context).textureMode(true)).apply {
+        // localIdeographFontFamily：中文等地名标注用系统字体本地渲染，无需打包字形
+        MapView(context, org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(context)
+            .textureMode(true)
+            .localIdeographFontFamily("sans-serif")).apply {
             onCreate(Bundle())
             setBackgroundColor(if (isDarkMode) "#1a1a1a".toColorInt() else "#f5f0e8".toColorInt())
         }
@@ -1290,14 +1293,22 @@ private fun createPillBitmap(
 
 private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
     // 矢量底图（OSM 数据经 Planetiler 生成，z4-10，asset 离线打包）。
-    // 亮色为米色纸感：浅蓝水系、浅灰道路、深灰铁路；暗色整体压暗。
+    // 亮色为米色纸感：浅蓝水系、浅灰道路、深灰铁路、灰色行政边界虚线、城市名标注；
+    // 暗色整体压暗。中文标注依赖 localIdeographFontFamily 用系统字体渲染。
     val bgColor = if (isDarkMode) "#1a1a1a" else "#f5f0e8"
     val waterColor = if (isDarkMode) "#16303c" else "#c8dfe8"
     val waterwayColor = if (isDarkMode) "#234a5c" else "#a8c8d8"
-    val roadColor = if (isDarkMode) "#3a3a3a" else "#e2dbd0"
+    val roadColor = if (isDarkMode) "#3a3a3a" else "#d9d1c5"
     val railColor = if (isDarkMode) "#8a8a8a" else "#969696"
+    val boundaryCountryColor = if (isDarkMode) "#909090" else "#7a7268"
+    val boundaryProvinceColor = if (isDarkMode) "#5a5a5a" else "#a8a098"
+    val boundaryCityColor = if (isDarkMode) "#484848" else "#c0b8ae"
+    val labelColor = if (isDarkMode) "#d8d8d8" else "#4a4a4a"
     return JSONObject().apply {
         put("version", 8)
+        // 字形 URL 指向不存在的 asset 目录：请求 404 后 MapLibre 回退到
+        // localIdeographFontFamily 本地光栅化（中文标注靠它渲染）
+        put("glyphs", "asset://glyphs/{fontstack}/{range}.pbf")
         put("sources", JSONObject().apply {
             put("base", JSONObject().apply {
                 put("type", "vector")
@@ -1355,6 +1366,99 @@ private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
                             put(JSONArray().apply { put(12); put(1.6) })
                         })
                     })
+                })
+            })
+            // 行政边界：国界最粗最深，省界次之，市界细一些、z6 起可见
+            put(JSONObject().apply {
+                put("id", "boundary-country"); put("type", "line"); put("source", "base"); put("source-layer", "boundary")
+                put("filter", JSONArray().apply { put("<="); put("admin_level"); put(2) })
+                put("paint", JSONObject().apply {
+                    put("line-color", boundaryCountryColor)
+                    put("line-width", JSONObject().apply {
+                        put("base", 1.4)
+                        put("stops", JSONArray().apply {
+                            put(JSONArray().apply { put(4); put(1.6) })
+                            put(JSONArray().apply { put(8); put(2.4) })
+                            put(JSONArray().apply { put(12); put(3.2) })
+                        })
+                    })
+                })
+            })
+            put(JSONObject().apply {
+                put("id", "boundary-province"); put("type", "line"); put("source", "base"); put("source-layer", "boundary")
+                put("filter", JSONArray().apply {
+                    put("all")
+                    put(JSONArray().apply { put(">"); put("admin_level"); put(2) })
+                    put(JSONArray().apply { put("<="); put("admin_level"); put(4) })
+                })
+                put("paint", JSONObject().apply {
+                    put("line-color", boundaryProvinceColor)
+                    put("line-width", JSONObject().apply {
+                        put("base", 1.0)
+                        put("stops", JSONArray().apply {
+                            put(JSONArray().apply { put(4); put(0.8) })
+                            put(JSONArray().apply { put(10); put(1.6) })
+                        })
+                    })
+                    put("line-dasharray", JSONArray().apply { put(3); put(2) })
+                })
+            })
+            put(JSONObject().apply {
+                put("id", "boundary-city"); put("type", "line"); put("source", "base"); put("source-layer", "boundary")
+                put("minzoom", 6)
+                put("filter", JSONArray().apply {
+                    put("all")
+                    put(JSONArray().apply { put(">="); put("admin_level"); put(5) })
+                    put(JSONArray().apply { put("<="); put("admin_level"); put(6) })
+                })
+                put("paint", JSONObject().apply {
+                    put("line-color", boundaryCityColor)
+                    put("line-width", JSONObject().apply {
+                        put("base", 1.0)
+                        put("stops", JSONArray().apply {
+                            put(JSONArray().apply { put(6); put(0.5) })
+                            put(JSONArray().apply { put(10); put(1.0) })
+                        })
+                    })
+                    put("line-dasharray", JSONArray().apply { put(2); put(2) })
+                })
+            })
+            // 地名标注：城市从 z4 起，镇从 z7 起
+            put(JSONObject().apply {
+                put("id", "place-city"); put("type", "symbol"); put("source", "base"); put("source-layer", "place")
+                put("filter", JSONArray().apply { put("=="); put("class"); put("city") })
+                put("layout", JSONObject().apply {
+                    put("text-field", "{name}")
+                    put("text-font", JSONArray().apply { put("sans-serif") })
+                    put("text-size", JSONObject().apply {
+                        put("base", 1.0)
+                        put("stops", JSONArray().apply {
+                            put(JSONArray().apply { put(4); put(11) })
+                            put(JSONArray().apply { put(8); put(13) })
+                        })
+                    })
+                    put("text-allow-overlap", false)
+                })
+                put("paint", JSONObject().apply {
+                    put("text-color", labelColor)
+                    put("text-halo-color", bgColor)
+                    put("text-halo-width", 1.2)
+                })
+            })
+            put(JSONObject().apply {
+                put("id", "place-town"); put("type", "symbol"); put("source", "base"); put("source-layer", "place")
+                put("minzoom", 7)
+                put("filter", JSONArray().apply { put("=="); put("class"); put("town") })
+                put("layout", JSONObject().apply {
+                    put("text-field", "{name}")
+                    put("text-font", JSONArray().apply { put("sans-serif") })
+                    put("text-size", 10.5)
+                    put("text-allow-overlap", false)
+                })
+                put("paint", JSONObject().apply {
+                    put("text-color", labelColor)
+                    put("text-halo-color", bgColor)
+                    put("text-halo-width", 1.0)
                 })
             })
         })
