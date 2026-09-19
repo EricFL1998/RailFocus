@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.graphics.PointF
 import android.os.Bundle
 import android.util.Log
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -26,7 +27,6 @@ import kotlinx.coroutines.delay
 import org.json.JSONArray
 import org.json.JSONObject
 import org.maplibre.android.MapLibre
-import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
@@ -235,45 +235,188 @@ fun MapLibreView(
     var wasRouteActive by remember { mutableStateOf(false) }
     var appliedHomeMinZoom by remember { mutableStateOf<Double?>(null) }
 
-    // 首页边界约束：可视范围不允许越过 HOME_BOUNDS + MARGIN（边缘流出一点）。
-    // 约束的是屏幕边缘而非相机中心，因此任何缩放级别下边框位置固定不变；
-    // 相机中心允许到达"边界+边距-半屏"。缩得太小（屏幕大于框）时中心锁定在框中心。
+    // 相机监听器里按值捕获 Compose 参数会拿到注册时的旧值，全部经 rememberUpdatedState 读取
+    val transitionProgressRef = rememberUpdatedState(transitionProgress)
+    val locationMarkerRef = rememberUpdatedState(locationMarkerPosition)
+    val initialPositionRef = rememberUpdatedState(initialPosition)
+    val insetsRef = rememberUpdatedState(
+        listOf(cameraInsetLeftDp, cameraInsetTopDp, cameraInsetRightDp, cameraInsetBottomDp)
+    )
+
+    // 首页边界约束 + 缩放支点。
+    // 约束目标：任何缩放级别下，可视窗口（黑框）始终不越过 HOME_BOUNDS + MARGIN（红框），
+    // 且拖到边界时直接拖不动（零过冲"撞墙"）。
+    //
+    // 机制（两层）：
+    // 1. 主防线 = native 中心约束。原生拖动(moveBy)/惯性/锚点缩放(moveLatLng)路径每次
+    //    应用相机时都会用 LatLngBounds 同步 constrain 相机中心（setLatLngZoom 内）——
+    //    中心越不过去，视口自然拖不出红框。我们把边界设为"当前缩放下可取的中心范围"
+    //    （allowedHomeCenterRange），zoom 变化时刷新。
+    //    关键：必须用新鲜 zoom 刷新边界——双指缩放会连续改变 zoom，而 Kotlin 缓存的
+    //    cameraPosition.zoom 手势期间不刷新（滞后会把中心卡离锚点轨迹、松手后回跳）。
+    //    map.zoom（MapLibreMap.getZoom）直通 native，与投影矩阵无关，永远新鲜。
+    //    （曾尝试用 projection 矩阵反推 zoom：启动/转场瞬态下矩阵与相机不一致，会
+    //    推出垃圾值。已放弃。）
+    // 2. 兜底 = idle 时（此时缓存已刷新）用同一套数学 jumpTo 修正残余越界。
+    //
+    // 事件语义（core Transform::startTransition）：拖动等即时手势每帧发 onCameraDidChange；
+    // 动画过渡逐帧发 onCameraIsChanging、结束发 onCameraDidChange。
+    // setLatLngBoundsForCameraTarget / moveCamera 会同步再触发相机事件，
+    // 重入不加守卫会无限递归（实测 StackOverflow），全部经 cameraEventGuard 挡住。
+    // native 边界状态：值为设置时的 zoom，null 表示未设置。用普通引用而非 Compose
+    // state——相机回调里每帧读写，不能触发重组。
+    val nativeCenterBoundsZoom = remember { DoubleRef() }
+    val cameraEventGuard = remember { BooleanRef() }
+
+    fun homeClampActive(): Boolean =
+        transitionProgressRef.value < 0.05f && !isMovingToHome && !isMovingToRoute &&
+            mapView.width > 0 && mapView.height > 0
+
+    // 主防线：按当前缩放刷新 native 中心约束；离开首页或瞬态退化时清除。
+    fun syncNativeCenterBounds(map: MapLibreMap, zoom: Double) {
+        val w = mapView.width
+        val h = mapView.height
+        val density = context.resources.displayMetrics.density
+        val usable = homeClampActive() && viewportFitsInHomeRegion(zoom, w, h, density)
+        if (!usable) {
+            if (nativeCenterBoundsZoom.value != null) {
+                // 先更新标记再调 native：native 会同步触发相机事件重入
+                nativeCenterBoundsZoom.value = null
+                map.setLatLngBoundsForCameraTarget(null)
+            }
+            return
+        }
+        val last = nativeCenterBoundsZoom.value
+        if (last == null || kotlin.math.abs(zoom - last) > 0.01) {
+            val insets = insetsRef.value
+            val (latRange, lngRange) = allowedHomeCenterRange(
+                zoom, w, h,
+                insets[0] * density, insets[1] * density, insets[2] * density, insets[3] * density,
+                density,
+            )
+            // 先更新标记再调 native：native 会同步触发相机事件重入
+            nativeCenterBoundsZoom.value = zoom
+            map.setLatLngBoundsForCameraTarget(
+                LatLngBounds.from(latRange.second, lngRange.second, latRange.first, lngRange.first)
+            )
+        }
+    }
+
+    // 兜底：相机静止后（缓存新鲜）修正残余越界。退化瞬态交给 minZoom，不干预。
+    fun clampViewportToHomeBounds(map: MapLibreMap) {
+        if (!homeClampActive()) return
+        val p = map.cameraPosition
+        val t = p.target ?: return
+        val density = context.resources.displayMetrics.density
+        if (!viewportFitsInHomeRegion(p.zoom, mapView.width, mapView.height, density)) return
+        val insets = insetsRef.value
+        val (latRange, lngRange) = allowedHomeCenterRange(
+            p.zoom, mapView.width, mapView.height,
+            insets[0] * density, insets[1] * density, insets[2] * density, insets[3] * density,
+            density,
+        )
+        val lat = t.latitude.coerceIn(latRange.first, latRange.second)
+        val lng = t.longitude.coerceIn(lngRange.first, lngRange.second)
+        if (kotlin.math.abs(lat - t.latitude) > 1e-9 || kotlin.math.abs(lng - t.longitude) > 1e-9) {
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), p.zoom))
+        }
+    }
+
     DisposableEffect(mapInstance) {
         val map = mapInstance
         if (map == null) {
             onDispose { }
         } else {
-            val listener = MapLibreMap.OnCameraMoveListener {
-                if (transitionProgress < 0.05f && !isMovingToHome && !isMovingToRoute) {
-                    val t = map.cameraPosition.target
-                    if (t != null) {
-                        val (latRange, lngRange) = allowedHomeCenterRange(
-                            map.cameraPosition.zoom, mapView.width, mapView.height
-                        )
-                        val lat = t.latitude.coerceIn(latRange.first, latRange.second)
-                        val lng = t.longitude.coerceIn(lngRange.first, lngRange.second)
-                        if (lat != t.latitude || lng != t.longitude) {
-                            map.moveCamera(
-                                CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), map.cameraPosition.zoom)
-                            )
-                        }
-                        // 缩放支点始终跟随"我的位置"标点的屏幕位置（即使相机被边界卡住，
-                        // 标点仍可见时围绕它缩放）；标点移出屏幕时退回屏幕中心。
-                        val userPos = locationMarkerPosition ?: initialPosition
-                        val dot = map.projection.toScreenLocation(userPos)
-                        val dotOnScreen = dot.x >= 0f && dot.x <= mapView.width && dot.y >= 0f && dot.y <= mapView.height
-                        map.uiSettings.setFocalPoint(
-                            if (dotOnScreen) PointF(dot.x, dot.y)
-                            else PointF(mapView.width / 2f, mapView.height / 2f)
-                        )
+            var lastFocal: PointF? = null
+            var focalCleared = true
+
+            // 缩放支点持续跟踪"我的位置"标点的屏幕位置（双指/双击/按钮缩放都围绕它）；
+            // 标点出屏时恢复默认锚点（双指中点）。
+            fun updateZoomPivot() {
+                var target: PointF? = null
+                if (homeClampActive()) {
+                    val userPos = locationMarkerRef.value ?: initialPositionRef.value
+                    val dot = map.projection.toScreenLocation(userPos)
+                    // 相机变化瞬态投影矩阵可能给出离谱读数：明显越界的保持现有支点不动
+                    val plausible = dot.x >= -mapView.width * 2f && dot.x <= mapView.width * 3f &&
+                        dot.y >= -mapView.height * 2f && dot.y <= mapView.height * 3f
+                    if (!plausible) return
+                    if (dot.x >= 0f && dot.x <= mapView.width && dot.y >= 0f && dot.y <= mapView.height) {
+                        target = dot
                     }
-                } else if (map.uiSettings.focalPoint != null) {
+                }
+                if (target != null) {
+                    val prev = lastFocal
+                    if (prev == null || kotlin.math.abs(prev.x - target.x) > 0.5f ||
+                        kotlin.math.abs(prev.y - target.y) > 0.5f
+                    ) {
+                        lastFocal = PointF(target.x, target.y)
+                        focalCleared = false
+                        map.uiSettings.setFocalPoint(lastFocal)
+                    }
+                } else if (!focalCleared) {
+                    focalCleared = true
+                    lastFocal = null
                     map.uiSettings.setFocalPoint(null)
                 }
             }
-            map.addOnCameraMoveListener(listener)
-            onDispose { map.removeOnCameraMoveListener(listener) }
+
+            // 双指缩放/动画过渡逐帧（animated transition 发 isChanging）：刷新边界 + 支点
+            val changingListener = MapView.OnCameraIsChangingListener {
+                if (!cameraEventGuard.value) {
+                    cameraEventGuard.value = true
+                    try {
+                        syncNativeCenterBounds(map, map.zoom)
+                        updateZoomPivot()
+                    } finally {
+                        cameraEventGuard.value = false
+                    }
+                }
+            }
+            // 拖动逐帧（immediate transition 只发 didChange）：刷新边界 + 支点
+            val didChangeListener = MapView.OnCameraDidChangeListener {
+                if (!cameraEventGuard.value) {
+                    cameraEventGuard.value = true
+                    try {
+                        syncNativeCenterBounds(map, map.zoom)
+                        updateZoomPivot()
+                    } finally {
+                        cameraEventGuard.value = false
+                    }
+                }
+            }
+            // 相机静止（缓存已刷新）：刷新边界 + 支点 + 修正残余越界
+            val idleListener = MapLibreMap.OnCameraIdleListener {
+                if (!cameraEventGuard.value) {
+                    cameraEventGuard.value = true
+                    try {
+                        syncNativeCenterBounds(map, map.zoom)
+                        updateZoomPivot()
+                        clampViewportToHomeBounds(map)
+                    } finally {
+                        cameraEventGuard.value = false
+                    }
+                }
+            }
+            mapView.addOnCameraIsChangingListener(changingListener)
+            mapView.addOnCameraDidChangeListener(didChangeListener)
+            map.addOnCameraIdleListener(idleListener)
+            onDispose {
+                mapView.removeOnCameraIsChangingListener(changingListener)
+                mapView.removeOnCameraDidChangeListener(didChangeListener)
+                map.removeOnCameraIdleListener(idleListener)
+            }
         }
+    }
+
+    // 原生中心约束的生命周期：离开首页时在路线相机动画开始前清除（本 effect 声明在
+    // 主相机 effect 之前，同一帧重组里先执行），否则旧边界会把动画路径上的相机中心卡住；
+    // 回到首页时立即按当前缩放布防，不等下一次手势。
+    // 键里包含转场标志位：从路线返回时 isMovingToHome 复位会重新触发本 effect 立即布防，
+    // 不留"动画结束到首次手势之间"的无约束窗口。
+    LaunchedEffect(mapInstance, transitionProgress, isMovingToHome, isMovingToRoute) {
+        val map = mapInstance ?: return@LaunchedEffect
+        syncNativeCenterBounds(map, map.zoom)
     }
 
     // 首页框选需要视图尺寸；布局完成前为 0，等到有尺寸后再放行
@@ -308,19 +451,27 @@ fun MapLibreView(
         // 夹取后，返回动画会平滑地上下左右平移到最终停靠位置。
         val currentMapPos = map.cameraPosition
 
-        // 首页相机：框住 HOME_BOUNDS + MARGIN（中国范围正好填满屏幕、边缘流出一点），
         // 首页相机：尽量居中"我的位置"标点；可视范围不许越过 HOME_BOUNDS + MARGIN，
         // 当前缩放放不下时定位点被夹到允许范围边缘（卡边界前提下尽量居中）。
-        // 首页最小缩放 = 边界+边距刚好填满屏幕的级别。
+        // 首页最小缩放 = 边界+边距刚好铺满屏幕的级别（取 maxOf：屏幕 ⊆ 边界，
+        // 缩到最小时看不到边界外的空白；若取 minOf 则是整框可见，视口会露出界外）。
+        // 注意 MapLibre 相机世界宽度是 512 * 2^z（512px 瓦片），且相机空间单位是 dp
+        // （物理 px / density），所以换算到物理像素要乘 512 * density——不是 256。
+        val density = context.resources.displayMetrics.density
         val homeBounds = homeCameraBoundsWithMargin()
-        val boundsWidthPx = homeBounds.longitudeSpan / 360.0 * 256.0
-        val boundsHeightPx = (mercatorY(homeBounds.latitudeSouth) - mercatorY(homeBounds.latitudeNorth)) * 256.0
-        val frameZoom = minOf(
+        val boundsWidthPx = homeBounds.longitudeSpan / 360.0 * 512.0 * density
+        val boundsHeightPx = (mercatorY(homeBounds.latitudeSouth) - mercatorY(homeBounds.latitudeNorth)) * 512.0 * density
+        val frameZoom = maxOf(
             kotlin.math.log2(mapView.width / boundsWidthPx),
             kotlin.math.log2(mapView.height / boundsHeightPx),
         )
         val homeZoom = 8.0
-        val (latRange, lngRange) = allowedHomeCenterRange(homeZoom, mapView.width, mapView.height)
+        val (latRange, lngRange) = allowedHomeCenterRange(
+            homeZoom, mapView.width, mapView.height,
+            cameraInsetLeftDp * density, cameraInsetTopDp * density,
+            cameraInsetRightDp * density, cameraInsetBottomDp * density,
+            density,
+        )
         val homeTarget = LatLng(
             initialPosition.latitude.coerceIn(latRange.first, latRange.second),
             initialPosition.longitude.coerceIn(lngRange.first, lngRange.second),
@@ -328,7 +479,8 @@ fun MapLibreView(
 
         // 首页时把最小缩放锁在"边界填满屏幕"的级别；进入路线/专注时恢复参数值，
         // 长路线可能需要比首页框选更小的缩放才能完整显示。
-        val desiredMinZoom = if (transitionProgress <= 0f) frameZoom else minZoom
+        // 同时不低于底图瓦片的最小级别（矢量瓦片 z4 起），否则缩到最小会看到空白。
+        val desiredMinZoom = if (transitionProgress <= 0f) maxOf(frameZoom, BASEMAP_MIN_ZOOM) else minZoom
         if (appliedHomeMinZoom != desiredMinZoom) {
             appliedHomeMinZoom = desiredMinZoom
             map.setMinZoomPreference(desiredMinZoom)
@@ -475,8 +627,9 @@ fun MapLibreView(
     // 记录上一次应用的模式，用于在 update 时强制刷新样式
     var lastAppliedDarkMode by remember { mutableStateOf<Boolean?>(null) }
 
+    Box(modifier = modifier) {
     AndroidView(
-        modifier = modifier,
+        modifier = Modifier.matchParentSize(),
         factory = { mapView },
         update = { view ->
             view.getMapAsync { map ->
@@ -552,6 +705,7 @@ fun MapLibreView(
             }
         }
     )
+    }
 }
 
 /** 首页相机目标的可行范围（大致覆盖中国） */
@@ -563,12 +717,28 @@ private const val HOME_BOUNDS_EAST = 132.5
 private const val HOME_BOUNDS_SOUTH = 18.0
 private const val HOME_BOUNDS_WEST = 87.0
 
-private fun homeCameraBounds(): LatLngBounds = LatLngBounds.from(
-    HOME_BOUNDS_NORTH, HOME_BOUNDS_EAST, HOME_BOUNDS_SOUTH, HOME_BOUNDS_WEST
-)
-
 /** 边界外允许流出的一小条地图（拖到边缘时仍可见） */
 private const val HOME_BOUNDS_MARGIN = 2.0
+
+/** 矢量底图瓦片的最小级别（见 createMinimalOSMStyle 的 source minzoom），低于它没有内容可渲染 */
+private const val BASEMAP_MIN_ZOOM = 4.0
+
+/** 可变的 Double? 引用：在相机回调里记录状态而不触发 Compose 重组 */
+private class DoubleRef(var value: Double? = null)
+
+/** 可变的 Boolean 引用：相机事件重入守卫，不触发 Compose 重组 */
+private class BooleanRef(var value: Boolean = false)
+
+/** 指定缩放下区域（HOME_BOUNDS + MARGIN）能否完整覆盖屏幕；不能则约束退化，不应设边界 */
+private fun viewportFitsInHomeRegion(zoom: Double, viewWidthPx: Int, viewHeightPx: Int, density: Float): Boolean {
+    if (viewWidthPx <= 0 || viewHeightPx <= 0) return false
+    val worldPx = 512.0 * Math.pow(2.0, zoom) * density
+    val regionWidthPx =
+        (HOME_BOUNDS_EAST + HOME_BOUNDS_MARGIN - (HOME_BOUNDS_WEST - HOME_BOUNDS_MARGIN)) / 360.0 * worldPx
+    val regionHeightPx =
+        (mercatorY(HOME_BOUNDS_SOUTH - HOME_BOUNDS_MARGIN) - mercatorY(HOME_BOUNDS_NORTH + HOME_BOUNDS_MARGIN)) * worldPx
+    return regionWidthPx >= viewWidthPx && regionHeightPx >= viewHeightPx
+}
 
 private fun homeCameraBoundsWithMargin(): LatLngBounds = LatLngBounds.from(
     HOME_BOUNDS_NORTH + HOME_BOUNDS_MARGIN, HOME_BOUNDS_EAST + HOME_BOUNDS_MARGIN,
@@ -588,25 +758,36 @@ private fun invMercatorY(y: Double): Double {
 }
 
 /**
- * 指定缩放级别下相机中心的可取范围：约束可视范围不越过 HOME_BOUNDS + MARGIN。
+ * 指定缩放级别下相机中心的可取范围：约束可视窗口不越过 HOME_BOUNDS + MARGIN。
+ * content padding 不对称时相机目标投影点偏离屏幕中心，视口四边到投影点的距离
+ * 分开计算（如首页底部面板使投影点偏上，南侧可见范围更大）。
  * 某维度屏幕大于框（范围反转）时退化为框中心。
+ * 世界宽度 = 512 * 2^zoom * density（MapLibre 相机空间是 512px 瓦片、dp 单位）。
  */
 private fun allowedHomeCenterRange(
     zoom: Double,
     viewWidthPx: Int,
     viewHeightPx: Int,
+    padLeftPx: Float,
+    padTopPx: Float,
+    padRightPx: Float,
+    padBottomPx: Float,
+    density: Float,
 ): Pair<Pair<Double, Double>, Pair<Double, Double>> {
-    val worldPx = 256.0 * Math.pow(2.0, zoom)
-    val halfLng = viewWidthPx * 360.0 / worldPx / 2.0
-    val halfScreenMercY = viewHeightPx / worldPx / 2.0
-    var minLat = invMercatorY(mercatorY(HOME_BOUNDS_SOUTH - HOME_BOUNDS_MARGIN) - halfScreenMercY)
-    var maxLat = invMercatorY(mercatorY(HOME_BOUNDS_NORTH + HOME_BOUNDS_MARGIN) + halfScreenMercY)
+    val worldPx = 512.0 * Math.pow(2.0, zoom) * density
+    // 视口各边缘到相机目标投影点的距离（投影点位于 padding 后的中心）
+    val westPx = (viewWidthPx + padLeftPx - padRightPx) / 2.0
+    val eastPx = (viewWidthPx - padLeftPx + padRightPx) / 2.0
+    val northPx = (viewHeightPx + padTopPx - padBottomPx) / 2.0
+    val southPx = (viewHeightPx - padTopPx + padBottomPx) / 2.0
+    var minLat = invMercatorY(mercatorY(HOME_BOUNDS_SOUTH - HOME_BOUNDS_MARGIN) - southPx / worldPx)
+    var maxLat = invMercatorY(mercatorY(HOME_BOUNDS_NORTH + HOME_BOUNDS_MARGIN) + northPx / worldPx)
     if (minLat > maxLat) {
         val c = (HOME_BOUNDS_SOUTH + HOME_BOUNDS_NORTH) / 2.0
         minLat = c; maxLat = c
     }
-    var minLng = HOME_BOUNDS_WEST - HOME_BOUNDS_MARGIN + halfLng
-    var maxLng = HOME_BOUNDS_EAST + HOME_BOUNDS_MARGIN - halfLng
+    var minLng = HOME_BOUNDS_WEST - HOME_BOUNDS_MARGIN + westPx * 360.0 / worldPx
+    var maxLng = HOME_BOUNDS_EAST + HOME_BOUNDS_MARGIN - eastPx * 360.0 / worldPx
     if (minLng > maxLng) {
         val c = (HOME_BOUNDS_WEST + HOME_BOUNDS_EAST) / 2.0
         minLng = c; maxLng = c
