@@ -504,10 +504,13 @@ fun MapLibreView(
 }
 
 /** 首页相机目标的可行范围（大致覆盖中国） */
-private const val HOME_BOUNDS_NORTH = 41.0
-private const val HOME_BOUNDS_EAST = 131.0
-private const val HOME_BOUNDS_SOUTH = 22.0
-private const val HOME_BOUNDS_WEST = 80.0
+// 车站网包围盒（18.2N–49.6N, 87.3E–131.2E）加少量边距。
+// 必须包含用户所在位置（如双鸭山 46.6N），否则相机中心被夹在 41N，
+// 放大后用户位置将永远无法进入视野。
+private const val HOME_BOUNDS_NORTH = 50.5
+private const val HOME_BOUNDS_EAST = 132.5
+private const val HOME_BOUNDS_SOUTH = 18.0
+private const val HOME_BOUNDS_WEST = 87.0
 
 /**
  * 把目标位置夹取到首页相机边界内。超出边界的车站（如双鸭山西）无法被相机居中，
