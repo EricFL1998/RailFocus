@@ -58,6 +58,9 @@ fun MapLibreView(
     showStationMarkers: Boolean = true,
     cameraTargetBounds: List<LatLng> = emptyList(),
     routeStations: List<Station> = emptyList(),
+    // 多条线路叠加（如总旅程视图的全部已完成线路）：每条线路一组坐标，
+    // 合成为一个 MultiLineString 绘制，与 routeStations 的单条高亮路线互不影响。
+    overlayRoutes: List<List<LatLng>> = emptyList(),
     trainProgress: Float = 0f,
     showTrainMarker: Boolean = false,
     enableGestures: Boolean = true,
@@ -65,6 +68,10 @@ fun MapLibreView(
     cameraInsetTopDp: Int = 80,
     cameraInsetRightDp: Int = 80,
     cameraInsetBottomDp: Int = 80,
+    // 概览相机：非空时进入后一次性把相机落到指定的中心与缩放级别（总旅程视图：
+    // 缩到最小 + 居中到全部线路），落位后不再干预，交给手势自由缩放拖动。
+    // 与 cameraTargetBounds 互斥使用：传了框选目标时不要再用它。
+    overviewCamera: Pair<LatLng, Double>? = null,
     onMapReady: (MapLibreMap) -> Unit = {},
     onMapLoaded: () -> Unit = {},
 ) {
@@ -607,6 +614,21 @@ fun MapLibreView(
     }
 
     // 3. 专注模式跟随逻辑 - 独立 LaunchedEffect，仅依赖 trainProgress
+    // 2.5 概览相机：一次性落位，不参与后续框选/跟随逻辑。
+    // 前提：transitionProgress = 1 且没有框选目标时，上面的相机指挥部不会改写相机，
+    // 所以这次落位之后用户可以自由缩放拖动。
+    var appliedOverviewCamera by remember { mutableStateOf<Pair<LatLng, Double>?>(null) }
+    LaunchedEffect(mapInstance, overviewCamera) {
+        val map = mapInstance ?: return@LaunchedEffect
+        val target = overviewCamera ?: return@LaunchedEffect
+        if (appliedOverviewCamera == target) return@LaunchedEffect
+        while (mapView.width == 0 || mapView.height == 0) {
+            delay(50)
+        }
+        appliedOverviewCamera = target
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(target.first, target.second))
+    }
+
     LaunchedEffect(
         mapInstance,
         trainProgress,
@@ -686,6 +708,7 @@ fun MapLibreView(
                             stations = stations,
                             showStationMarkers = showStationMarkers,
                             latchedStations = latchedStations,
+                            overlayRoutes = overlayRoutes,
                             trainProgress = trainProgress,
                             showTrainMarker = showTrainMarker,
                             primaryContainerArgb = primaryContainerArgb,
@@ -704,6 +727,7 @@ fun MapLibreView(
                         stations = stations,
                         showStationMarkers = showStationMarkers,
                         latchedStations = latchedStations,
+                        overlayRoutes = overlayRoutes,
                         trainProgress = trainProgress,
                         showTrainMarker = showTrainMarker,
                         primaryContainerArgb = primaryContainerArgb,
@@ -732,7 +756,7 @@ private const val HOME_BOUNDS_WEST = 87.0
 /** 边界外允许流出的一小条地图（拖到边缘时仍可见） */
 private const val HOME_BOUNDS_MARGIN = 2.0
 
-/** 矢量底图瓦片的最小级别（见 createMinimalOSMStyle 的 source minzoom），低于它没有内容可渲染 */
+/** 主页相机的缩放下限。矢量底图 asset 实际覆盖 z0-10（见 createMinimalOSMStyle 的 source minzoom）。 */
 private const val BASEMAP_MIN_ZOOM = 4.0
 
 /** 可变的 Double? 引用：在相机回调里记录状态而不触发 Compose 重组 */
@@ -820,6 +844,7 @@ private fun updateMapLayers(
     onPrimaryContainerArgb: Int,
     primaryArgb: Int,
     onMapLoaded: () -> Unit,
+    overlayRoutes: List<List<LatLng>> = emptyList(),
     transitionProgress: Float = 1.0f,
 ) {
     // 透明度始终跟随转场进度：进入时淡入，返回时随缩放一起渐出，
@@ -831,6 +856,15 @@ private fun updateMapLayers(
         addRoutePolyline(style, latchedStations, primaryArgb, contentOpacity)
     } else {
         removeSourceAndLayer(style, "route-source", "route-layer")
+    }
+    // 多线路叠加层（总旅程视图）：与单条路线互斥使用，两者同时传时以各自图层共存
+    if (overlayRoutes.isNotEmpty()) {
+        addOverlayRoutes(style, overlayRoutes, primaryArgb, contentOpacity)
+    } else {
+        removeSourceAndLayer(
+            style, "overlay-routes-source",
+            "overlay-routes-layer",
+        )
     }
     updateCurrentLocationMarker(style, initialPosition)
     // 修正：确保在有 routeStations 时，即使整体 showStationMarkers 为 false，
@@ -958,8 +992,8 @@ private fun calculateTargetCameraState(
     } catch (_: Exception) { null }
 }
 
-private fun removeSourceAndLayer(style: Style, sourceId: String, layerId: String) {
-    style.getLayer(layerId)?.let { style.removeLayer(it) }
+private fun removeSourceAndLayer(style: Style, sourceId: String, vararg layerIds: String) {
+    layerIds.forEach { layerId -> style.getLayer(layerId)?.let { style.removeLayer(it) } }
     style.getSource(sourceId)?.let { style.removeSource(it) }
 }
 
@@ -1111,6 +1145,64 @@ private fun addRoutePolyline(
     }
     style.getLayer("route-layer")?.setProperties(PropertyFactory.lineOpacity(opacity * 0.6f))
     return stations
+}
+
+/**
+ * 多线路叠加层：把若干条独立线路（如全部已完成旅程）合成为一个 FeatureCollection，
+ * 用同一个图层绘制；线宽、透明度、圆头圆角都跟路线选择页的单条线路（addRoutePolyline）
+ * 完全一致，两处地图上的线路看起来是同一种线。
+ * 同一区段被多条线路覆盖时透明度自然叠深，走得多的地方颜色更重。
+ */
+private fun addOverlayRoutes(
+    style: Style,
+    routes: List<List<LatLng>>,
+    lineColor: Int,
+    opacity: Float = 1.0f
+) {
+    val validRoutes = routes.filter { it.size >= 2 }
+    if (validRoutes.isEmpty()) {
+        removeSourceAndLayer(style, "overlay-routes-source", "overlay-routes-layer")
+        return
+    }
+    val features = JSONArray().apply {
+        validRoutes.forEach { route ->
+            put(JSONObject().apply {
+                put("type", "Feature")
+                put("geometry", JSONObject().apply {
+                    put("type", "LineString")
+                    put("coordinates", JSONArray().apply {
+                        route.forEach { point ->
+                            put(JSONArray().apply { put(point.longitude); put(point.latitude) })
+                        }
+                    })
+                })
+            })
+        }
+    }
+    val geoJson = JSONObject().apply {
+        put("type", "FeatureCollection")
+        put("features", features)
+    }.toString()
+
+    val existingSource = style.getSourceAs<GeoJsonSource>("overlay-routes-source")
+    if (existingSource != null) {
+        existingSource.setGeoJson(geoJson)
+    } else {
+        style.addSource(GeoJsonSource("overlay-routes-source", geoJson))
+        val lineLayer = LineLayer("overlay-routes-layer", "overlay-routes-source")
+        lineLayer.withProperties(
+            PropertyFactory.lineColor(lineColor),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineOpacity(opacity * 0.6f),
+            PropertyFactory.lineCap("round"),
+            PropertyFactory.lineJoin("round"),
+        )
+        style.addLayer(lineLayer)
+    }
+    style.getLayer("overlay-routes-layer")?.setProperties(
+        PropertyFactory.lineOpacity(opacity * 0.6f),
+        PropertyFactory.lineColor(lineColor),
+    )
 }
 
 private fun updateTrainMarker(
@@ -1301,7 +1393,7 @@ private fun createPillBitmap(
 }
 
 private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
-    // 矢量底图（OSM 数据经 Planetiler 生成，z4-10，asset 离线打包）。
+    // 矢量底图（OSM 数据经 Planetiler 生成，z0-10，asset 离线打包）。
     // 亮色为米色纸感：浅蓝水系、浅灰道路、深灰铁路、灰色行政边界虚线、城市名标注；
     // 暗色整体压暗。中文标注依赖 localIdeographFontFamily 用系统字体渲染。
     val bgColor = if (isDarkMode) "#1a1a1a" else "#f5f0e8"
@@ -1322,7 +1414,7 @@ private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
             put("base", JSONObject().apply {
                 put("type", "vector")
                 put("tiles", JSONArray().apply { put("asset://tiles_vector/{z}/{x}/{y}.pbf") })
-                put("minzoom", 4); put("maxzoom", 10)
+                put("minzoom", 0); put("maxzoom", 10)
             })
         })
         put("layers", JSONArray().apply {

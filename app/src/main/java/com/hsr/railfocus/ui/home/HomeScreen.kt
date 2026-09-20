@@ -52,6 +52,7 @@ import org.maplibre.android.geometry.LatLng
 @Composable
 fun HomeScreen(
     onSettingsClick: () -> Unit,
+    onAllJourneysClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     viewModel: HomeViewModel = hiltViewModel(),
     focusSessionViewModel: FocusSessionViewModel = hiltViewModel(),
@@ -273,7 +274,14 @@ fun HomeScreen(
                 )
             }
             if (phase == HomePhase.Data) {
-                DataBottomSheet(onDismiss = { phase = HomePhase.None })
+                DataBottomSheet(
+                    onDismiss = { phase = HomePhase.None },
+                    // 先进总旅程地图视图：先把面板收掉，返回首页时不会残留半开的弹层
+                    onAllJourneysClick = {
+                        phase = HomePhase.None
+                        onAllJourneysClick()
+                    },
+                )
             }
 
             val focusTypes by viewModel.focusTypes.collectAsState()

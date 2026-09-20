@@ -46,9 +46,11 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -103,6 +105,7 @@ fun DataContent(
     uiState: HistoryUiState,
     dailyGoal: DailyGoalState = DailyGoalState(45, 0, 0),
     onGoalSelected: (Int) -> Unit = {},
+    onAllJourneysClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     // 数据统计只计入完成的旅程；取消的未完成车票不参与统计
@@ -146,6 +149,7 @@ fun DataContent(
             totalDistanceKm = stats.totalDistanceKm,
             totalJourneys = stats.totalJourneys,
             averageFocusMinutes = stats.averageFocusMinutes,
+            onAllJourneysClick = onAllJourneysClick,
         )
 
         WeeklyFocusChart(
@@ -189,6 +193,7 @@ fun DataContent(
 @Composable
 fun DataBottomSheet(
     onDismiss: () -> Unit,
+    onAllJourneysClick: () -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -211,6 +216,7 @@ fun DataBottomSheet(
             uiState = uiState,
             dailyGoal = dailyGoal,
             onGoalSelected = viewModel::setDailyGoal,
+            onAllJourneysClick = onAllJourneysClick,
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -221,6 +227,7 @@ private fun TotalDistanceCard(
     totalDistanceKm: Double,
     totalJourneys: Int,
     averageFocusMinutes: Int,
+    onAllJourneysClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -267,6 +274,28 @@ private fun TotalDistanceCard(
                     text = stringResource(R.string.data_journey_summary, totalJourneys, averageFocusMinutes),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                )
+            }
+
+            // 总旅程视图入口：进入只展示已完成旅程线路的地图
+            FilledTonalButton(
+                onClick = onAllJourneysClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Route,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.data_all_journeys_entry),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }

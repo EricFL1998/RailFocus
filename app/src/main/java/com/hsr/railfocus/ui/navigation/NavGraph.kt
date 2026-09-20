@@ -54,6 +54,7 @@ fun RailFocusNavGraph(
             composable<Screen.Home> {
                 HomeScreen(
                     onSettingsClick = { navController.navigate(Screen.Settings) },
+                    onAllJourneysClick = { navController.navigate(Screen.AllJourneys) },
                     sharedTransitionScope = sharedTransitionScope
                 )
             }
@@ -91,6 +92,13 @@ fun RailFocusNavGraph(
                 com.hsr.railfocus.ui.settings.SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToFocusTypeSettings = { navController.navigate(Screen.FocusTypeSettings) }
+                )
+            }
+
+            // 总旅程视图（全部已完成线路）
+            composable<Screen.AllJourneys> {
+                com.hsr.railfocus.ui.journeys.AllJourneysScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
 

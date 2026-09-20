@@ -21,6 +21,10 @@ sealed interface Screen {
     @Serializable
     data object Settings : Screen
 
+    /** 总旅程视图：全屏地图展示全部已完成旅程线路 */
+    @Serializable
+    data object AllJourneys : Screen
+
     @Serializable
     data object FocusTypeSettings : Screen
 }

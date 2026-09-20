@@ -28,7 +28,7 @@ sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'scripts' / 'osm_data' / 'rail_focus_v2.mbtiles'
 OUT = ROOT / 'app' / 'src' / 'main' / 'assets' / 'tiles_vector'
-MIN_ZOOM = 4
+MIN_ZOOM = 0
 MAX_ZOOM = 10
 
 KEEP = {

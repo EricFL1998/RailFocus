@@ -79,6 +79,13 @@
     <string name="data_title">数据</string>
     <string name="data_total_distance">总里程</string>
     <string name="data_journey_summary">共完成 %1$d 次旅程 · 平均专注 %2$d 分钟</string>
+    <string name="data_all_journeys_entry">查看总旅程视图</string>
+
+    <!-- All journeys map view -->
+    <string name="all_journeys_title">总旅程</string>
+    <string name="all_journeys_summary">已完成 %1$d 次旅程 · 共 %2$s km</string>
+    <string name="all_journeys_empty_title">还没有完成的旅程</string>
+    <string name="all_journeys_empty_desc">完成一次专注旅程后，这里会画出你的全部线路</string>
     <string name="data_fact_equator">环绕地球</string>
     <string name="data_fact_china">南北跨度</string>
     <string name="data_fact_avg_focus">平均专注</string>
