@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -384,28 +383,15 @@ private fun ExpressiveTypeChip(
     type: FocusType,
     onClick: () -> Unit
 ) {
-    val isDark = MaterialTheme.colorScheme.background.toArgb().let { argb ->
-        val r = (argb shr 16) and 0xff
-        val g = (argb shr 8) and 0xff
-        val b = argb and 0xff
-        (r * 0.299 + g * 0.587 + b * 0.114) < 128
-    }
-
-    val adaptedContainerColor = if (isDark) {
-        type.containerColor.copy(alpha = 0.25f)
-    } else {
-        type.containerColor
-    }
-    
-    val adaptedContentColor = type.color
-
     Surface(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
         shape = RoundedCornerShape(16.dp),
-        color = adaptedContainerColor,
+        // 专注场景保留各自的原始配色，深色模式下也不叠加暗色遮罩
+        color = type.containerColor,
+        contentColor = type.color,
         tonalElevation = 2.dp
     ) {
         Row(
@@ -417,12 +403,12 @@ private fun ExpressiveTypeChip(
                 imageVector = type.icon,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = adaptedContentColor
+                tint = type.color
             )
             Text(
                 text = type.displayName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = adaptedContentColor,
+                color = type.color,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
