@@ -69,17 +69,13 @@ fun HomeScreen(
     val searchQuery by timeSelectionViewModel.searchQuery.collectAsState()
     val searchResults by timeSelectionViewModel.searchResults.collectAsState()
 
-    // 离开路线选择阶段（进入专注页或返回首页）时，把时长重置回最小值，
-    // 保证每次再进入路线选择都默认是最少时间
+    // 进入路线选择时把时长重置回最小值，保证每次进入都默认是最少时间。
+    // 返回首页时的重置挪到退出转场结束之后（见下面回到首页稳定后的重置）：
+    // 在离开的那一刻重置会把目的地列表整表换掉，退出动画的路线来源随之改变。
     LaunchedEffect(phase) {
         when {
-            // 进入路线选择时重置；进入专注页不重置，保持选中项与正在进行的旅程一致
+            // 进入专注页不重置，保持选中项与正在进行的旅程一致
             phase == HomePhase.JourneySelection ->
-                timeSelectionViewModel.resetToMinimum()
-            // 回到首页时重置（包括取消/结束旅程、退出路线选择）。
-            // 必须在离开旅程的此刻就重置，而不是等下次进入选择页：
-            // 时间选择器首次组合会用旧状态初始化页码并立即回报，覆盖进入时的重置。
-            phase == HomePhase.None ->
                 timeSelectionViewModel.resetToMinimum()
         }
     }
@@ -103,9 +99,24 @@ fun HomeScreen(
     if (phase == HomePhase.FocusSession) {
         focusUiState.path?.path?.let { lastFocusPath = it }
     }
+
+    // 退出路线选择时不能再读 timeSelectionUiState.selectedDestination：
+    // 回到首页那一刻会把时长重置回最小值、目的地列表被整表替换，
+    // 选中项会变成"最接近最小时长"的那条路线（即列表里的第一条），
+    // 退出动画就会从它、而不是用户真正选中的那条路线开始推回首页。
+    // 与专注路径同理，退出期间改用离开路线选择那一刻的路线快照。
+    var lastRouteStations by remember { mutableStateOf<List<Station>?>(null) }
+    if (phase == HomePhase.JourneySelection) {
+        timeSelectionUiState.selectedDestination?.pathStations?.let { lastRouteStations = it }
+    }
+
+    // 稳定回到首页（退出转场结束）后才丢弃快照并重置时长：
+    // 推迟到这一刻，退出动画期间才能一直用用户选中的那条路线。
     LaunchedEffect(phase, transitionProgress) {
         if (phase == HomePhase.None && transitionProgress == 0f) {
             lastFocusPath = null
+            lastRouteStations = null
+            timeSelectionViewModel.resetToMinimum()
         }
     }
 
@@ -130,7 +141,8 @@ fun HomeScreen(
                 startStation = if (phase == HomePhase.JourneySelection) timeSelectionUiState.startStation else uiState.currentStation,
                 selectedDestination = timeSelectionUiState.selectedDestination,
                 phase = phase,
-                focusPath = if (phase == HomePhase.FocusSession) focusUiState.path?.path else lastFocusPath
+                focusPath = if (phase == HomePhase.FocusSession) focusUiState.path?.path else lastFocusPath,
+                exitRouteStations = lastRouteStations
             )
 
             MapLibreView(
@@ -332,7 +344,8 @@ private fun computeCameraState(
     startStation: Station,
     selectedDestination: DestinationOption?,
     phase: HomePhase,
-    focusPath: List<Station>?
+    focusPath: List<Station>?,
+    exitRouteStations: List<Station>?
 ): CameraState {
     val isRoutePerspective = phase == HomePhase.JourneySelection || phase == HomePhase.FocusSession
     val isExiting = !isRoutePerspective && progress > 0f
@@ -344,8 +357,8 @@ private fun computeCameraState(
     } else if (phase == HomePhase.JourneySelection) {
         selectedDestination?.pathStations
     } else if (isExiting) {
-        // 退出阶段：保留之前的路线供地图参考（用于退出动画）
-        focusPath ?: selectedDestination?.pathStations
+        // 退出阶段：使用离开路线时留下的路线快照供地图参考（用于退出动画）
+        focusPath ?: exitRouteStations
     } else null
 
     if (currentRoute.isNullOrEmpty()) {
