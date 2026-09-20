@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hsr.railfocus.R
@@ -81,8 +82,9 @@ fun StationInfoCard(
                 modifier = Modifier.weight(1f)
             )
             
+            // 速度块不参与权重分配，按内容取宽；左右两站再平分剩余空间。
+            // 这样数字和单位总能拿到完整宽度，km/h 在任何屏宽与字体缩放下都不会折行。
             Column(
-                modifier = Modifier.weight(0.8f),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -94,13 +96,17 @@ fun StationInfoCard(
                         text = speed.toInt().toString(),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = stringResource(R.string.focus_speed_unit),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
@@ -137,7 +143,8 @@ fun StationLabel(
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
