@@ -1,11 +1,14 @@
 package com.hsr.railfocus.ui.home.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -25,15 +28,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,7 +60,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -62,6 +75,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,7 +95,7 @@ import kotlin.math.roundToInt
 /**
  * 数据 内容面板
  *
- * 展示各种有趣的专注旅程数据，包含图表、趣味对比和统计。
+ * 顶部展示专注目标、总里程与近期专注曲线，其余统计板块折叠成一行摘要，点开即可查看明细。
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -103,18 +117,23 @@ fun DataContent(
             .statusBarsPadding()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = stringResource(R.string.data_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.data_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp),
+            )
 
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+        }
 
         // 专注目标与总里程：页面顶部的两张主卡
         DailyGoalCard(
@@ -129,28 +148,19 @@ fun DataContent(
             averageFocusMinutes = stats.averageFocusMinutes,
         )
 
-        // 里程相关的趣味对比与成就，紧跟在总里程之后
-        FunFactsGrid(
-            equatorLoops = stats.equatorLoops,
-            chinaCrossings = stats.chinaCrossings,
-            averageFocusMinutes = stats.averageFocusMinutes,
-            totalJourneys = stats.totalJourneys,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        MilestonesSection(
-            totalDistanceKm = stats.totalDistanceKm,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        // 足迹相关：省份打卡与近期专注
-        ProvincesSection(
-            litProvinces = stats.visitedProvinces,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
         WeeklyFocusChart(
             data = stats.weeklyFocus,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 其余数据板块默认折叠成一行摘要，可随时展开查看明细
+        StatsSection(
+            stats = stats,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        ProvincesSection(
+            litProvinces = stats.visitedProvinces,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -159,8 +169,8 @@ fun DataContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        StatsGrid(
-            stats = stats,
+        MilestonesSection(
+            totalDistanceKm = stats.totalDistanceKm,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -460,25 +470,30 @@ private fun WeeklyFocusChart(
                     hint = stringResource(R.string.data_recent_focus_empty),
                 )
             } else {
-                Box(
+                val maxMinutes = data.maxOfOrNull { it.second } ?: 1
+                val barColor = MaterialTheme.colorScheme.primary
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
                         .padding(top = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    val maxMinutes = data.maxOfOrNull { it.second } ?: 1
-                    val barColor = MaterialTheme.colorScheme.primary
-
-                    Canvas(modifier = Modifier.fillMaxSize()) {
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(144.dp),
+                    ) {
                         val width = size.width
                         val height = size.height
-                        val barWidth = width / (data.size * 2)
                         val spacing = width / data.size
+                        // 底部留出余量，最低点不会贴住画布边缘
+                        val baseline = height - 4.dp.toPx()
 
                         // 绘制背景渐变
                         val points = data.mapIndexed { index, (_, value) ->
                             val x = index * spacing + spacing / 2
-                            val y = height - (value.toFloat() / maxMinutes * height * 0.8f)
+                            val y = baseline - (value.toFloat() / maxMinutes * baseline * 0.9f)
                             Offset(x, y)
                         }
 
@@ -531,16 +546,16 @@ private fun WeeklyFocusChart(
                         }
                     }
 
-                    // 绘制 X 轴标签
+                    // X 轴标签放在画布下方，避免曲线穿过日期文字
                     Row(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.Bottom
                     ) {
                         data.forEach { (label, _) ->
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             )
                         }
@@ -551,56 +566,235 @@ private fun WeeklyFocusChart(
     }
 }
 
+/** 统计数据：把原来的「相当于」与「统计数据」合并成一张紧凑网格，默认折叠 */
 @Composable
-private fun FunFactsGrid(
-    equatorLoops: Double,
-    chinaCrossings: Double,
-    averageFocusMinutes: Int,
-    totalJourneys: Int,
+private fun StatsSection(
+    stats: DataStats,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        SectionTitle(text = stringResource(R.string.data_fun_facts_header))
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    val tiles = listOf(
+        StatTileData(
+            icon = Icons.Default.Schedule,
+            label = stringResource(R.string.data_stat_total_time),
+            value = stats.totalFocusMinutes.toString(),
+            unit = stringResource(R.string.data_unit_minutes),
+        ),
+        StatTileData(
+            icon = Icons.Default.Timer,
+            label = stringResource(R.string.data_fact_avg_focus),
+            value = stats.averageFocusMinutes.toString(),
+            unit = stringResource(R.string.data_unit_minutes),
+        ),
+        StatTileData(
+            icon = Icons.Default.Place,
+            label = stringResource(R.string.data_stat_cities),
+            value = stats.uniqueCities.toString(),
+            unit = stringResource(R.string.data_unit_cities),
+        ),
+        StatTileData(
+            icon = Icons.Default.Train,
+            label = stringResource(R.string.data_fact_completed),
+            value = stats.totalJourneys.toString(),
+            unit = stringResource(R.string.data_unit_times),
+        ),
+        StatTileData(
+            icon = Icons.AutoMirrored.Filled.TrendingUp,
+            label = stringResource(R.string.data_stat_max_dist),
+            value = stats.longestJourneyKm.toInt().toString(),
+            unit = stringResource(R.string.history_unit_km),
+        ),
+        StatTileData(
+            icon = Icons.AutoMirrored.Filled.TrendingDown,
+            label = stringResource(R.string.data_stat_min_dist),
+            value = stats.shortestJourneyKm.toInt().toString(),
+            unit = stringResource(R.string.history_unit_km),
+        ),
+        StatTileData(
+            icon = Icons.Default.Public,
+            label = stringResource(R.string.data_fact_equator),
+            value = String.format(Locale.CHINA, "%.2f", stats.equatorLoops),
+            unit = stringResource(R.string.data_unit_loops),
+        ),
+        StatTileData(
+            icon = Icons.Default.SwapVert,
+            label = stringResource(R.string.data_fact_china),
+            value = String.format(Locale.CHINA, "%.2f", stats.chinaCrossings),
+            unit = stringResource(R.string.data_unit_times),
+        ),
+    )
+
+    ExpandableSection(
+        title = stringResource(R.string.data_stats_grid),
+        summary = stringResource(R.string.data_stats_summary, stats.totalFocusMinutes, stats.uniqueCities),
+        icon = Icons.Default.Schedule,
+        modifier = modifier,
+    ) {
+        tiles.chunked(2).forEach { rowTiles ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                FunFactCard(
-                    icon = Icons.Default.Explore,
-                    label = stringResource(R.string.data_fact_equator),
-                    value = String.format(Locale.CHINA, "%.2f", equatorLoops),
-                    unit = stringResource(R.string.data_unit_loops),
-                    modifier = Modifier.weight(1f),
+                rowTiles.forEach { tile ->
+                    CompactStatTile(
+                        icon = tile.icon,
+                        label = tile.label,
+                        value = tile.value,
+                        unit = tile.unit,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (rowTiles.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/** 单条统计数据的展示内容 */
+private data class StatTileData(
+    val icon: ImageVector,
+    val label: String,
+    val value: String,
+    val unit: String,
+)
+
+/** 紧凑统计块：两列排布，比原来的大卡片省一半高度 */
+@Composable
+private fun CompactStatTile(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    unit: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                FunFactCard(
-                    icon = Icons.Default.Route,
-                    label = stringResource(R.string.data_fact_china),
-                    value = String.format(Locale.CHINA, "%.2f", chinaCrossings),
-                    unit = stringResource(R.string.data_unit_times),
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = unit,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 2.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 可折叠的数据板块：折叠时只占一行（图标 + 标题 + 摘要），展开后显示明细。
+ * 数据面板板块较多，默认折叠可以让整页保持精简。
+ */
+@Composable
+private fun ExpandableSection(
+    title: String,
+    summary: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button) { expanded = !expanded }
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Surface(
+                    modifier = Modifier.size(34.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                Column(
                     modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                FunFactCard(
-                    icon = Icons.Default.AccessTime,
-                    label = stringResource(R.string.data_fact_avg_focus),
-                    value = averageFocusMinutes.toString(),
-                    unit = stringResource(R.string.data_unit_minutes),
-                    modifier = Modifier.weight(1f),
-                )
-                FunFactCard(
-                    icon = Icons.Default.EmojiEvents,
-                    label = stringResource(R.string.data_fact_completed),
-                    value = totalJourneys.toString(),
-                    unit = stringResource(R.string.data_unit_times),
-                    modifier = Modifier.weight(1f),
+
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    content = content,
                 )
             }
         }
@@ -612,79 +806,80 @@ private fun TopDestinationsSection(
     destinations: List<Pair<String, Int>>,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        SectionTitle(text = stringResource(R.string.data_top_destinations))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            if (destinations.isEmpty()) {
-                EmptyHint(
-                    text = stringResource(R.string.data_top_destinations_empty),
-                    icon = Icons.Default.Place,
-                )
-            } else {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    val maxCount = destinations.firstOrNull()?.second ?: 1
-                    destinations.forEachIndexed { index, (city, count) ->
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+    val summary = if (destinations.isEmpty()) {
+        stringResource(R.string.data_no_data)
+    } else {
+        stringResource(
+            R.string.data_top_destinations_summary,
+            destinations.first().first,
+            destinations.size,
+        )
+    }
+
+    ExpandableSection(
+        title = stringResource(R.string.data_top_destinations),
+        summary = summary,
+        icon = Icons.Default.Place,
+        modifier = modifier,
+    ) {
+        if (destinations.isEmpty()) {
+            Text(
+                text = stringResource(R.string.data_top_destinations_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        } else {
+            val maxCount = destinations.firstOrNull()?.second ?: 1
+            destinations.forEachIndexed { index, (city, count) ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f, fill = false),
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(24.dp),
+                                shape = CircleShape,
+                                color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f, fill = false),
-                                ) {
-                                    Surface(
-                                        modifier = Modifier.size(28.dp),
-                                        shape = CircleShape,
-                                        color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = (index + 1).toString(),
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = if (index == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                fontWeight = FontWeight.Bold,
-                                            )
-                                        }
-                                    }
+                                Box(contentAlignment = Alignment.Center) {
                                     Text(
-                                        text = city,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        text = (index + 1).toString(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (index == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
-                                Text(
-                                    text = stringResource(R.string.data_arrival_count, count),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 1,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
                             }
-                            LinearProgressIndicator(
-                                progress = { count.toFloat() / maxCount },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(CircleShape),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            Text(
+                                text = city,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        Text(
+                            text = stringResource(R.string.data_arrival_count, count),
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
                     }
+                    LinearProgressIndicator(
+                        progress = { count.toFloat() / maxCount },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
                 }
             }
         }
@@ -715,103 +910,96 @@ private fun ProvincesSection(
     val litCount = ALL_PROVINCES.count { lit.contains(it) }
     val progress = if (total == 0) 0f else litCount.toFloat() / total
 
-    Column(modifier = modifier) {
-        SectionTitle(text = stringResource(R.string.data_provinces_title))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Column(
+    ExpandableSection(
+        title = stringResource(R.string.data_provinces_title),
+        summary = stringResource(
+            R.string.data_provinces_summary,
+            litCount,
+            total,
+            (progress * 100).roundToInt(),
+        ),
+        icon = Icons.Default.Check,
+        modifier = modifier,
+    ) {
+        // 打卡总进度
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.data_provinces_progress, litCount, total),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.data_provinces_percent, (progress * 100).roundToInt()),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            LinearProgressIndicator(
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                // 打卡总进度
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.data_provinces_progress, litCount, total),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.data_provinces_percent, (progress * 100).roundToInt()),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(CircleShape),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                    if (litCount == 0) {
-                        Text(
-                            text = stringResource(R.string.data_provinces_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        )
-                    }
-                }
+                    .height(8.dp)
+                    .clip(CircleShape),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+            if (litCount == 0) {
+                Text(
+                    text = stringResource(R.string.data_provinces_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+            }
+        }
 
-                // 分区打卡
-                PROVINCE_REGIONS.forEach { (region, provinces) ->
-                    val regionLit = provinces.count { lit.contains(it) }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = region,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            )
-                            Text(
-                                text = regionLit.toString() + "/" + provinces.size.toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (regionLit > 0) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                },
-                            )
-                        }
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            provinces.forEach { province ->
-                                ProvinceChip(name = province, lit = lit.contains(province))
-                            }
-                        }
+        // 分区打卡
+        PROVINCE_REGIONS.forEach { (region, provinces) ->
+            val regionLit = provinces.count { lit.contains(it) }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = region,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                    )
+                    Text(
+                        text = regionLit.toString() + "/" + provinces.size.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (regionLit > 0) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        },
+                    )
+                }
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    provinces.forEach { province ->
+                        ProvinceChip(name = province, lit = lit.contains(province))
                     }
                 }
             }
@@ -865,157 +1053,82 @@ private fun MilestonesSection(
     modifier: Modifier = Modifier,
 ) {
     val milestones = listOf(1000.0, 5000.0, 10000.0, 40075.0)
-    Column(modifier = modifier) {
-        SectionTitle(text = stringResource(R.string.data_milestones_title))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+    val reachedCount = milestones.count { totalDistanceKm >= it }
+
+    ExpandableSection(
+        title = stringResource(R.string.data_milestones_title),
+        summary = stringResource(R.string.data_milestones_summary, reachedCount, milestones.size),
+        icon = Icons.Default.EmojiEvents,
+        modifier = modifier,
+    ) {
+        milestones.forEach { threshold ->
+            val reached = totalDistanceKm >= threshold
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                milestones.forEach { threshold ->
-                    val reached = totalDistanceKm >= threshold
+                Icon(
+                    imageVector = Icons.Default.EmojiEvents,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = if (reached) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+                    },
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (reached) {
-                                MaterialTheme.colorScheme.primary
+                        Text(
+                            text = stringResource(R.string.data_milestone_km, threshold.toLong()),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                            color = if (reached) {
+                                MaterialTheme.colorScheme.onSurface
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                             },
                         )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.data_milestone_km, threshold.toLong()),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = if (reached) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                                },
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                LinearProgressIndicator(
-                                    progress = { (totalDistanceKm / threshold).toFloat().coerceIn(0f, 1f) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(6.dp)
-                                        .clip(CircleShape),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                )
-                                Text(
-                                    text = if (reached) {
-                                        stringResource(R.string.data_milestone_reached)
-                                    } else {
-                                        stringResource(R.string.data_milestone_remaining, (threshold - totalDistanceKm).roundToInt())
-                                    },
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 1,
-                                    color = if (reached) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                                    },
-                                )
-                            }
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (reached) {
+                                stringResource(R.string.data_milestone_reached)
+                            } else {
+                                stringResource(R.string.data_milestone_remaining, (threshold - totalDistanceKm).roundToInt())
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            color = if (reached) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                            },
+                        )
                     }
+                    LinearProgressIndicator(
+                        progress = { (totalDistanceKm / threshold).toFloat().coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun StatsGrid(
-    stats: DataStats,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        SectionTitle(text = stringResource(R.string.data_stats_grid))
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                StatCard(
-                    label = stringResource(R.string.data_stat_total_time),
-                    value = stats.totalFocusMinutes.toString(),
-                    unit = stringResource(R.string.data_unit_minutes),
-                    icon = Icons.Default.Schedule,
-                    modifier = Modifier.weight(1f),
-                )
-                StatCard(
-                    label = stringResource(R.string.data_stat_cities),
-                    value = stats.uniqueCities.toString(),
-                    unit = stringResource(R.string.data_unit_cities),
-                    icon = Icons.Default.Place,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                StatCard(
-                    label = stringResource(R.string.data_stat_max_dist),
-                    value = stats.longestJourneyKm.toInt().toString(),
-                    unit = stringResource(R.string.history_unit_km),
-                    icon = Icons.Default.Route,
-                    modifier = Modifier.weight(1f),
-                )
-                StatCard(
-                    label = stringResource(R.string.data_stat_min_dist),
-                    value = stats.shortestJourneyKm.toInt().toString(),
-                    unit = stringResource(R.string.history_unit_km),
-                    icon = Icons.Default.Route,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-        modifier = modifier.padding(bottom = 8.dp),
-        textAlign = TextAlign.Start,
-    )
 }
 
 /** 卡片内的空状态占位：图标 + 说明文字 */
@@ -1059,124 +1172,6 @@ private fun EmptyHint(
         }
     }
 }
-
-@Composable
-private fun FunFactCard(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    unit: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = unit,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(bottom = 2.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    unit: String? = null,
-    icon: ImageVector? = null,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                )
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                maxLines = 1,
-            )
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Start,
-            ) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                )
-                if (unit != null) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = unit,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
 
 data class DataStats(
     val totalJourneys: Int,

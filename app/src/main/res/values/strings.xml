@@ -79,7 +79,6 @@
     <string name="data_title">数据</string>
     <string name="data_total_distance">总里程</string>
     <string name="data_journey_summary">共完成 %1$d 次旅程 · 平均专注 %2$d 分钟</string>
-    <string name="data_fun_facts_header">相当于</string>
     <string name="data_fact_equator">环绕地球</string>
     <string name="data_fact_china">南北跨度</string>
     <string name="data_fact_avg_focus">平均专注</string>
@@ -89,6 +88,7 @@
     <string name="data_unit_minutes">分钟</string>
     <string name="data_top_destinations">热门目的地</string>
     <string name="data_stats_grid">统计数据</string>
+    <string name="data_stats_summary">总时长 %1$d 分钟 · %2$d 座城市</string>
     <string name="data_stat_total_time">总时长</string>
     <string name="data_stat_cities">探索城市</string>
     <string name="data_stat_max_dist">最长旅程</string>
@@ -101,8 +101,10 @@
     <string name="data_provinces_title">省份打卡</string>
     <string name="data_provinces_progress">已点亮 %1$d/%2$d</string>
     <string name="data_provinces_percent">%1$d%%</string>
+    <string name="data_provinces_summary">已点亮 %1$d/%2$d · %3$d%%</string>
     <string name="data_provinces_hint">去过的省份会自动点亮</string>
     <string name="data_milestones_title">里程成就</string>
+    <string name="data_milestones_summary">%1$d/%2$d 个成就已达成</string>
     <string name="data_milestone_km">累计 %1$d 公里</string>
     <string name="data_milestone_reached">已达成</string>
     <string name="data_milestone_pending">未达成</string>
@@ -116,6 +118,7 @@
     <string name="data_no_data">暂无数据</string>
     <string name="data_recent_focus_empty">完成一次专注旅程后，这里会显示最近 7 次的专注时长</string>
     <string name="data_top_destinations_empty">完成旅程后，常去的城市会排在这里</string>
+    <string name="data_top_destinations_summary">最常去 %1$s · %2$d 座城市</string>
     <string name="data_arrival_count">%1$d次到达</string>
 
     <!-- Settings -->
