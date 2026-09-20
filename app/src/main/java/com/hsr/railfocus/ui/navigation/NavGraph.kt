@@ -54,8 +54,7 @@ fun RailFocusNavGraph(
             composable<Screen.Home> {
                 HomeScreen(
                     onSettingsClick = { navController.navigate(Screen.Settings) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = this
+                    sharedTransitionScope = sharedTransitionScope
                 )
             }
 

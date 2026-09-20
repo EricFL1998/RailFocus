@@ -53,7 +53,6 @@ import org.maplibre.android.geometry.LatLng
 fun HomeScreen(
     onSettingsClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
     viewModel: HomeViewModel = hiltViewModel(),
     focusSessionViewModel: FocusSessionViewModel = hiltViewModel(),
 ) {
@@ -158,10 +157,23 @@ fun HomeScreen(
             )
 
             val isPanelActive = phase == HomePhase.MyJourneys || phase == HomePhase.Data
-            if (phase == HomePhase.None || isPanelActive) {
+            // 首页层不能一离开 HomePhase.None 就退出组合：那样 location-header /
+            // start-journey-button / menu-panel 的 sharedBounds 会瞬间失去形变起点，
+            // 只剩一张空地图，路线面板随后才淡入，观感上就是闪现。
+            // 包进 AnimatedVisibility 后它会全程参与布局并同步淡出，
+            // 共享元素才能像退出时那样从首页位置连续形变到路线面板位置。
+            AnimatedVisibility(
+                visible = phase == HomePhase.None || isPanelActive,
+                enter = EnterTransition.None, // 退出方向保持原样：首页立即完整出现
+                exit = fadeOut(tween(HOME_LAYER_FADE_MS)),
+                modifier = Modifier.fillMaxSize(),
+            ) {
                 HomeState(
                     sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = if (phase == HomePhase.None) animatedVisibilityScope else null,
+                    // 必须用这层自己的 scope：共享元素只在该 scope 参与转场时才交给共享
+                    // 元素层绘制；沿用外层的导航 scope 会留下一份内联副本，与形变中的
+                    // 按钮叠在一起，看起来是重影。
+                    animatedVisibilityScope = this,
                     uiState = uiState,
                     onStartJourney = { phase = HomePhase.JourneySelection },
                     onMyJourneysClick = { phase = HomePhase.MyJourneys },
@@ -299,6 +311,8 @@ fun HomeScreen(
         }
     }
 }
+
+private const val HOME_LAYER_FADE_MS = 300
 
 private enum class HomePhase {
     None, MyJourneys, Data, JourneySelection, FocusSession
