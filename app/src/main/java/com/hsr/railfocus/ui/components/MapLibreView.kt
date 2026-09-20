@@ -195,12 +195,10 @@ fun MapLibreView(
         cameraInsetRightDp,
         cameraInsetBottomDp
     ) {
-        android.util.Log.d("MapCamera", "INPUT: boundsSize=${cameraTargetBounds.size}, transitionProgress=$transitionProgress")
         if (cameraTargetBounds.isNotEmpty()) {
             val isInitialEntry = latchedBounds.isEmpty()
             latchedBounds = cameraTargetBounds
             latchedStations = routeStations
-            android.util.Log.d("MapCamera", "LATCHED: data updated")
 
             mapInstance?.let { map ->
                 val state = calculateTargetCameraState(
@@ -275,6 +273,17 @@ fun MapLibreView(
         transitionProgressRef.value < 0.05f && !isMovingToHome && !isMovingToRoute &&
             mapView.width > 0 && mapView.height > 0
 
+    // 立即解除 native 中心约束（先更新标记再调 native：native 会同步触发相机事件重入）。
+    // 时序要点：setLatLngBoundsForCameraTarget 会终止进行中的相机过渡，所以解除必须发生在
+    // 转场相机动画启动之前。若交给"动画开始后的相机回调"去解除，刚启动的 easeCamera 会在
+    // 同一毫秒被 native 掐掉，进入路线时表现为相机直接跳到位而不是平滑推移。
+    fun releaseNativeCenterBounds(map: MapLibreMap) {
+        if (nativeCenterBoundsZoom.value != null) {
+            nativeCenterBoundsZoom.value = null
+            map.setLatLngBoundsForCameraTarget(null)
+        }
+    }
+
     // 主防线：按当前缩放刷新 native 中心约束；离开首页或瞬态退化时清除。
     fun syncNativeCenterBounds(map: MapLibreMap, zoom: Double) {
         val w = mapView.width
@@ -282,11 +291,7 @@ fun MapLibreView(
         val density = context.resources.displayMetrics.density
         val usable = homeClampActive() && viewportFitsInHomeRegion(zoom, w, h, density)
         if (!usable) {
-            if (nativeCenterBoundsZoom.value != null) {
-                // 先更新标记再调 native：native 会同步触发相机事件重入
-                nativeCenterBoundsZoom.value = null
-                map.setLatLngBoundsForCameraTarget(null)
-            }
+            releaseNativeCenterBounds(map)
             return
         }
         val last = nativeCenterBoundsZoom.value
@@ -528,6 +533,10 @@ fun MapLibreView(
             isMovingToHome = false
             wasRouteActive = true
 
+            // 必须在动画启动前解除 native 中心约束：把这一步留给动画开始后的相机回调，
+            // 回调会立刻解除约束并把刚启动的 easeCamera 一起终止掉。
+            releaseNativeCenterBounds(map)
+
             frameCamera(
                 map = map,
                 context = context,
@@ -547,6 +556,9 @@ fun MapLibreView(
             isMovingToHome = true
             isMovingToRoute = false
             wasRouteActive = true
+
+            // 与进入方向对称：解除约束要在 ease 之前，避免被随后的相机回调打断。
+            releaseNativeCenterBounds(map)
 
             map.easeCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom), 500)
             previousTransitionProgress = transitionProgress
@@ -570,7 +582,6 @@ fun MapLibreView(
                     val zoomDiff = kotlin.math.abs(currentZoom - currentMapPos.zoom)
 
                     if (boundsChanged || insetsChanged || (dist > 2000.0) || (zoomDiff > 0.2)) {
-                        android.util.Log.d("MapCamera", "Framing camera: latchedBounds size=${latchedBounds.size}")
                         frameCamera(
                             map = map,
                             context = context,
@@ -616,10 +627,8 @@ fun MapLibreView(
                 try {
                     if (trainProgress >= 0.95f) {
                         val target = latchedStations.last().let { LatLng(it.lat, it.lng) }
-                        android.util.Log.d("MapCamera", "Following train: approach destination $target")
                         map.animateCamera(CameraUpdateFactory.newLatLngZoom(target, 8.5), 1000)
                     } else {
-                        android.util.Log.d("MapCamera", "Following train: pos=$trainPos, progress=$trainProgress")
                         map.animateCamera(CameraUpdateFactory.newLatLngZoom(trainPos, followZoom), 1000)
                     }
                 } catch (_: Exception) {}
