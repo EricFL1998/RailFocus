@@ -98,11 +98,15 @@
     <string name="data_daily_goal">今日专注目标</string>
     <string name="data_daily_goal_done">今日目标已达成</string>
     <string name="data_streak_days">连续打卡 %1$d 天</string>
-    <string name="data_provinces_title">省份点亮 %1$d/%2$d</string>
+    <string name="data_provinces_title">省份打卡</string>
+    <string name="data_provinces_progress">已点亮 %1$d/%2$d</string>
+    <string name="data_provinces_percent">%1$d%%</string>
+    <string name="data_provinces_hint">去过的省份会自动点亮</string>
     <string name="data_milestones_title">里程成就</string>
     <string name="data_milestone_km">累计 %1$d 公里</string>
     <string name="data_milestone_reached">已达成</string>
     <string name="data_milestone_pending">未达成</string>
+    <string name="data_milestone_remaining">还差 %1$d 公里</string>
     <string name="ticket_share">分享车票</string>
     <string name="settings_ambient_sound">车厢环境音</string>
     <string name="settings_ambient_sound_summary">专注时播放行驶中的车厢背景声</string>
@@ -110,6 +114,8 @@
     <string name="settings_station_announcement_summary">列车到站、发车时播放提示音</string>
     <string name="widget_focus_timer_desc">展示进行中的专注旅程与剩余时间</string>
     <string name="data_no_data">暂无数据</string>
+    <string name="data_recent_focus_empty">完成一次专注旅程后，这里会显示最近 7 次的专注时长</string>
+    <string name="data_top_destinations_empty">完成旅程后，常去的城市会排在这里</string>
     <string name="data_arrival_count">%1$d次到达</string>
 
     <!-- Settings -->

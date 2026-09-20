@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -26,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Insights
@@ -74,6 +76,7 @@ import com.hsr.railfocus.ui.history.HistoryViewModel
 import com.hsr.railfocus.util.ProvinceFormatter
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * 数据 内容面板
@@ -100,7 +103,7 @@ fun DataContent(
             .statusBarsPadding()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Text(
             text = stringResource(R.string.data_title),
@@ -113,6 +116,7 @@ fun DataContent(
             color = MaterialTheme.colorScheme.outlineVariant,
         )
 
+        // 专注目标与总里程：页面顶部的两张主卡
         DailyGoalCard(
             dailyGoal = dailyGoal,
             onGoalSelected = onGoalSelected,
@@ -125,11 +129,7 @@ fun DataContent(
             averageFocusMinutes = stats.averageFocusMinutes,
         )
 
-        WeeklyFocusChart(
-            data = stats.weeklyFocus,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
+        // 里程相关的趣味对比与成就，紧跟在总里程之后
         FunFactsGrid(
             equatorLoops = stats.equatorLoops,
             chinaCrossings = stats.chinaCrossings,
@@ -138,13 +138,19 @@ fun DataContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        MilestonesSection(
+            totalDistanceKm = stats.totalDistanceKm,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 足迹相关：省份打卡与近期专注
         ProvincesSection(
             litProvinces = stats.visitedProvinces,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        MilestonesSection(
-            totalDistanceKm = stats.totalDistanceKm,
+        WeeklyFocusChart(
+            data = stats.weeklyFocus,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -158,7 +164,11 @@ fun DataContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .height(24.dp),
+        )
     }
 }
 
@@ -267,130 +277,141 @@ private fun DailyGoalCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            // 环形进度
-            Box(
-                modifier = Modifier.size(84.dp),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                val ringColor = if (goalAchieved) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                // 环形进度
+                Box(
+                    modifier = Modifier.size(84.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val ringColor = if (goalAchieved) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    }
+                    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val stroke = 8.dp.toPx()
+                        drawArc(
+                            color = trackColor,
+                            startAngle = 0f,
+                            sweepAngle = 360f,
+                            useCenter = false,
+                            topLeft = Offset(stroke / 2, stroke / 2),
+                            size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+                            style = Stroke(width = stroke),
+                        )
+                        drawArc(
+                            color = ringColor,
+                            startAngle = -90f,
+                            sweepAngle = 360f * progress,
+                            useCenter = false,
+                            topLeft = Offset(stroke / 2, stroke / 2),
+                            size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+                            style = Stroke(width = stroke),
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = dailyGoal.todayFocusMin.toString(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = if (goalAchieved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "/ " + dailyGoal.goalMin.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
                 }
-                val trackColor = MaterialTheme.colorScheme.surfaceVariant
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val stroke = 8.dp.toPx()
-                    drawArc(
-                        color = trackColor,
-                        startAngle = 0f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        topLeft = Offset(stroke / 2, stroke / 2),
-                        size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
-                        style = Stroke(width = stroke),
-                    )
-                    drawArc(
-                        color = ringColor,
-                        startAngle = -90f,
-                        sweepAngle = 360f * progress,
-                        useCenter = false,
-                        topLeft = Offset(stroke / 2, stroke / 2),
-                        size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
-                        style = Stroke(width = stroke),
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = dailyGoal.todayFocusMin.toString(),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = if (goalAchieved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = "/ " + dailyGoal.goalMin.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (goalAchieved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = if (goalAchieved) {
+                                stringResource(R.string.data_daily_goal_done)
+                            } else {
+                                stringResource(R.string.data_daily_goal)
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                        Text(
+                            text = stringResource(R.string.data_streak_days, dailyGoal.streakDays),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f),
+            // 目标档位：四档等宽排布，不会再换行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = if (goalAchieved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = if (goalAchieved) {
-                            stringResource(R.string.data_daily_goal_done)
+                listOf(30, 45, 60, 90).forEach { goal ->
+                    val selected = goal == dailyGoal.goalMin
+                    Surface(
+                        onClick = { onGoalSelected(goal) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            stringResource(R.string.data_daily_goal)
+                            MaterialTheme.colorScheme.surfaceVariant
                         },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                    Text(
-                        text = stringResource(R.string.data_streak_days, dailyGoal.streakDays),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                // 目标档位
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    listOf(30, 45, 60, 90).forEach { goal ->
-                        val selected = goal == dailyGoal.goalMin
-                        Surface(
-                            onClick = { onGoalSelected(goal) },
-                            shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Text(
+                            text = goal.toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                             color = if (selected) {
-                                MaterialTheme.colorScheme.primary
+                                MaterialTheme.colorScheme.onPrimary
                             } else {
-                                MaterialTheme.colorScheme.surfaceVariant
+                                MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                        ) {
-                            Text(
-                                text = goal.toString(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            )
-                        }
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                        )
                     }
                 }
             }
@@ -433,18 +454,11 @@ private fun WeeklyFocusChart(
             }
 
             if (data.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.data_no_data),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    )
-                }
+                EmptyHint(
+                    text = stringResource(R.string.data_no_data),
+                    icon = Icons.Default.Insights,
+                    hint = stringResource(R.string.data_recent_focus_empty),
+                )
             } else {
                 Box(
                     modifier = Modifier
@@ -547,39 +561,48 @@ private fun FunFactsGrid(
 ) {
     Column(modifier = modifier) {
         SectionTitle(text = stringResource(R.string.data_fun_facts_header))
-        FlowRow(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            FunFactCard(
-                icon = Icons.Default.Explore,
-                label = stringResource(R.string.data_fact_equator),
-                value = String.format(Locale.CHINA, "%.2f", equatorLoops),
-                unit = stringResource(R.string.data_unit_loops),
-                modifier = Modifier.weight(1f),
-            )
-            FunFactCard(
-                icon = Icons.Default.Route,
-                label = stringResource(R.string.data_fact_china),
-                value = String.format(Locale.CHINA, "%.2f", chinaCrossings),
-                unit = stringResource(R.string.data_unit_times),
-                modifier = Modifier.weight(1f),
-            )
-            FunFactCard(
-                icon = Icons.Default.AccessTime,
-                label = stringResource(R.string.data_fact_avg_focus),
-                value = averageFocusMinutes.toString(),
-                unit = stringResource(R.string.data_unit_minutes),
-                modifier = Modifier.weight(1f),
-            )
-            FunFactCard(
-                icon = Icons.Default.EmojiEvents,
-                label = stringResource(R.string.data_fact_completed),
-                value = totalJourneys.toString(),
-                unit = stringResource(R.string.data_unit_times),
-                modifier = Modifier.weight(1f),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FunFactCard(
+                    icon = Icons.Default.Explore,
+                    label = stringResource(R.string.data_fact_equator),
+                    value = String.format(Locale.CHINA, "%.2f", equatorLoops),
+                    unit = stringResource(R.string.data_unit_loops),
+                    modifier = Modifier.weight(1f),
+                )
+                FunFactCard(
+                    icon = Icons.Default.Route,
+                    label = stringResource(R.string.data_fact_china),
+                    value = String.format(Locale.CHINA, "%.2f", chinaCrossings),
+                    unit = stringResource(R.string.data_unit_times),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FunFactCard(
+                    icon = Icons.Default.AccessTime,
+                    label = stringResource(R.string.data_fact_avg_focus),
+                    value = averageFocusMinutes.toString(),
+                    unit = stringResource(R.string.data_unit_minutes),
+                    modifier = Modifier.weight(1f),
+                )
+                FunFactCard(
+                    icon = Icons.Default.EmojiEvents,
+                    label = stringResource(R.string.data_fact_completed),
+                    value = totalJourneys.toString(),
+                    unit = stringResource(R.string.data_unit_times),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -596,60 +619,71 @@ private fun TopDestinationsSection(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    contentColor = MaterialTheme.colorScheme.onSurface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ),
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                destinations.forEachIndexed { index, (city, count) ->
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+            if (destinations.isEmpty()) {
+                EmptyHint(
+                    text = stringResource(R.string.data_top_destinations_empty),
+                    icon = Icons.Default.Place,
+                )
+            } else {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    val maxCount = destinations.firstOrNull()?.second ?: 1
+                    destinations.forEachIndexed { index, (city, count) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                Surface(
-                                    modifier = Modifier.size(28.dp),
-                                    shape = CircleShape,
-                                    color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f, fill = false),
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = (index + 1).toString(),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = if (index == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = FontWeight.Bold,
-                                        )
+                                    Surface(
+                                        modifier = Modifier.size(28.dp),
+                                        shape = CircleShape,
+                                        color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = (index + 1).toString(),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = if (index == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
                                     }
+                                    Text(
+                                        text = city,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
                                 }
                                 Text(
-                                    text = city,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    text = stringResource(R.string.data_arrival_count, count),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 )
                             }
-                            Text(
-                                text = stringResource(R.string.data_arrival_count, count),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            LinearProgressIndicator(
+                                progress = { count.toFloat() / maxCount },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(CircleShape),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             )
                         }
-                        val maxCount = destinations.firstOrNull()?.second ?: 1
-                        LinearProgressIndicator(
-                            progress = { count.toFloat() / maxCount },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(CircleShape),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        )
                     }
                 }
             }
@@ -657,19 +691,19 @@ private fun TopDestinationsSection(
     }
 }
 
-/** 34 个省级行政区，用于"点亮省份"展示 */
-private val ALL_PROVINCES = listOf(
-    "\u5317\u4eac\u5e02", "\u5929\u6d25\u5e02", "\u6cb3\u5317\u7701", "\u5c71\u897f\u7701",
-    "\u5185\u8499\u53e4\u81ea\u6cbb\u533a", "\u8fbd\u5b81\u7701", "\u5409\u6797\u7701",
-    "\u9ed1\u9f99\u6c5f\u7701", "\u4e0a\u6d77\u5e02", "\u6c5f\u82cf\u7701", "\u6d59\u6c5f\u7701",
-    "\u5b89\u5fbd\u7701", "\u798f\u5efa\u7701", "\u6c5f\u897f\u7701", "\u5c71\u4e1c\u7701",
-    "\u6cb3\u5357\u7701", "\u6e56\u5317\u7701", "\u6e56\u5357\u7701", "\u5e7f\u4e1c\u7701",
-    "\u5e7f\u897f\u58ee\u65cf\u81ea\u6cbb\u533a", "\u6d77\u5357\u7701", "\u91cd\u5e86\u5e02",
-    "\u56db\u5ddd\u7701", "\u8d35\u5dde\u7701", "\u4e91\u5357\u7701", "\u897f\u85cf\u81ea\u6cbb\u533a",
-    "\u9655\u897f\u7701", "\u7518\u8083\u7701", "\u9752\u6d77\u7701", "\u5b81\u590f\u56de\u65cf\u81ea\u6cbb\u533a",
-    "\u65b0\u7586\u7ef4\u543e\u5c14\u81ea\u6cbb\u533a", "\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a",
-    "\u6fb3\u95e8\u7279\u522b\u884c\u653f\u533a", "\u53f0\u6e7e\u7701",
+/** 省份打卡：33 个省级行政区，按地理分区陈列（不含台湾） */
+private val PROVINCE_REGIONS: List<Pair<String, List<String>>> = listOf(
+    "华北" to listOf("北京市", "天津市", "河北省", "山西省", "内蒙古自治区"),
+    "东北" to listOf("辽宁省", "吉林省", "黑龙江省"),
+    "华东" to listOf("上海市", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省"),
+    "华中" to listOf("河南省", "湖北省", "湖南省"),
+    "华南" to listOf("广东省", "广西壮族自治区", "海南省", "香港特别行政区", "澳门特别行政区"),
+    "西南" to listOf("重庆市", "四川省", "贵州省", "云南省", "西藏自治区"),
+    "西北" to listOf("陕西省", "甘肃省", "青海省", "宁夏回族自治区", "新疆维吾尔自治区"),
 )
+
+/** 全部可点亮的省份 */
+private val ALL_PROVINCES: List<String> = PROVINCE_REGIONS.flatMap { it.second }
 
 @Composable
 private fun ProvincesSection(
@@ -677,46 +711,150 @@ private fun ProvincesSection(
     modifier: Modifier = Modifier,
 ) {
     val lit = litProvinces.toSet()
+    val total = ALL_PROVINCES.size
+    val litCount = ALL_PROVINCES.count { lit.contains(it) }
+    val progress = if (total == 0) 0f else litCount.toFloat() / total
+
     Column(modifier = modifier) {
-        SectionTitle(text = stringResource(R.string.data_provinces_title, lit.size, ALL_PROVINCES.size))
+        SectionTitle(text = stringResource(R.string.data_provinces_title))
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    contentColor = MaterialTheme.colorScheme.onSurface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ),
         ) {
-            FlowRow(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                ALL_PROVINCES.forEach { province ->
-                    val isLit = lit.contains(province)
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isLit) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                        },
+                // 打卡总进度
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            text = province,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isLit) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                            },
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            text = stringResource(R.string.data_provinces_progress, litCount, total),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.data_provinces_percent, (progress * 100).roundToInt()),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                    if (litCount == 0) {
+                        Text(
+                            text = stringResource(R.string.data_provinces_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
                     }
                 }
+
+                // 分区打卡
+                PROVINCE_REGIONS.forEach { (region, provinces) ->
+                    val regionLit = provinces.count { lit.contains(it) }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = region,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.weight(1f),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                            )
+                            Text(
+                                text = regionLit.toString() + "/" + provinces.size.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (regionLit > 0) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                },
+                            )
+                        }
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            provinces.forEach { province ->
+                                ProvinceChip(name = province, lit = lit.contains(province))
+                            }
+                        }
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun ProvinceChip(
+    name: String,
+    lit: Boolean,
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = if (lit) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (lit) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal,
+                color = if (lit) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                },
+            )
         }
     }
 }
@@ -734,12 +872,14 @@ private fun MilestonesSection(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    contentColor = MaterialTheme.colorScheme.onSurface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ),
         ) {
             Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 milestones.forEach { threshold ->
                     val reached = totalDistanceKm >= threshold
@@ -763,36 +903,46 @@ private fun MilestonesSection(
                                 text = stringResource(R.string.data_milestone_km, threshold.toLong()),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 color = if (reached) {
                                     MaterialTheme.colorScheme.onSurface
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                                 },
                             )
-                            LinearProgressIndicator(
-                                progress = { (totalDistanceKm / threshold).toFloat().coerceIn(0f, 1f) },
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 4.dp)
-                                    .height(6.dp)
-                                    .clip(CircleShape),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            )
+                                    .padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                LinearProgressIndicator(
+                                    progress = { (totalDistanceKm / threshold).toFloat().coerceIn(0f, 1f) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(6.dp)
+                                        .clip(CircleShape),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                                Text(
+                                    text = if (reached) {
+                                        stringResource(R.string.data_milestone_reached)
+                                    } else {
+                                        stringResource(R.string.data_milestone_remaining, (threshold - totalDistanceKm).roundToInt())
+                                    },
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1,
+                                    color = if (reached) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                                    },
+                                )
+                            }
                         }
-                        Text(
-                            text = if (reached) {
-                                stringResource(R.string.data_milestone_reached)
-                            } else {
-                                stringResource(R.string.data_milestone_pending)
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (reached) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                            },
-                        )
                     }
                 }
             }
@@ -807,39 +957,48 @@ private fun StatsGrid(
 ) {
     Column(modifier = modifier) {
         SectionTitle(text = stringResource(R.string.data_stats_grid))
-        FlowRow(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            StatCard(
-                label = stringResource(R.string.data_stat_total_time),
-                value = stats.totalFocusMinutes.toString(),
-                unit = stringResource(R.string.data_unit_minutes),
-                icon = Icons.Default.Schedule,
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                label = stringResource(R.string.data_stat_cities),
-                value = stats.uniqueCities.toString(),
-                unit = stringResource(R.string.data_unit_cities),
-                icon = Icons.Default.Place,
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                label = stringResource(R.string.data_stat_max_dist),
-                value = stats.longestJourneyKm.toInt().toString(),
-                unit = stringResource(R.string.history_unit_km),
-                icon = Icons.Default.Route,
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                label = stringResource(R.string.data_stat_min_dist),
-                value = stats.shortestJourneyKm.toInt().toString(),
-                unit = stringResource(R.string.history_unit_km),
-                icon = Icons.Default.Route,
-                modifier = Modifier.weight(1f),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                StatCard(
+                    label = stringResource(R.string.data_stat_total_time),
+                    value = stats.totalFocusMinutes.toString(),
+                    unit = stringResource(R.string.data_unit_minutes),
+                    icon = Icons.Default.Schedule,
+                    modifier = Modifier.weight(1f),
+                )
+                StatCard(
+                    label = stringResource(R.string.data_stat_cities),
+                    value = stats.uniqueCities.toString(),
+                    unit = stringResource(R.string.data_unit_cities),
+                    icon = Icons.Default.Place,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                StatCard(
+                    label = stringResource(R.string.data_stat_max_dist),
+                    value = stats.longestJourneyKm.toInt().toString(),
+                    unit = stringResource(R.string.history_unit_km),
+                    icon = Icons.Default.Route,
+                    modifier = Modifier.weight(1f),
+                )
+                StatCard(
+                    label = stringResource(R.string.data_stat_min_dist),
+                    value = stats.shortestJourneyKm.toInt().toString(),
+                    unit = stringResource(R.string.history_unit_km),
+                    icon = Icons.Default.Route,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -854,9 +1013,51 @@ private fun SectionTitle(
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-        modifier = modifier.padding(bottom = 4.dp),
+        modifier = modifier.padding(bottom = 8.dp),
         textAlign = TextAlign.Start,
     )
+}
+
+/** 卡片内的空状态占位：图标 + 说明文字 */
+@Composable
+private fun EmptyHint(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    hint: String? = null,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(28.dp)
+                    .padding(bottom = 2.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center,
+        )
+        if (hint != null) {
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
 }
 
 @Composable
@@ -925,15 +1126,17 @@ private fun StatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (icon != null) {
                 Icon(
@@ -943,38 +1146,37 @@ private fun StatCard(
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                 )
             }
-            Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                maxLines = 1,
+            )
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.Start,
+            ) {
                 Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    text = value,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
                 )
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.Start,
-                ) {
+                if (unit != null) {
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = value,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Visible,
+                        text = unit,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 4.dp),
                     )
-                    if (unit != null) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = unit,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(bottom = 4.dp),
-                        )
-                    }
                 }
             }
         }
     }
 }
+
 
 data class DataStats(
     val totalJourneys: Int,
