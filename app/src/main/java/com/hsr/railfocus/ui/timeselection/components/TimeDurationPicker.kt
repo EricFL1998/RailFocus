@@ -1,10 +1,20 @@
 package com.hsr.railfocus.ui.timeselection.components
 
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDecay
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.foundation.gestures.TargetedFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
-import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +34,8 @@ import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.R
 import androidx.compose.ui.unit.dp
 import com.hsr.railfocus.ui.theme.RailFocusTheme
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * 横向滚动数字刻度条时间选择器
@@ -120,10 +132,7 @@ fun TimeDurationPicker(
                 .background(MaterialTheme.colorScheme.primary),
         )
 
-        val snapFlingBehavior = PagerDefaults.flingBehavior(
-            state = pagerState,
-            snapPositionalThreshold = 0.3f, // 调低阈值 (从 0.5 -> 0.3)，让其在微调时更早“吸附”到目标分钟
-        )
+        val snapFlingBehavior = rememberNearestTickFlingBehavior(pagerState)
 
         // 刻度条：刻度在指示线下方，标签在刻度下方
         HorizontalPager(
@@ -150,6 +159,86 @@ fun TimeDurationPicker(
         }
     }
 }
+
+@Composable
+private fun rememberNearestTickFlingBehavior(pagerState: PagerState): TargetedFlingBehavior {
+    val decaySpec = rememberSplineBasedDecay<Float>()
+    return remember(pagerState, decaySpec) {
+        NearestTickFlingBehavior(
+            state = pagerState,
+            decaySpec = decaySpec,
+            snapSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        )
+    }
+}
+
+/**
+ * 吸附到最近刻度的 fling 行为。
+ *
+ * 为什么不用 [androidx.compose.foundation.pager.PagerDefaults.flingBehavior]：Pager 默认的吸附逻辑
+ * （PagerSnapLayoutInfoProvider）用“手指从按下到抬起的总位移 ÷ 页宽”的小数部分来决定最终停在哪个
+ * 刻度。本组件的页宽只有 20dp（480dpi 下约 60px），而一次拖动的手指位移往往是页宽的几十倍，于是那个
+ * 小数部分几乎是随机的，松手后会额外跳一格——想选 25 分钟却几乎总是得到 24 或 26。
+ *
+ * 这里改成完全依据真实滚动位置（currentPage + currentPageOffsetFraction）取最近刻度：
+ * 先按速度做惯性衰减，再无条件下沉到指示线下方的那一格，与手指位移无关，因此任何速度下都能精确停在
+ * 想要的那一分钟。
+ */
+private class NearestTickFlingBehavior(
+    private val state: PagerState,
+    private val decaySpec: DecayAnimationSpec<Float>,
+    private val snapSpec: AnimationSpec<Float>,
+) : TargetedFlingBehavior {
+
+    override suspend fun ScrollScope.performFling(
+        initialVelocity: Float,
+        onRemainingDistanceUpdated: (Float) -> Unit,
+    ): Float {
+        // 1) 惯性阶段：完全按速度衰减，碰到列表两端时停下
+        if (initialVelocity != 0f) {
+            var lastValue = 0f
+            AnimationState(initialValue = 0f, initialVelocity = initialVelocity)
+                .animateDecay(decaySpec) {
+                    val delta = value - lastValue
+                    lastValue = value
+                    val consumed = scrollBy(delta)
+                    if (abs(delta - consumed) > ConsumedTolerancePx) cancelAnimation()
+                }
+        }
+
+        // 2) 吸附阶段：目标是离当前滚动位置最近的整数刻度，也就是指示线下方的那个刻度
+        val snapDelta = nearestTickDeltaPx()
+        if (abs(snapDelta) > ConsumedTolerancePx) {
+            onRemainingDistanceUpdated(snapDelta)
+            var consumedUpToNow = 0f
+            AnimationState(initialValue = 0f).animateTo(snapDelta, snapSpec) {
+                val delta = value - consumedUpToNow
+                val consumed = scrollBy(delta)
+                if (abs(delta - consumed) > ConsumedTolerancePx) cancelAnimation()
+                consumedUpToNow += consumed
+            }
+        }
+
+        onRemainingDistanceUpdated(0f)
+        // 速度已被吸收，不再传给父级滚动容器
+        return 0f
+    }
+
+    /** 到最近整数刻度的像素距离，正数表示需要向前滚动。 */
+    private fun nearestTickDeltaPx(): Float {
+        val pageCount = state.pageCount
+        if (pageCount == 0) return 0f
+        val layoutInfo = state.layoutInfo
+        val pageWithSpacing = (layoutInfo.pageSize + layoutInfo.pageSpacing).toFloat()
+        if (pageWithSpacing <= 0f) return 0f
+        // currentPage + currentPageOffsetFraction 即当前指示线所在的小数刻度位置
+        val fractionalPage = state.currentPage + state.currentPageOffsetFraction
+        val targetPage = fractionalPage.roundToInt().coerceIn(0, pageCount - 1)
+        return (targetPage - fractionalPage) * pageWithSpacing
+    }
+}
+
+private const val ConsumedTolerancePx = 0.5f
 
 @Composable
 private fun ScaleTick(
