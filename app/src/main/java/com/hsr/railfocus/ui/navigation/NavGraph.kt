@@ -1,8 +1,17 @@
 package com.hsr.railfocus.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -12,6 +21,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -51,7 +63,15 @@ fun RailFocusNavGraph(
             }
 
             // 首页
-            composable<Screen.Home> {
+            composable<Screen.Home>(
+                // 二级页面从右侧推进来时，首页轻微左移淡出；返回时再滑回来
+                exitTransition = {
+                    if (targetState.destination.isSlidePage()) pagePushExit() else null
+                },
+                popEnterTransition = {
+                    if (initialState.destination.isSlidePage()) pagePopEnter() else null
+                },
+            ) {
                 HomeScreen(
                     onSettingsClick = { navController.navigate(Screen.Settings) },
                     onAllJourneysClick = { navController.navigate(Screen.AllJourneys) },
@@ -88,7 +108,12 @@ fun RailFocusNavGraph(
             }
 
             // 设置页
-            composable<Screen.Settings> {
+            composable<Screen.Settings>(
+                enterTransition = { pagePushEnter() },
+                exitTransition = { pagePushExit() },
+                popEnterTransition = { pagePopEnter() },
+                popExitTransition = { pagePopExit() },
+            ) {
                 com.hsr.railfocus.ui.settings.SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToFocusTypeSettings = { navController.navigate(Screen.FocusTypeSettings) }
@@ -96,14 +121,24 @@ fun RailFocusNavGraph(
             }
 
             // 总旅程视图（全部已完成线路）
-            composable<Screen.AllJourneys> {
+            composable<Screen.AllJourneys>(
+                enterTransition = { pagePushEnter() },
+                exitTransition = { pagePushExit() },
+                popEnterTransition = { pagePopEnter() },
+                popExitTransition = { pagePopExit() },
+            ) {
                 com.hsr.railfocus.ui.journeys.AllJourneysScreen(
                     onBack = { navController.popBackStack() },
                 )
             }
 
             // 专注场景设置页
-            composable<Screen.FocusTypeSettings> {
+            composable<Screen.FocusTypeSettings>(
+                enterTransition = { pagePushEnter() },
+                exitTransition = { pagePushExit() },
+                popEnterTransition = { pagePopEnter() },
+                popExitTransition = { pagePopExit() },
+            ) {
                 com.hsr.railfocus.ui.settings.FocusTypeSettingsScreen(
                     onBack = { navController.popBackStack() },
                     viewModel = hiltViewModel()
@@ -119,3 +154,44 @@ fun RailFocusNavGraph(
         }
     }
 }
+
+/**
+ * 二级页面（设置 / 专注场景设置 / 总旅程）之间共用的横向推入动画时长。
+ * 与 App 内其它过渡保持同一节奏，用同一条缓动曲线，短促不拖沓。
+ */
+private const val PAGE_SLIDE_DURATION_MS = 320
+
+/** 底层页面让位时退让的比例：只往旁边挪一点，做出层叠推进的纵深感 */
+private const val PAGE_SLIDE_BACK_FRACTION = 4
+
+/** 新页面从右侧滑入 */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePushEnter(): EnterTransition =
+    slideInHorizontally(
+        animationSpec = tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
+    ) { it } + fadeIn(tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing))
+
+/** 当前页面往左退让并淡出，让新页面盖上来 */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePushExit(): ExitTransition =
+    slideOutHorizontally(
+        animationSpec = tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
+    ) { -it / PAGE_SLIDE_BACK_FRACTION } +
+        fadeOut(tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing))
+
+/** 返回时下层页面从左侧滑回原位 */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePopEnter(): EnterTransition =
+    slideInHorizontally(
+        animationSpec = tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
+    ) { -it / PAGE_SLIDE_BACK_FRACTION } +
+        fadeIn(tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing))
+
+/** 返回时当前页面整体向右滑出 */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePopExit(): ExitTransition =
+    slideOutHorizontally(
+        animationSpec = tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
+    ) { it } + fadeOut(tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing))
+
+/** 当前页面是否属于需要横向推入动画的二级页面 */
+private fun NavDestination.isSlidePage(): Boolean =
+    hasRoute<Screen.Settings>() ||
+        hasRoute<Screen.AllJourneys>() ||
+        hasRoute<Screen.FocusTypeSettings>()
