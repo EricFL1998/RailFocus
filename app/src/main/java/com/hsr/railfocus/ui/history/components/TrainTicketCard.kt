@@ -441,7 +441,17 @@ fun TrainTicketCard(
         }
         }
 
-        // 左右真实物理打孔缺口（取页面背景色覆盖，边缘清晰利落）
+        // 左右真实物理打孔缺口（取页面背景色覆盖并带有凹向内部的圆弧描边）
+        val strokeColor = cardBorder?.let {
+            when (ticket.trainSeries) {
+                TrainSeries.C_SERIES -> if (isDark) Color(0xFF233830) else Color(0xFFE0F2F1)
+                TrainSeries.D_SERIES -> if (isDark) Color(0xFF223547) else Color(0xFFE3F2FD)
+                TrainSeries.G_SERIES -> if (isDark) Color(0xFF3D2F22) else Color(0xFFFFECB3)
+                TrainSeries.SLEEPER -> if (isDark) Color(0xFF222D4A) else Color(0xFF2D3B62)
+            }
+        }
+
+        // 左打孔缺口
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -450,6 +460,24 @@ fun TrainTicketCard(
                 .clip(CircleShape)
                 .background(pageBgColor)
         )
+        if (strokeColor != null) {
+            Canvas(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = (-10).dp, y = (-48).dp)
+                    .size(20.dp)
+            ) {
+                drawArc(
+                    color = strokeColor,
+                    startAngle = -90f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                )
+            }
+        }
+
+        // 右打孔缺口
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -458,6 +486,22 @@ fun TrainTicketCard(
                 .clip(CircleShape)
                 .background(pageBgColor)
         )
+        if (strokeColor != null) {
+            Canvas(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 10.dp, y = (-48).dp)
+                    .size(20.dp)
+            ) {
+                drawArc(
+                    color = strokeColor,
+                    startAngle = 90f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                )
+            }
+        }
     }
 }
 
