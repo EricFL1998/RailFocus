@@ -1,5 +1,6 @@
 package com.hsr.railfocus.ui.history.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -51,12 +53,56 @@ import com.hsr.railfocus.ui.theme.RailFocusTheme
 fun TrainTicketCard(
     ticket: TrainTicketModel,
     modifier: Modifier = Modifier,
+    forceDarkTheme: Boolean? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val captureLayer = rememberGraphicsLayer()
-    val statusColor = if (ticket.isCompleted) Color(0xFF4CAF50) else Color(0xFFF44336)
     val notchSize = 16.dp
+
+    // 自动适配深色模式（根据主题背景明度），也可通过 forceDarkTheme 显式指定
+    val isDark = forceDarkTheme ?: (MaterialTheme.colorScheme.surface.luminance() < 0.5f)
+
+    val statusColor = if (isDark) {
+        if (ticket.isCompleted) Color(0xFF81C784) else Color(0xFFEF5350)
+    } else {
+        if (ticket.isCompleted) Color(0xFF4CAF50) else Color(0xFFF44336)
+    }
+
+    // 票面背景与边框：深色模式下采用深墨绿车票质感底色与细腻轮廓边框，浅色模式下保持经典白纸车票
+    val containerColor = if (isDark) Color(0xFF1B241E) else Color.White
+    val cardBorder = if (isDark) BorderStroke(1.dp, Color(0xFF2E3E33)) else null
+    val cardElevation = if (isDark) 3.dp else 2.dp
+
+    val primaryTextColor = if (isDark) Color(0xFFF1F5F2) else Color.Black
+    val secondaryTextColor = if (isDark) Color(0xFF9EABA2) else Color.Gray
+    val labelTextColor = if (isDark) Color(0xFF88988E) else Color.LightGray
+    val trackLineColor = if (isDark) Color(0xFF384A3D) else Color.LightGray
+    val dividerColor = if (isDark) Color(0xFF2B3B30) else Color(0xFFEEEEEE)
+    val trainIconTint = if (isDark) {
+        if (ticket.isCompleted) Color(0xFF81C784) else Color(0xFF88988E)
+    } else {
+        Color.LightGray
+    }
+
+    val seatClassContainer = if (isDark) {
+        Color(0xFF1B5E20).copy(alpha = 0.45f)
+    } else {
+        RailColors.Primary.copy(alpha = 0.1f)
+    }
+    val seatClassTextColor = if (isDark) Color(0xFF81C784) else RailColors.Primary
+
+    val seatInfoContainer = if (isDark) Color(0xFF253328) else MaterialTheme.colorScheme.surfaceVariant
+    val seatInfoTextColor = if (isDark) Color(0xFFD4DDD6) else MaterialTheme.colorScheme.onSurfaceVariant
+
+    val arrivalTextColor = if (ticket.isCompleted) {
+        primaryTextColor
+    } else {
+        if (isDark) Color(0xFF5A6960) else Color.LightGray
+    }
+
+    val shareButtonBg = if (isDark) Color(0xFF253328) else Color(0xFFF5F5F5)
+    val shareButtonTint = if (isDark) Color(0xFFD4DDD6) else Color.DarkGray
 
     Box(modifier = modifier) {
         Card(
@@ -68,8 +114,9 @@ fun TrainTicketCard(
                     drawLayer(captureLayer)
                 },
             shape = TrainTicketShape(notchSize),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            border = cardBorder,
+            elevation = CardDefaults.cardElevation(defaultElevation = cardElevation),
         ) {
         Column(
             modifier = Modifier
@@ -85,7 +132,7 @@ fun TrainTicketCard(
                 Text(
                     text = ticket.ticketDate,
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.Gray
+                    color = secondaryTextColor
                 )
                 Text(
                     text = if (ticket.isCompleted) stringResource(R.string.history_status_completed) else stringResource(R.string.history_status_cancelled),
@@ -109,12 +156,12 @@ fun TrainTicketCard(
                         text = ticket.record.startStation.name,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Black,
-                        color = Color.Black
+                        color = primaryTextColor
                     )
                     Text(
                         text = ticket.record.startStation.city,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = secondaryTextColor
                     )
                 }
 
@@ -138,7 +185,7 @@ fun TrainTicketCard(
                         )
                         Canvas(modifier = Modifier.weight(1f).height(1.dp)) {
                             drawLine(
-                                color = Color.LightGray,
+                                color = trackLineColor,
                                 start = Offset.Zero,
                                 end = Offset(size.width, 0f),
                                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
@@ -147,11 +194,11 @@ fun TrainTicketCard(
                         BulletTrainIcon(
                             contentDescription = null,
                             size = 18.dp,
-                            tint = Color.LightGray,
+                            tint = trainIconTint,
                         )
                         Canvas(modifier = Modifier.weight(1f).height(1.dp)) {
                             drawLine(
-                                color = Color.LightGray,
+                                color = trackLineColor,
                                 start = Offset.Zero,
                                 end = Offset(size.width, 0f),
                                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
@@ -167,7 +214,7 @@ fun TrainTicketCard(
                     Text(
                         text = "${ticket.plannedMinutes}m",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray,
+                        color = secondaryTextColor,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -178,12 +225,12 @@ fun TrainTicketCard(
                         text = ticket.record.endStation.name,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Black,
-                        color = Color.Black
+                        color = primaryTextColor
                     )
                     Text(
                         text = ticket.record.endStation.city,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = secondaryTextColor
                     )
                 }
             }
@@ -197,25 +244,25 @@ fun TrainTicketCard(
                 ticket.seatClass.let { seatClass ->
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = RailColors.Primary.copy(alpha = 0.1f),
+                        color = seatClassContainer,
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text(
                             text = seatClass,
                             style = MaterialTheme.typography.labelSmall,
-                            color = RailColors.Primary,
+                            color = seatClassTextColor,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
                 }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    color = seatInfoContainer
                 ) {
                     Text(
                         text = ticket.seatInfo,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = seatInfoTextColor,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
@@ -224,7 +271,10 @@ fun TrainTicketCard(
             Spacer(modifier = Modifier.weight(1f))
 
             // 虚线
-            DashedDivider(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp))
+            DashedDivider(
+                color = dividerColor,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+            )
 
             // 底部：详细时间与距离
             Row(
@@ -233,22 +283,22 @@ fun TrainTicketCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.Start) {
-                    Text(stringResource(R.string.history_departure), style = MaterialTheme.typography.labelSmall, color = Color.LightGray)
-                    Text(ticket.departureTime, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.history_departure), style = MaterialTheme.typography.labelSmall, color = labelTextColor)
+                    Text(ticket.departureTime, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = primaryTextColor)
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.history_distance), style = MaterialTheme.typography.labelSmall, color = Color.LightGray)
-                    Text("${ticket.record.path.totalDistanceKm.toInt()} " + stringResource(R.string.history_unit_km), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.history_distance), style = MaterialTheme.typography.labelSmall, color = labelTextColor)
+                    Text("${ticket.record.path.totalDistanceKm.toInt()} " + stringResource(R.string.history_unit_km), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = primaryTextColor)
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(stringResource(R.string.history_arrival), style = MaterialTheme.typography.labelSmall, color = Color.LightGray)
+                    Text(stringResource(R.string.history_arrival), style = MaterialTheme.typography.labelSmall, color = labelTextColor)
                     Text(
                         ticket.arrivalTime,
                         style = MaterialTheme.typography.bodyMedium, 
                         fontWeight = FontWeight.Bold,
-                        color = if (ticket.isCompleted) Color.Black else Color.LightGray
+                        color = arrivalTextColor
                     )
                 }
             }
@@ -265,12 +315,12 @@ fun TrainTicketCard(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF5F5F5)),
+                    .background(shareButtonBg),
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = stringResource(R.string.ticket_share),
-                    tint = Color.DarkGray,
+                    tint = shareButtonTint,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -310,10 +360,13 @@ private suspend fun shareTicket(
 }
 
 @Composable
-private fun DashedDivider(modifier: Modifier = Modifier) {
+private fun DashedDivider(
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFFEEEEEE),
+) {
     Canvas(modifier = modifier.height(1.dp)) {
         drawLine(
-            color = Color(0xFFEEEEEE),
+            color = color,
             start = Offset.Zero,
             end = Offset(size.width, 0f),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
@@ -379,42 +432,52 @@ private class TrainTicketShape(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFF5F5F5)
-@Composable
-private fun TrainTicketCardPreview() {
-    RailFocusTheme {
-        val sample = TrainTicketModel(
-            record = JourneyRecord(
-                id = "preview-id",
-                startStation = Station.DEFAULT.copy(name = "南京南"),
-                endStation = Station.DEFAULT.copy(name = "北京南"),
-                plannedDurationMin = 120,
-                actualDurationMin = 118,
-                path = PathResult(
-                    path = listOf(Station.DEFAULT, Station.DEFAULT),
-                    totalDurationMin = 120,
-                    totalDistanceKm = 1024.0,
-                    edges = emptyList()
-                ),
-                createdAt = System.currentTimeMillis(),
-                completedAt = System.currentTimeMillis()
-            ),
-            ticketDate = "2026年7月3日",
-            departureTime = "10:25",
-            arrivalTime = "12:25",
-            trainNumber = "G124",
-            seatInfo = "11车13A号",
-            seatClass = "二等座",
-            focusMinutes = 118,
-            plannedMinutes = 30,
-            stationCount = 2,
-            isCompleted = false,
-            completionStatus = "已取消",
-            focusState = "专注未达成"
-        )
+private val PreviewSampleTicket = TrainTicketModel(
+    record = JourneyRecord(
+        id = "preview-id",
+        startStation = Station.DEFAULT.copy(name = "南京南"),
+        endStation = Station.DEFAULT.copy(name = "北京南"),
+        plannedDurationMin = 120,
+        actualDurationMin = 118,
+        path = PathResult(
+            path = listOf(Station.DEFAULT, Station.DEFAULT),
+            totalDurationMin = 120,
+            totalDistanceKm = 1024.0,
+            edges = emptyList()
+        ),
+        createdAt = System.currentTimeMillis(),
+        completedAt = System.currentTimeMillis()
+    ),
+    ticketDate = "2026年7月3日",
+    departureTime = "10:25",
+    arrivalTime = "12:25",
+    trainNumber = "G124",
+    seatInfo = "11车13A号",
+    seatClass = "二等座",
+    focusMinutes = 118,
+    plannedMinutes = 30,
+    stationCount = 2,
+    isCompleted = true,
+    completionStatus = "已完成",
+    focusState = "专注达成"
+)
 
+@Preview(name = "Light Mode Ticket", showBackground = true, backgroundColor = 0xFFF5F5F5)
+@Composable
+private fun TrainTicketCardLightPreview() {
+    RailFocusTheme(darkTheme = false) {
         Box(modifier = Modifier.padding(16.dp)) {
-            TrainTicketCard(ticket = sample)
+            TrainTicketCard(ticket = PreviewSampleTicket)
+        }
+    }
+}
+
+@Preview(name = "Dark Mode Ticket", showBackground = true, backgroundColor = 0xFF0D130F)
+@Composable
+private fun TrainTicketCardDarkPreview() {
+    RailFocusTheme(darkTheme = true) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            TrainTicketCard(ticket = PreviewSampleTicket)
         }
     }
 }
