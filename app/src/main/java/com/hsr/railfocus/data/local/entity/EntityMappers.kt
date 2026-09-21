@@ -47,6 +47,7 @@ fun JourneyRecordEntity.toDomain(
         focusType = focusType,
         seatNumber = seatNumber,
         carriageNumber = carriageNumber,
+        delayMinutes = delayMinutes,
     )
 }
 
@@ -65,5 +66,6 @@ fun JourneyRecord.toEntity(pathJson: String): JourneyRecordEntity {
         focusType = focusType,
         seatNumber = seatNumber,
         carriageNumber = carriageNumber,
+        delayMinutes = delayMinutes,
     )
 }

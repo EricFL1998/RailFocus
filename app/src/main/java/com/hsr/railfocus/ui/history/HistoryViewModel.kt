@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -126,17 +127,19 @@ class HistoryViewModel @Inject constructor(
             val departureTime = TIME_FORMAT.format(Date(createdAt))
             val arrivalTime = completedAt?.let { TIME_FORMAT.format(Date(it)) } ?: "---"
 
-            val trainNumber = synthesizeTrainNumber()
+            val (trainSeries, prefix, maxSpeed) = determineTrainSeries(plannedDurationMin, createdAt, focusType)
+            val trainNumber = synthesizeTrainNumber(prefix)
             val seatInfo = if (carriageNumber != null && seatNumber != null) {
-                "${carriageNumber}车${seatNumber}号"
+                val cleaned = seatNumber.replace("号", "")
+                "${carriageNumber}车${cleaned}"
             } else {
-                synthesizeSeatInfo()
+                synthesizeSeatInfo(trainSeries)
             }
             val seatClass = focusType?.let { typeName ->
                 // Since FocusType is no longer an enum, we just use the typeName (which is the displayName)
                 // or we could look up the FocusType from a repository if we needed more info.
                 typeName
-            } ?: synthesizeSeatClass()
+            } ?: synthesizeSeatClass(trainSeries)
 
             val stationCount = path.path.size
             val isCompleted = status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED
@@ -147,37 +150,69 @@ class HistoryViewModel @Inject constructor(
                 departureTime = departureTime,
                 arrivalTime = arrivalTime,
                 trainNumber = trainNumber,
+                trainSeries = trainSeries,
+                maxSpeed = maxSpeed,
                 seatInfo = seatInfo,
                 seatClass = seatClass,
                 focusMinutes = actualDurationMin,
                 plannedMinutes = plannedDurationMin,
                 stationCount = stationCount,
                 isCompleted = isCompleted,
-                completionStatus = if (isCompleted) "已完成" else "已取消",
+                completionStatus = if (isCompleted) "已完成" else "已退票",
                 focusState = if (isCompleted) {
                     if (actualDurationMin >= plannedDurationMin) "专注达成" else "专注未完成"
                 } else {
                     "专注未达成"
                 },
+                delayMinutes = delayMinutes,
             )
         }
 
-        private fun JourneyRecord.synthesizeTrainNumber(): String {
-            // Deterministic "train number" derived from start/end station ids.
-            val start = startStation.id.firstOrNull()?.uppercaseChar() ?: 'G'
-            val end = endStation.id.firstOrNull()?.uppercaseChar() ?: '1'
-            val prefix = if (TRAIN_PREFIXES.any { it[0] == start }) start.toString() else "G"
+        private fun determineTrainSeries(
+            plannedMin: Int,
+            createdAtMillis: Long,
+            focusType: String?
+        ): Triple<TrainSeries, String, Int> {
+            val isExplicitSleeper = (focusType?.contains("卧") == true) || (focusType?.contains("夜") == true)
+            return when {
+                // 动卧 / 夜行特快
+                isExplicitSleeper -> {
+                    Triple(TrainSeries.SLEEPER, "D", 250)
+                }
+                // 15 ~ 25 分钟轻量级短番茄钟 -> C字头 城际动车 200 km/h
+                plannedMin in 1..29 -> {
+                    Triple(TrainSeries.C_SERIES, "C", 200)
+                }
+                // 30 ~ 45 分钟常规节奏 -> D字头 和谐号 250 km/h
+                plannedMin in 30..59 -> {
+                    Triple(TrainSeries.D_SERIES, "D", 250)
+                }
+                // 60 分钟及以上高深度专注 -> G字头 复兴号智能动车组 350 km/h
+                else -> {
+                    Triple(TrainSeries.G_SERIES, "G", 350)
+                }
+            }
+        }
+
+        private fun JourneyRecord.synthesizeTrainNumber(prefix: String): String {
+            val start = startStation.id.firstOrNull()?.uppercaseChar() ?: 'A'
+            val end = endStation.id.firstOrNull()?.uppercaseChar() ?: 'B'
             val digits = ((start.code + end.code + plannedDurationMin) % 900 + 100).toString()
             return "$prefix$digits"
         }
 
-        private fun JourneyRecord.synthesizeSeatInfo(): String {
-            val row = SEAT_ROWS.elementAt((startStation.id.hashCode()).mod(SEAT_ROWS.count()).coerceIn(0, SEAT_ROWS.count() - 1))
-            val letter = SEAT_LETTERS.elementAt((endStation.id.hashCode()).mod(SEAT_LETTERS.size))
-            return row.toString() + "车" + row + letter + "号"
-        }
+       private fun JourneyRecord.synthesizeSeatInfo(series: TrainSeries): String {
+           val row = SEAT_ROWS.elementAt((startStation.id.hashCode()).mod(SEAT_ROWS.count()).coerceIn(0, SEAT_ROWS.count() - 1))
+           val letter = SEAT_LETTERS.elementAt((endStation.id.hashCode()).mod(SEAT_LETTERS.size))
+           if (series == TrainSeries.SLEEPER) {
+               val bunk = if (row % 2 == 0) "下铺" else "上铺"
+                return "${row}车${(row % 8 + 1)}$bunk"
+           }
+            return row.toString() + "车" + row + letter
+       }
 
-        private fun JourneyRecord.synthesizeSeatClass(): String {
+        private fun JourneyRecord.synthesizeSeatClass(series: TrainSeries): String {
+            if (series == TrainSeries.SLEEPER) return "高级动卧"
             return SEAT_CLASSES.elementAt((startStation.id.hashCode()).mod(SEAT_CLASSES.size))
         }
 

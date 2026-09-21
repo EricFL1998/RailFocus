@@ -27,7 +27,7 @@ import com.hsr.railfocus.data.local.entity.VisitedStationRecordEntity
         VisitedStationRecordEntity::class,
         FocusTypeEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class UserDatabase : RoomDatabase() {
@@ -48,6 +48,15 @@ abstract class UserDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 2 -> 3：旅程表新增 delayMinutes 列（列车晚点时间，分钟）。
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE journey_records ADD COLUMN delayMinutes INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile
         private var INSTANCE: UserDatabase? = null
 
@@ -63,7 +72,7 @@ abstract class UserDatabase : RoomDatabase() {
                 UserDatabase::class.java,
                 DATABASE_NAME
             )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
         }
     }

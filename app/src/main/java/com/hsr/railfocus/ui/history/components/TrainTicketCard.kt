@@ -2,6 +2,7 @@ package com.hsr.railfocus.ui.history.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -23,7 +24,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +45,7 @@ import com.hsr.railfocus.domain.model.JourneyRecord
 import com.hsr.railfocus.domain.model.PathResult
 import com.hsr.railfocus.domain.model.Station
 import com.hsr.railfocus.ui.history.TrainTicketModel
+import com.hsr.railfocus.ui.history.TrainSeries
 import com.hsr.railfocus.ui.components.BulletTrainIcon
 import com.hsr.railfocus.ui.theme.RailColors
 import com.hsr.railfocus.ui.theme.RailFocusTheme
@@ -57,6 +61,7 @@ fun TrainTicketCard(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val captureLayer = rememberGraphicsLayer()
     val notchSize = 16.dp
 
@@ -69,20 +74,50 @@ fun TrainTicketCard(
         if (ticket.isCompleted) Color(0xFF4CAF50) else Color(0xFFF44336)
     }
 
-    // 票面背景与边框：深色模式下采用深墨绿车票质感底色与细腻轮廓边框，浅色模式下保持经典白纸车票
-    val containerColor = if (isDark) Color(0xFF1B241E) else Color.White
-    val cardBorder = if (isDark) BorderStroke(1.dp, Color(0xFF2E3E33)) else null
+    // 依据不同车型（C/D/G/动卧）定制票面质感与边框，并在深色模式下保持低饱和舒适度
+    val (containerColor, cardBorder, seriesBadgeBg, seriesBadgeColor, seriesLabel) = when (ticket.trainSeries) {
+        TrainSeries.C_SERIES -> {
+            if (isDark) {
+                tuple5(Color(0xFF13201B), BorderStroke(1.dp, Color(0xFF233830)), Color(0xFF004D40).copy(alpha = 0.45f), Color(0xFF80CBC4), "城际")
+            } else {
+                tuple5(Color(0xFFFBFDFB), BorderStroke(1.dp, Color(0xFFE0F2F1)), Color(0xFFE0F2F1), Color(0xFF00796B), "城际")
+            }
+        }
+        TrainSeries.D_SERIES -> {
+            if (isDark) {
+                tuple5(Color(0xFF131D28), BorderStroke(1.dp, Color(0xFF223547)), Color(0xFF0D47A1).copy(alpha = 0.45f), Color(0xFF90CAF9), "和谐号")
+            } else {
+                tuple5(Color(0xFFF9FBFE), BorderStroke(1.dp, Color(0xFFE3F2FD)), Color(0xFFE3F2FD), Color(0xFF1976D2), "和谐号")
+            }
+        }
+        TrainSeries.G_SERIES -> {
+            if (isDark) {
+                tuple5(Color(0xFF211A14), BorderStroke(1.dp, Color(0xFF3D2F22)), Color(0xFF5D4037).copy(alpha = 0.5f), Color(0xFFFFD54F), "复兴号")
+            } else {
+                tuple5(Color(0xFFFFFDF8), BorderStroke(1.dp, Color(0xFFFFECB3)), Color(0xFFFFF8E1), Color(0xFFC67D00), "复兴号")
+            }
+        }
+        TrainSeries.SLEEPER -> {
+            // 动卧：深邃星空夜行风格，在浅色/深色模式下均保持标志性墨蓝夜空底色
+            if (isDark) {
+                tuple5(Color(0xFF0C101D), BorderStroke(1.dp, Color(0xFF222D4A)), Color(0xFF1E284E), Color(0xFF9FA8DA), "动卧")
+            } else {
+                tuple5(Color(0xFF131A30), BorderStroke(1.dp, Color(0xFF2D3B62)), Color(0xFF232F55), Color(0xFFBAC7FF), "动卧")
+            }
+        }
+    }
     val cardElevation = if (isDark) 3.dp else 2.dp
 
-    val primaryTextColor = if (isDark) Color(0xFFF1F5F2) else Color.Black
-    val secondaryTextColor = if (isDark) Color(0xFF9EABA2) else Color.Gray
-    val labelTextColor = if (isDark) Color(0xFF88988E) else Color.LightGray
-    val trackLineColor = if (isDark) Color(0xFF384A3D) else Color.LightGray
-    val dividerColor = if (isDark) Color(0xFF2B3B30) else Color(0xFFEEEEEE)
+    val isSleeper = ticket.trainSeries == TrainSeries.SLEEPER
+    val primaryTextColor = if (isDark || isSleeper) Color(0xFFF1F5F2) else Color.Black
+    val secondaryTextColor = if (isDark || isSleeper) Color(0xFF9EABA2) else Color.Gray
+    val labelTextColor = if (isDark || isSleeper) Color(0xFF88988E) else Color.LightGray
+    val trackLineColor = if (isDark || isSleeper) Color(0xFF384A5D) else Color.LightGray
+    val dividerColor = if (isDark || isSleeper) Color(0xFF25314D) else Color(0xFFEEEEEE)
     val trainIconTint = if (isDark) {
-        if (ticket.isCompleted) Color(0xFF81C784) else Color(0xFF88988E)
+        if (ticket.isCompleted) seriesBadgeColor else Color(0xFF88988E)
     } else {
-        Color.LightGray
+        seriesBadgeColor.copy(alpha = 0.7f)
     }
 
     val seatClassContainer = if (isDark) {
@@ -104,43 +139,86 @@ fun TrainTicketCard(
     val shareButtonBg = if (isDark) Color(0xFF253328) else Color(0xFFF5F5F5)
     val shareButtonTint = if (isDark) Color(0xFFD4DDD6) else Color.DarkGray
 
+    val pageBgColor = MaterialTheme.colorScheme.background
+
     Box(modifier = modifier) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight() // 允许内容决定高度，防止在大字体或多内容下被裁剪
+                .wrapContentHeight()
                 .drawWithContent {
                     captureLayer.record { this@drawWithContent.drawContent() }
                     drawLayer(captureLayer)
-                },
-            shape = TrainTicketShape(notchSize),
+                }
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        if (ticket.isCompleted) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            scope.launch { shareTicket(context, captureLayer, ticket) }
+                        }
+                    }
+                ),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = containerColor),
             border = cardBorder,
             elevation = CardDefaults.cardElevation(defaultElevation = cardElevation),
         ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                if (isSleeper) {
+                    // 动卧专属星空粒子背景与微弱极光流动
+                    Canvas(modifier = Modifier.matchParentSize()) {
+                        // 随机散落的闪耀星星
+                        val starCount = 38
+                        val seed = ticket.record.id.hashCode()
+                        val random = java.util.Random(seed.toLong())
+                        for (i in 0 until starCount) {
+                            val x = random.nextFloat() * size.width
+                            val y = random.nextFloat() * size.height
+                            val r = 0.8f + random.nextFloat() * 1.5f
+                            val alpha = 0.25f + random.nextFloat() * 0.65f
+                            val starColor = if (i % 5 == 0) Color(0xFFFFE082).copy(alpha = alpha) else Color(0xFFE8EAF6).copy(alpha = alpha)
+                            drawCircle(
+                                color = starColor,
+                                radius = r,
+                                center = Offset(x, y)
+                            )
+                        }
+                        // 顶部与底部微弱星云蓝光
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFF3F51B5).copy(alpha = 0.18f), Color.Transparent),
+                                center = Offset(size.width * 0.85f, size.height * 0.15f),
+                                radius = size.width * 0.6f
+                            ),
+                            radius = size.width * 0.6f,
+                            center = Offset(size.width * 0.85f, size.height * 0.15f)
+                        )
+                    }
+                }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
-            // 顶部：日期与状态
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = ticket.ticketDate,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = secondaryTextColor
-                )
-                Text(
-                    text = if (ticket.isCompleted) stringResource(R.string.history_status_completed) else stringResource(R.string.history_status_cancelled),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = statusColor,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+          // 顶部：日期与状态
+          Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+          ) {
+              Text(
+                  text = ticket.ticketDate,
+                  style = MaterialTheme.typography.labelMedium,
+                  color = secondaryTextColor
+              )
+               Text(
+                   text = if (ticket.isCompleted) stringResource(R.string.history_status_completed) else stringResource(R.string.history_status_cancelled),
+                   style = MaterialTheme.typography.labelLarge,
+                   color = statusColor,
+                   fontWeight = FontWeight.Bold
+               )
+          }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -211,12 +289,18 @@ fun TrainTicketCard(
                                 .background(statusColor)
                         )
                     }
-                    Text(
-                        text = "${ticket.plannedMinutes}m",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = secondaryTextColor,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
+                   Row(
+                       verticalAlignment = Alignment.CenterVertically,
+                       horizontalArrangement = Arrangement.spacedBy(4.dp),
+                       modifier = Modifier.padding(top = 2.dp)
+                   ) {
+                       Text(
+                           text = ticket.trainNumber,
+                           style = MaterialTheme.typography.labelSmall,
+                           fontWeight = FontWeight.Bold,
+                           color = primaryTextColor
+                       )
+                   }
                 }
 
                 // 右侧车站
@@ -235,12 +319,25 @@ fun TrainTicketCard(
                 }
             }
 
-            // 专注类型 / 座位信息
+            // 车型标签 / 专注类型 / 座位信息
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = seriesBadgeBg,
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text(
+                        text = seriesLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = seriesBadgeColor,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
                 ticket.seatClass.let { seatClass ->
                     Surface(
                         shape = RoundedCornerShape(12.dp),
@@ -255,26 +352,64 @@ fun TrainTicketCard(
                         )
                     }
                 }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = seatInfoContainer
-                ) {
-                    Text(
-                        text = ticket.seatInfo,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = seatInfoTextColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+               Surface(
+                   shape = RoundedCornerShape(12.dp),
+                   color = seatInfoContainer
+               ) {
+                   Text(
+                       text = ticket.seatInfo,
+                       style = MaterialTheme.typography.labelSmall,
+                       color = seatInfoTextColor,
+                       modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                   )
+               }
+                if (ticket.delayMinutes > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = (if (isDark) Color(0xFFEF5350) else Color(0xFFF44336)).copy(alpha = 0.15f),
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.history_status_delayed, ticket.delayMinutes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isDark) Color(0xFFEF5350) else Color(0xFFD32F2F),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                } else if (ticket.isCompleted) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = (if (isDark) Color(0xFF81C784) else Color(0xFF4CAF50)).copy(alpha = 0.15f),
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.history_status_on_time),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isDark) Color(0xFF81C784) else Color(0xFF388E3C),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
                 }
+           }
+
+           Spacer(modifier = Modifier.weight(1f))
+
+            // 虚线与左右车票半圆打孔
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                DashedDivider(
+                    color = dividerColor,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 虚线
-            DashedDivider(
-                color = dividerColor,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-            )
 
             // 底部：详细时间与距离
             Row(
@@ -304,27 +439,25 @@ fun TrainTicketCard(
             }
         }
         }
-
-        if (ticket.isCompleted) {
-            IconButton(
-                onClick = {
-                    scope.launch { shareTicket(context, captureLayer, ticket) }
-                },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(shareButtonBg),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = stringResource(R.string.ticket_share),
-                    tint = shareButtonTint,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
         }
+
+        // 左右真实物理打孔缺口（取页面背景色覆盖，边缘清晰利落）
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = (-10).dp, y = (-48).dp)
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(pageBgColor)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 10.dp, y = (-48).dp)
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(pageBgColor)
+        )
     }
 }
 
@@ -459,7 +592,8 @@ private val PreviewSampleTicket = TrainTicketModel(
     stationCount = 2,
     isCompleted = true,
     completionStatus = "已完成",
-    focusState = "专注达成"
+    focusState = "专注达成",
+    delayMinutes = 0
 )
 
 @Preview(name = "Light Mode Ticket", showBackground = true, backgroundColor = 0xFFF5F5F5)
@@ -481,3 +615,6 @@ private fun TrainTicketCardDarkPreview() {
         }
     }
 }
+
+private data class Tuple5<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
+private fun <A, B, C, D, E> tuple5(a: A, b: B, c: C, d: D, e: E) = Tuple5(a, b, c, d, e)

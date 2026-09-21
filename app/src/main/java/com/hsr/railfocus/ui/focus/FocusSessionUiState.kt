@@ -26,6 +26,8 @@ data class FocusSessionUiState(
     val carriageNumber: String? = null,
     val stationFact: com.hsr.railfocus.domain.model.StationFact? = null,
     val error: String? = null,
+    /** 累计晚点分钟数 */
+    val delayMinutes: Int = 0,
     /** 是否为从数据库恢复的旅程 */
     val isRestored: Boolean = false,
     /** 恢复旅程时重建的 DestinationOption JSON，用于重启前台服务 */

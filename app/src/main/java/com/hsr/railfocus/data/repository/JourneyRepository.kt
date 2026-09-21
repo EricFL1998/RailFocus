@@ -104,16 +104,17 @@ class JourneyRepository @Inject constructor(
         }
     }
 
-    /**
-     * 完成旅程
-     */
-    suspend fun completeJourney(journeyId: String, actualDurationMin: Int) {
-        journeyDataAccess.updateCompletion(
-            id = journeyId,
-            actualDurationMin = actualDurationMin,
-            completedAt = System.currentTimeMillis(),
-        )
-        journeyDataAccess.updateStatus(journeyId, "COMPLETED")
+   /**
+    * 完成旅程
+    */
+    suspend fun completeJourney(journeyId: String, actualDurationMin: Int, delayMinutes: Int = 0) {
+       journeyDataAccess.updateCompletion(
+           id = journeyId,
+           actualDurationMin = actualDurationMin,
+           completedAt = System.currentTimeMillis(),
+            delayMinutes = delayMinutes,
+       )
+       journeyDataAccess.updateStatus(journeyId, "COMPLETED")
 
         // 记录访问：完成时才把路径上的车站标记为已访问
         val journey = getJourneyById(journeyId)
@@ -131,18 +132,19 @@ class JourneyRepository @Inject constructor(
         }
     }
 
-    /**
-     * 取消旅程
-     * 改为更新状态为 CANCELLED，而非直接删除，以便在历史中保留“未达成”的车票
-     */
-    suspend fun cancelJourney(journeyId: String, actualDurationMin: Int) {
-        journeyDataAccess.updateStatus(journeyId, "CANCELLED")
-        journeyDataAccess.updateCompletion(
-            id = journeyId,
-            actualDurationMin = actualDurationMin,
-            completedAt = System.currentTimeMillis(),
-        )
-    }
+   /**
+    * 取消旅程
+    * 改为更新状态为 CANCELLED，而非直接删除，以便在历史中保留“未达成”的车票
+    */
+    suspend fun cancelJourney(journeyId: String, actualDurationMin: Int, delayMinutes: Int = 0) {
+       journeyDataAccess.updateStatus(journeyId, "CANCELLED")
+       journeyDataAccess.updateCompletion(
+           id = journeyId,
+           actualDurationMin = actualDurationMin,
+           completedAt = System.currentTimeMillis(),
+            delayMinutes = delayMinutes,
+       )
+   }
 
     /**
      * 清除所有旅程和访问记录

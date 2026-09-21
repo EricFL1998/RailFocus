@@ -21,7 +21,8 @@ class CompleteJourneyUseCase @Inject constructor(
      */
     suspend operator fun invoke(
         journeyId: String,
-        actualDurationMin: Int
+        actualDurationMin: Int,
+        delayMinutes: Int = 0,
     ): JourneyRecord? {
         return try {
             // 1. 获取旅程记录
@@ -34,7 +35,7 @@ class CompleteJourneyUseCase @Inject constructor(
             }
             
             // 3. 完成旅程
-            journeyRepository.completeJourney(journeyId, actualDurationMin)
+            journeyRepository.completeJourney(journeyId, actualDurationMin, delayMinutes)
             
             // 4. 返回更新后的记录
             journeyRepository.getJourneyById(journeyId)

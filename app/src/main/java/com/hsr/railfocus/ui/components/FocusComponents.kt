@@ -158,6 +158,7 @@ fun CompletionOverlay(
     focusType: FocusType?,
     stationFact: StationFact?,
     completed: Boolean = true,
+    delayMinutes: Int = 0,
     onBackHome: () -> Unit
 ) {
     var showCard by remember { mutableStateOf(false) }
@@ -329,6 +330,14 @@ fun CompletionOverlay(
                                     label = stringResource(R.string.completion_type_label),
                                     value = focusType?.displayName ?: stringResource(R.string.completion_type_default),
                                     icon = focusType?.icon
+                                )
+                                InfoItem(
+                                    label = stringResource(R.string.completion_delay_label),
+                                    value = if (delayMinutes > 0) {
+                                        stringResource(R.string.completion_delayed, delayMinutes)
+                                    } else {
+                                        stringResource(R.string.completion_on_time)
+                                    }
                                 )
                             }
                         }

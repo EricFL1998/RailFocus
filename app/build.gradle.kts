@@ -11,13 +11,13 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.hsr.railfocus"
-        minSdk = 26
-        targetSdk = 37
-        versionCode = 6
-        versionName = "1.5"
+       applicationId = "com.hsr.railfocus"
+       minSdk = 26
+       targetSdk = 37
+        versionCode = 7
+        versionName = "1.6"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+       testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {

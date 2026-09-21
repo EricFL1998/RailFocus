@@ -93,11 +93,11 @@ class HistoryViewModelTest {
         assertFalse(state.isEmpty)
         assertEquals(1, state.tickets.size)
 
-        val ticket = state.tickets.first()
-        assertFalse(ticket.isCompleted)
-        assertEquals("已取消", ticket.completionStatus)
-        assertEquals("专注未达成", ticket.focusState)
-    }
+       val ticket = state.tickets.first()
+       assertFalse(ticket.isCompleted)
+        assertEquals("已退票", ticket.completionStatus)
+       assertEquals("专注未达成", ticket.focusState)
+   }
 
     @Test
     fun `active journeys are filtered out`() = runTest {

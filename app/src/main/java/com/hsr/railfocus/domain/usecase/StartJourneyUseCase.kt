@@ -21,6 +21,7 @@ class StartJourneyUseCase @Inject constructor(
         seatNumber: String? = null,
         carriageNumber: String? = null,
         completedAt: Long? = null,
+        delayMinutes: Int = 0,
     ): JourneyRecord {
         val createdAt = System.currentTimeMillis()
         val actualCompletedAt = completedAt ?: if (status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED) {
@@ -40,6 +41,7 @@ class StartJourneyUseCase @Inject constructor(
             focusType = focusType,
             seatNumber = seatNumber,
             carriageNumber = carriageNumber,
+            delayMinutes = delayMinutes,
         )
         journeyRepository.saveJourney(record)
         return record

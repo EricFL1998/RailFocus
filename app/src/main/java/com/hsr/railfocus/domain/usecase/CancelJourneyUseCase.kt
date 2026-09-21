@@ -16,9 +16,10 @@ class CancelJourneyUseCase @Inject constructor(
      * 
      * @param journeyId 旅程ID
      * @param actualDurationMin 取消时已专注的分钟数
+     * @param delayMinutes 晚点分钟数
      * @return true表示成功，false表示失败
      */
-    suspend operator fun invoke(journeyId: String, actualDurationMin: Int = 0): Boolean {
+    suspend operator fun invoke(journeyId: String, actualDurationMin: Int = 0, delayMinutes: Int = 0): Boolean {
         return try {
             // 1. 获取旅程
             val journey = journeyRepository.getJourneyById(journeyId)
@@ -30,7 +31,7 @@ class CancelJourneyUseCase @Inject constructor(
             }
             
             // 3. 取消旅程
-            journeyRepository.cancelJourney(journeyId, actualDurationMin)
+            journeyRepository.cancelJourney(journeyId, actualDurationMin, delayMinutes)
             true
         } catch (_: Exception) {
             false

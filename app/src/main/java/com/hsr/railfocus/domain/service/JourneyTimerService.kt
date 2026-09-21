@@ -62,7 +62,21 @@ class JourneyTimerService @Inject constructor(
     private var savedRemainingSeconds: Int = 0
     private var totalSessionSeconds: Int = 0
     private var currentPath: PathResult? = null
+    private var pauseStartTimeMillis: Long = 0L
+    private var totalPauseMillis: Long = 0L
 
+    /** 当前旅程累计晚点秒数（暂停时间） */
+    val delaySeconds: Int
+        get() {
+            val currentPause = if (_state.value is TimerState.Paused && pauseStartTimeMillis > 0L) {
+                System.currentTimeMillis() - pauseStartTimeMillis
+            } else 0L
+            return ((totalPauseMillis + currentPause) / 1000L).toInt()
+        }
+
+    /** 当前旅程累计晚点分钟数 */
+    val delayMinutes: Int
+        get() = (delaySeconds + 59) / 60
     /**
      * 启动计时器（基础版本，无进度追踪）
      */
@@ -74,11 +88,13 @@ class JourneyTimerService @Inject constructor(
      * 启动基础计时器，可分别指定剩余时间与总时间，
      * 以便暂停恢复后保持原始的进度百分比。
      */
-    private fun startBasic(remainingSeconds: Int, totalSeconds: Int, scope: CoroutineScope) {
-        timerJob?.cancel()
-        totalSessionSeconds = totalSeconds
-        savedRemainingSeconds = remainingSeconds
-        _state.value = TimerState.Running(remainingSeconds, totalSeconds)
+   private fun startBasic(remainingSeconds: Int, totalSeconds: Int, scope: CoroutineScope) {
+       timerJob?.cancel()
+        pauseStartTimeMillis = 0L
+        totalPauseMillis = 0L
+       totalSessionSeconds = totalSeconds
+       savedRemainingSeconds = remainingSeconds
+       _state.value = TimerState.Running(remainingSeconds, totalSeconds)
         _progress.value = null
         currentPath = null
 
@@ -103,15 +119,17 @@ class JourneyTimerService @Inject constructor(
      * @param durationSeconds 总时长（秒）
      * @param scope 协程作用域
      */
-    fun startWithProgress(
-        path: PathResult,
-        durationSeconds: Int,
-        scope: CoroutineScope
-    ) {
-        timerJob?.cancel()
-        totalSessionSeconds = durationSeconds
-        savedRemainingSeconds = durationSeconds
-        currentPath = path
+   fun startWithProgress(
+       path: PathResult,
+       durationSeconds: Int,
+       scope: CoroutineScope
+   ) {
+       timerJob?.cancel()
+        pauseStartTimeMillis = 0L
+        totalPauseMillis = 0L
+       totalSessionSeconds = durationSeconds
+       savedRemainingSeconds = durationSeconds
+       currentPath = path
         
         // 重置到站检测器
         arrivalDetector.reset()
@@ -132,17 +150,24 @@ class JourneyTimerService @Inject constructor(
         timerJob = runProgressLoop(path, remainingSeconds = durationSeconds, scope)
     }
 
-    fun pause() {
-        // 空闲状态下暂停没有意义，避免之后 resume() 启动一个 0 秒计时器
-        if (_state.value is TimerState.Idle) return
-        timerJob?.cancel()
-        _state.value = TimerState.Paused
-    }
+   fun pause() {
+       // 空闲状态下暂停没有意义，避免之后 resume() 启动一个 0 秒计时器
+       if (_state.value is TimerState.Idle) return
+        if (pauseStartTimeMillis == 0L) {
+            pauseStartTimeMillis = System.currentTimeMillis()
+        }
+       timerJob?.cancel()
+       _state.value = TimerState.Paused
+   }
 
-    fun resume(scope: CoroutineScope) {
-        val current = _state.value
-        if (current is TimerState.Paused) {
-            val path = currentPath
+   fun resume(scope: CoroutineScope) {
+       val current = _state.value
+       if (current is TimerState.Paused) {
+            if (pauseStartTimeMillis > 0L) {
+                totalPauseMillis += (System.currentTimeMillis() - pauseStartTimeMillis)
+                pauseStartTimeMillis = 0L
+            }
+           val path = currentPath
             if (path != null) {
                 // 使用原始总时长和剩余时间继续运行，保持进度连续性
                 resumeWithProgress(path, savedRemainingSeconds, totalSessionSeconds, scope)
@@ -230,13 +255,15 @@ class JourneyTimerService @Inject constructor(
         }
     }
 
-    fun stop() {
-        timerJob?.cancel()
-        _state.value = TimerState.Idle
-        _progress.value = null
-        currentPath = null
-        arrivalDetector.reset()
-    }
+   fun stop() {
+       timerJob?.cancel()
+        pauseStartTimeMillis = 0L
+        totalPauseMillis = 0L
+       _state.value = TimerState.Idle
+       _progress.value = null
+       currentPath = null
+       arrivalDetector.reset()
+   }
 
     /**
      * 从持久化检查点恢复旅程。
@@ -249,16 +276,18 @@ class JourneyTimerService @Inject constructor(
      * @param remainingSeconds 检查点记录的剩余时间（秒）
      * @param scope 协程作用域
      */
-    fun restoreProgress(
-        path: PathResult,
-        totalSeconds: Int,
-        remainingSeconds: Int,
-        scope: CoroutineScope,
-    ) {
-        timerJob?.cancel()
-        totalSessionSeconds = totalSeconds
-        savedRemainingSeconds = remainingSeconds
-        currentPath = path
+   fun restoreProgress(
+       path: PathResult,
+       totalSeconds: Int,
+       remainingSeconds: Int,
+       scope: CoroutineScope,
+   ) {
+       timerJob?.cancel()
+        pauseStartTimeMillis = 0L
+        totalPauseMillis = 0L
+       totalSessionSeconds = totalSeconds
+       savedRemainingSeconds = remainingSeconds
+       currentPath = path
 
         arrivalDetector.reset()
         path.path.firstOrNull()?.let { arrivalDetector.markAsArrived(it.id) }

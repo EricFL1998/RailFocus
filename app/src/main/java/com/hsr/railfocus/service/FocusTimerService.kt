@@ -425,9 +425,9 @@ class FocusTimerService : Service() {
         return getString(R.string.notif_next_station, pathStations[nextIndex].name)
     }
 
-    private fun buildFallbackNotification(isPaused: Boolean, currentSegmentIndex: Int): Notification {
-        val statusSuffix = if (isPaused) " · 已暂停" else ""
-        return Notification.Builder(this, CHANNEL_ID)
+   private fun buildFallbackNotification(isPaused: Boolean, currentSegmentIndex: Int): Notification {
+        val statusSuffix = if (isPaused) " · 列车晚点" else ""
+       return Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("$startStationName → $endStationName")
             .setContentText((arrivalAnnouncement ?: currentStationLabel(currentSegmentIndex)) + statusSuffix)
             .setSmallIcon(R.drawable.ic_bullet_train)

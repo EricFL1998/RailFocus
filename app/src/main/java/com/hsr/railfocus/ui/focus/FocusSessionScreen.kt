@@ -176,6 +176,7 @@ fun FocusSessionScreen(
                 duration = uiState.totalSeconds / 60,
                 focusType = uiState.focusType,
                 stationFact = uiState.stationFact,
+                delayMinutes = uiState.delayMinutes,
                 onBackHome = onBackHome
             )
         }
@@ -189,6 +190,7 @@ fun FocusSessionScreen(
                 focusType = uiState.focusType,
                 stationFact = null,
                 completed = false,
+                delayMinutes = uiState.delayMinutes,
                 onBackHome = onBackHome
             )
         }

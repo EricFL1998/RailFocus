@@ -21,4 +21,5 @@ data class JourneyRecordEntity(
     val focusType: String? = null,
     val seatNumber: String? = null,
     val carriageNumber: String? = null,
+    val delayMinutes: Int = 0,
 )

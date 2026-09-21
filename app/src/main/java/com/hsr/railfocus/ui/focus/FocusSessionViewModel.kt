@@ -225,9 +225,10 @@ class FocusSessionViewModel @Inject constructor(
                         _uiState.update { it.copy(isPaused = true) }
                         checkpointRemaining(_uiState.value.remainingSeconds)
                     }
-                    is JourneyTimerService.TimerState.Completed -> {
-                        _uiState.update { it.copy(isCompleted = true) }
-                        loadStationFact()
+                   is JourneyTimerService.TimerState.Completed -> {
+                        val currentDelay = timerService.delayMinutes
+                        _uiState.update { it.copy(isCompleted = true, delayMinutes = currentDelay) }
+                       loadStationFact()
                         finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED)
                         saveLastLocation()
                         
@@ -280,34 +281,36 @@ class FocusSessionViewModel @Inject constructor(
     private fun finishJourney(status: com.hsr.railfocus.domain.model.JourneyStatus) {
         if (hasFinished) return
         hasFinished = true
-        val state = _uiState.value
-        val path = state.path ?: return
-        val actualDurationMin = ((state.totalSeconds - state.remainingSeconds) / 60).coerceAtLeast(0)
+       val state = _uiState.value
+       val path = state.path ?: return
+       val actualDurationMin = ((state.totalSeconds - state.remainingSeconds) / 60).coerceAtLeast(0)
+        val delayMinutes = timerService.delayMinutes
 
-        viewModelScope.launch {
-            try {
-                val journeyId = state.journeyId
-                if (journeyId != null) {
-                    when (status) {
-                        com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED ->
-                            completeJourneyUseCase(journeyId, actualDurationMin.coerceAtLeast(1))
-                        else ->
-                            cancelJourneyUseCase(journeyId, actualDurationMin)
-                    }
-                } else {
-                    startJourneyUseCase(
-                        startStation = state.startStation,
-                        endStation = state.endStation,
-                        path = path,
-                        plannedDurationMin = state.totalSeconds / 60,
-                        actualDurationMin = actualDurationMin,
-                        status = status,
-                        focusType = state.focusType?.displayName,
-                        seatNumber = state.seatNumber,
-                        carriageNumber = state.carriageNumber,
-                        completedAt = System.currentTimeMillis(),
-                    )
-                }
+       viewModelScope.launch {
+           try {
+               val journeyId = state.journeyId
+               if (journeyId != null) {
+                   when (status) {
+                       com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED ->
+                            completeJourneyUseCase(journeyId, actualDurationMin.coerceAtLeast(1), delayMinutes)
+                       else ->
+                            cancelJourneyUseCase(journeyId, actualDurationMin, delayMinutes)
+                   }
+               } else {
+                   startJourneyUseCase(
+                       startStation = state.startStation,
+                       endStation = state.endStation,
+                       path = path,
+                       plannedDurationMin = state.totalSeconds / 60,
+                       actualDurationMin = actualDurationMin,
+                       status = status,
+                       focusType = state.focusType?.displayName,
+                       seatNumber = state.seatNumber,
+                       carriageNumber = state.carriageNumber,
+                       completedAt = System.currentTimeMillis(),
+                        delayMinutes = delayMinutes,
+                   )
+               }
                 // 只有完成的旅程计入每日目标与连续打卡
                 if (status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED) {
                     preferencesRepository.recordFocusMinutes(actualDurationMin.coerceAtLeast(1))
@@ -341,11 +344,12 @@ class FocusSessionViewModel @Inject constructor(
         timerService.resume(viewModelScope)
     }
 
-    fun stop() {
-        if (_uiState.value.isStopped) return
-        timerService.stop()
-        _uiState.update { it.copy(isStopped = true) }
-        finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.CANCELLED)
+   fun stop() {
+       if (_uiState.value.isStopped) return
+        val currentDelay = timerService.delayMinutes
+       timerService.stop()
+        _uiState.update { it.copy(isStopped = true, delayMinutes = currentDelay) }
+       finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.CANCELLED)
 
         // Stop the foreground service to dismiss notification
         context.stopService(Intent(context, FocusTimerService::class.java))

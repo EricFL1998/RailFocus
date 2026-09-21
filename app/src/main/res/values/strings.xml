@@ -43,17 +43,20 @@
     <string name="completion_welcome">欢迎来到</string>
     <string name="completion_journey_ended">旅程已结束</string>
     <string name="completion_not_completed">未完成</string>
-    <string name="completion_duration_label">专注时长</string>
-    <string name="completion_type_label">专注类型</string>
-    <string name="completion_finish">完成旅程</string>
+   <string name="completion_duration_label">专注时长</string>
+   <string name="completion_type_label">专注类型</string>
+    <string name="completion_delay_label">运行状态</string>
+    <string name="completion_on_time">正点到达</string>
+    <string name="completion_delayed">晚点 %1$d 分钟</string>
+   <string name="completion_finish">完成旅程</string>
     <string name="completion_back_home">返回首页</string>
     <string name="completion_type_default">通用</string>
 
-    <!-- History / My Journeys -->
-    <string name="history_title">我的旅程</string>
-    <string name="history_status_completed">已到达</string>
-    <string name="history_status_cancelled">已取消</string>
-    <string name="history_filter_status">状态</string>
+   <!-- History / My Journeys -->
+   <string name="history_title">我的旅程</string>
+   <string name="history_status_completed">已到达</string>
+    <string name="history_status_cancelled">已退票</string>
+   <string name="history_filter_status">状态</string>
     <string name="history_filter_scene">场景</string>
     <string name="history_filter_sort">排序</string>
     <string name="history_filter_all_status">全部状态</string>
@@ -64,9 +67,11 @@
     <string name="history_sort_earliest_first">最早优先</string>
     <string name="history_empty_title">还没有旅程</string>
     <string name="history_empty_desc">还没有旅程，开始一场专注的旅行吧</string>
-    <string name="history_departure">出发</string>
-    <string name="history_arrival">到达</string>
-    <string name="history_distance">距离</string>
+   <string name="history_departure">出发</string>
+   <string name="history_arrival">到达</string>
+    <string name="history_status_on_time">正点</string>
+    <string name="history_status_delayed">晚点%1$d分</string>
+   <string name="history_distance">距离</string>
     <string name="history_unit_km">km</string>
 
     <!-- Data / Statistics -->
@@ -152,13 +157,13 @@
 
     <!-- Notifications -->
     <string name="notif_channel_name">专注计时</string>
-    <string name="notif_channel_desc">显示专注旅程的列车运行进度</string>
-    <string name="notif_action_pause">暂停</string>
-    <string name="notif_action_resume">继续</string>
-    <string name="notif_action_stop">停止</string>
-    <string name="notif_subtext">专注旅程</string>
-    <string name="notif_next_station">下一站: %1$s</string>
-    <string name="notif_paused">已暂停</string>
-    <string name="notif_remaining_time">剩余时间: %1$s</string>
+   <string name="notif_channel_desc">显示专注旅程的列车运行进度</string>
+   <string name="notif_action_pause">暂停</string>
+   <string name="notif_action_resume">继续</string>
+   <string name="notif_action_stop">停止</string>
+   <string name="notif_subtext">专注旅程</string>
+   <string name="notif_next_station">下一站: %1$s</string>
+    <string name="notif_paused">列车晚点</string>
+   <string name="notif_remaining_time">剩余时间: %1$s</string>
 
 </resources>
