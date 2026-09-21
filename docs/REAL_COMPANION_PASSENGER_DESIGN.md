@@ -49,6 +49,9 @@ CREATE TABLE active_journeys (
     id UUID PRIMARY KEY,                   -- 旅程唯一 ID
     user_identifier TEXT NOT NULL,         -- 匿名化设备指纹/随机用户 ID
     seat_info TEXT NOT NULL,               -- 分配的座位（如 05车08A）
+    start_station_name TEXT NOT NULL,      -- 该旅客旅程的始发站（如 "北京南"）
+    end_station_name TEXT NOT NULL,        -- 该旅客旅程的终点站（如 "上海虹桥"）
+    focus_type TEXT NOT NULL DEFAULT '通用',-- 专注类别（如 "深度工作"、"考研自习"、"阅读"）
     station_ids TEXT[] NOT NULL,           -- 本次旅程规划经过的所有站点 ID 数组
     current_segment_from TEXT NOT NULL,    -- 当前所在区间的出发站 ID
     current_segment_to TEXT NOT NULL,      -- 当前所在区间的下一站 ID
@@ -69,7 +72,7 @@ CREATE INDEX idx_active_segment ON active_journeys (current_segment_from, curren
    - 每 45 秒或每次列车到达下一区段时，更新一次心跳与当前区间 (`current_segment_from`, `current_segment_to`)；
    - 查询当前正在同一区间专注的真实人数：
      ```sql
-     SELECT COUNT(*), array_agg(seat_info) 
+     SELECT id, seat_info, start_station_name, end_station_name, focus_type, started_at
      FROM active_journeys 
      WHERE current_segment_from = :currentFrom 
        AND current_segment_to = :currentTo
@@ -88,12 +91,21 @@ CREATE INDEX idx_active_segment ON active_journeys (current_segment_from, curren
 
 ## 4. UI 界面与交互设计
 
-### 一、 专注进行中：车厢实时客流屏
-- **位置**：专注界面右上角或控制栏边缘的微型指示标。
-- **状态展示**：
-  - **当前无人同乘**：展示 `[ 💺 独自前行 ]` 或不打扰的极弱指示；
-  - **有真实同乘**：展示 `[ 💺 同车旅客 2 人 ]`；
-  - 点击指示标可展开磨砂浮层，查看同乘旅客的真实车次座位（如 `03车05F`、`07车12A`）以及他们与你的共同区间（如 *“与你同行：济南西 → 南京南”*）。
+### 一、 专注进行中：车厢实时客流屏与同乘旅客列表
+
+1. **常驻微型状态标**
+   - **位置**：专注界面右上角或控制区旁的微型胶囊标。
+   - **状态展示**：
+     - **当前无人同乘**：展示 `[ 💺 独自前行 ]`；
+     - **有真实同乘**：展示 `[ 💺 同车旅客 2 人 ]`。
+
+2. **【同车旅客列表】半透明磨砂抽屉（点击展开）**
+   - 点击状态标自底部滑出清爽的车厢旅客花名册（安静自习卡片列表），每位真实同乘乘客卡片包含：
+     - **座位席别**：如 `05车08A`（二等座/一等座/动卧）；
+     - **行程区间（始发站 ➔ 终点站）**：清晰标明对方的整段行程（如 `北京南 ➔ 上海虹桥`），并标注当前与你的**共乘路段**；
+     - **专注场景类别**：展示对方设置的专注标签，如 `📚 深度阅读`、`💻 编码研发`、`📝 考研自习`；
+     - **已在途时长**：如 `已乘车专注 38 分钟`。
+   - **安静克制原则**：列表中纯展示自习状态，不提供聊天、加好友或点对点打扰功能，保持车厢肃静。
 
 ### 二、 到站时动态：真实上下车微播报
 - 当列车行驶到某一个中间车站时，若检测到真实用户变动，在车站信息卡上方弹出轻量文字吐司（Toast/Banner）：
@@ -105,9 +117,9 @@ CREATE INDEX idx_active_segment ON active_journeys (current_segment_from, curren
   - **文案**：
     - 若全程独自一人：*“本次旅程由你一人安静包车完成，享受了难得的专属专注时光”*；
     - 若有真实同行者：*“本次旅程全程共有 3 位真实旅客曾与你在不同路段并肩专注，最长同行 42 分钟”*；
-  - **相遇时间轴清单**：
-    - `05车08B 旅客 · 在济南西上车 · 共同专注 45 分钟`
-    - `03车02A 旅客 · 在南京南下车 · 共同专注 20 分钟`
+  - **相遇时间轴清单（完整行程与类别沉淀）**：
+    - `05车08B 旅客 [北京南 ➔ 杭州东] · 场景: 深度工作 · 在济南西上车 · 共同专注 45 分钟`
+    - `03车02A 旅客 [济南西 ➔ 南京南] · 场景: 英语背词 · 在南京南下车 · 共同专注 20 分钟`
 
 ---
 
