@@ -50,6 +50,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val ambientEnabled by viewModel.ambientSoundEnabled.collectAsState()
     val stationAnnouncementEnabled by viewModel.stationAnnouncementEnabled.collectAsState()
+    val keepScreenOnEnabled by viewModel.keepScreenOnEnabled.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showClearDataDialog by remember { mutableStateOf(false) }
@@ -184,6 +185,15 @@ fun SettingsScreen(
                 summaryRes = R.string.settings_station_announcement_summary,
                 enabled = stationAnnouncementEnabled,
                 onToggle = viewModel::setStationAnnouncementEnabled,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+
+            SoundToggleSection(
+                icon = Icons.Default.BrightnessHigh,
+                titleRes = R.string.settings_keep_screen_on,
+                summaryRes = R.string.settings_keep_screen_on_summary,
+                enabled = keepScreenOnEnabled,
+                onToggle = viewModel::setKeepScreenOnEnabled,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 

@@ -20,6 +20,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -53,6 +55,13 @@ class FocusSessionViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(FocusSessionUiState())
     val uiState: StateFlow<FocusSessionUiState> = _uiState.asStateFlow()
+
+    val keepScreenOnEnabled: StateFlow<Boolean> = preferencesRepository.keepScreenOnEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = true,
+        )
 
     /** 防止完成/取消被重复处理（StateFlow 重放、多次点击等） */
     private var hasFinished: Boolean = false

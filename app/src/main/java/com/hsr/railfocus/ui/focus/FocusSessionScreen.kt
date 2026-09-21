@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,8 +39,18 @@ fun FocusSessionScreen(
     viewModel: FocusSessionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val keepScreenOnEnabled by viewModel.keepScreenOnEnabled.collectAsState()
     val context = LocalContext.current
+    val view = LocalView.current
     var showStopConfirm by remember { mutableStateOf(false) }
+
+    // 屏幕常亮：当用户开启设置且旅程处于进行中时保持屏幕常亮
+    DisposableEffect(keepScreenOnEnabled, uiState.isRunning) {
+        view.keepScreenOn = keepScreenOnEnabled && uiState.isRunning
+        onDispose {
+            view.keepScreenOn = false
+        }
+    }
 
     // 启动前台服务，确保后台运行
     LaunchedEffect(destinationJson) {

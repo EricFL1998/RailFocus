@@ -82,6 +82,19 @@ class SettingsViewModel @Inject constructor(
             initialValue = true,
         )
 
+    val keepScreenOnEnabled = userPreferencesRepository.keepScreenOnEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = true,
+        )
+
+    fun setKeepScreenOnEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setKeepScreenOnEnabled(enabled)
+        }
+    }
+
     private val _pendingUpdate = MutableStateFlow<AppUpdateInfo?>(null)
 
     /** 已发现但尚未处理的新版本，用于设置页“检查更新”行的版本提示 */

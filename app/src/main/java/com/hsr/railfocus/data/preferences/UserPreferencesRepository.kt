@@ -46,6 +46,23 @@ class UserPreferencesRepository @Inject constructor(
         val LAST_GOAL_DATE = stringPreferencesKey("last_goal_date")
         val AMBIENT_SOUND_ENABLED = booleanPreferencesKey("ambient_sound_enabled")
         val STATION_ANNOUNCEMENT_ENABLED = booleanPreferencesKey("station_announcement_enabled")
+        val KEEP_SCREEN_ON_ENABLED = booleanPreferencesKey("keep_screen_on_enabled")
+    }
+
+    /**
+     * 专注旅程进行时是否保持屏幕常亮
+     */
+    val keepScreenOnEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[Keys.KEEP_SCREEN_ON_ENABLED] ?: true
+    }
+
+    /**
+     * 设置专注常亮开关
+     */
+    suspend fun setKeepScreenOnEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.KEEP_SCREEN_ON_ENABLED] = enabled
+        }
     }
 
     /**
