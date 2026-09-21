@@ -442,13 +442,11 @@ fun TrainTicketCard(
         }
 
         // 左右真实物理打孔缺口（取页面背景色覆盖并带有凹向内部的圆弧描边）
-        val strokeColor = cardBorder?.let {
-            when (ticket.trainSeries) {
-                TrainSeries.C_SERIES -> if (isDark) Color(0xFF233830) else Color(0xFFE0F2F1)
-                TrainSeries.D_SERIES -> if (isDark) Color(0xFF223547) else Color(0xFFE3F2FD)
-                TrainSeries.G_SERIES -> if (isDark) Color(0xFF3D2F22) else Color(0xFFFFECB3)
-                TrainSeries.SLEEPER -> if (isDark) Color(0xFF222D4A) else Color(0xFF2D3B62)
-            }
+        val strokeColor = when (ticket.trainSeries) {
+            TrainSeries.C_SERIES -> if (isDark) Color(0xFF2A453A) else Color(0xFFB2DFDB)
+            TrainSeries.D_SERIES -> if (isDark) Color(0xFF263D54) else Color(0xFFBBDEFB)
+            TrainSeries.G_SERIES -> if (isDark) Color(0xFF4A3828) else Color(0xFFFFE082)
+            TrainSeries.SLEEPER -> if (isDark) Color(0xFF29375A) else Color(0xFF3B4D80)
         }
 
         // 左打孔缺口
@@ -472,7 +470,7 @@ fun TrainTicketCard(
                     startAngle = -90f,
                     sweepAngle = 180f,
                     useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
                 )
             }
         }
@@ -498,7 +496,7 @@ fun TrainTicketCard(
                     startAngle = 90f,
                     sweepAngle = 180f,
                     useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
                 )
             }
         }
