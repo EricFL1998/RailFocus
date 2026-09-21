@@ -188,7 +188,7 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePopEnter(): En
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePopExit(): ExitTransition =
     slideOutHorizontally(
         animationSpec = tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
-    ) { it } + fadeOut(tween(PAGE_SLIDE_DURATION_MS, easing = FastOutSlowInEasing))
+    ) { it }
 
 /** 当前页面是否属于需要横向推入动画的二级页面 */
 private fun NavDestination.isSlidePage(): Boolean =

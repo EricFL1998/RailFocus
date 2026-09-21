@@ -5,6 +5,7 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -141,7 +142,11 @@ fun HomeScreen(
     var bottomPanelMeasured by remember { mutableStateOf(false) }
 
     SharedTransitionLayout {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             val cameraState = computeCameraState(
                 progress = transitionProgress,
                 homeTarget = homeTarget,

@@ -1,5 +1,6 @@
 package com.hsr.railfocus.ui.journeys
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,7 +72,11 @@ fun AllJourneysScreen(
     // 默认视野：缩到最小级别，地图居中在全部已完成线路的重心上
     val overviewCamera = (uiState.cameraCenter ?: CHINA_CENTER) to OVERVIEW_ZOOM
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         MapLibreView(
             modifier = Modifier.fillMaxSize(),
             // 这里不展示“我的位置”标点（经纬度 0,0 会被地图组件忽略）
