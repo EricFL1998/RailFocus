@@ -75,6 +75,19 @@ class SettingsViewModel @Inject constructor(
             initialValue = true,
         )
 
+    val ambientSoundVolume = userPreferencesRepository.ambientSoundVolume
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = 30,
+        )
+
+    fun setAmbientSoundVolume(volume: Int) {
+        viewModelScope.launch {
+            userPreferencesRepository.setAmbientSoundVolume(volume)
+        }
+    }
+
     val stationAnnouncementEnabled = userPreferencesRepository.stationAnnouncementEnabled
         .stateIn(
             scope = viewModelScope,

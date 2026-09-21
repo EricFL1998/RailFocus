@@ -57,6 +57,7 @@ class FocusTimerService : Service() {
 
         private const val AMBIENT_NORMAL_VOLUME = 0.3f
         private const val AMBIENT_DUCK_VOLUME = 0.1f
+        private var currentAmbientVolumeFraction = 0.3f
 
         fun createStartIntent(context: Context, destinationJson: String): Intent {
             return Intent(context, FocusTimerService::class.java).apply {
@@ -184,20 +185,30 @@ class FocusTimerService : Service() {
         observeTimer()
     }
 
-    private fun observeStationAnnouncementPreference() {
-        preferenceJob?.cancel()
-        preferenceJob = serviceScope.launch {
-            // 旅程开始即视为从始发站发车
-            if (preferencesRepository.stationAnnouncementEnabled.first()) {
-                stationAnnouncementEnabled = true
-                playStationAnnouncement(R.raw.train_departure_announcement)
+   private fun observeStationAnnouncementPreference() {
+       preferenceJob?.cancel()
+       preferenceJob = serviceScope.launch {
+           // 旅程开始即视为从始发站发车
+           if (preferencesRepository.stationAnnouncementEnabled.first()) {
+               stationAnnouncementEnabled = true
+               playStationAnnouncement(R.raw.train_departure_announcement)
+           }
+           // 持续同步开关，旅程中途切换立即生效
+            launch {
+                preferencesRepository.stationAnnouncementEnabled.collect { enabled ->
+                    stationAnnouncementEnabled = enabled
+                }
             }
-            // 持续同步开关，旅程中途切换立即生效
-            preferencesRepository.stationAnnouncementEnabled.collect { enabled ->
-                stationAnnouncementEnabled = enabled
+            launch {
+                preferencesRepository.ambientSoundVolume.collect { vol ->
+                    currentAmbientVolumeFraction = (vol / 100f).coerceIn(0f, 1f)
+                    if (announcementPlayer == null) {
+                        ambientPlayer?.setVolume(currentAmbientVolumeFraction, currentAmbientVolumeFraction)
+                    }
+                }
             }
-        }
-    }
+       }
+   }
 
     /**
      * 播放站台广播音。
@@ -216,31 +227,31 @@ class FocusTimerService : Service() {
             ambientPlayer?.setVolume(AMBIENT_DUCK_VOLUME, AMBIENT_DUCK_VOLUME)
             val player = MediaPlayer.create(this, soundRes)
             if (player != null) {
-                player.setOnCompletionListener {
-                    announcementPlayer = null
-                    runCatching { it.release() }
-                    ambientPlayer?.setVolume(AMBIENT_NORMAL_VOLUME, AMBIENT_NORMAL_VOLUME)
-                    onComplete?.invoke()
-                }
-                player.start()
-                announcementPlayer = player
-            } else {
-                // 创建失败时恢复环境音音量
-                ambientPlayer?.setVolume(AMBIENT_NORMAL_VOLUME, AMBIENT_NORMAL_VOLUME)
-            }
+               player.setOnCompletionListener {
+                   announcementPlayer = null
+                   runCatching { it.release() }
+                    ambientPlayer?.setVolume(currentAmbientVolumeFraction, currentAmbientVolumeFraction)
+                   onComplete?.invoke()
+               }
+               player.start()
+               announcementPlayer = player
+           } else {
+               // 创建失败时恢复环境音音量
+                ambientPlayer?.setVolume(currentAmbientVolumeFraction, currentAmbientVolumeFraction)
+           }
         }
     }
 
-    private fun startAmbience() {
-        if (ambientPlayer != null) return
-        runCatching {
-            ambientPlayer = MediaPlayer.create(this, R.raw.hsr_whitenoise)?.apply {
-                isLooping = true
-                setVolume(AMBIENT_NORMAL_VOLUME, AMBIENT_NORMAL_VOLUME)
-                start()
-            }
-        }
-    }
+   private fun startAmbience() {
+       if (ambientPlayer != null) return
+       runCatching {
+           ambientPlayer = MediaPlayer.create(this, R.raw.hsr_whitenoise)?.apply {
+               isLooping = true
+                setVolume(currentAmbientVolumeFraction, currentAmbientVolumeFraction)
+               start()
+           }
+       }
+   }
 
     private fun pauseAmbience() {
         runCatching { ambientPlayer?.takeIf { it.isPlaying }?.pause() }

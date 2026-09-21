@@ -117,6 +117,7 @@
     <string name="ticket_share">分享车票</string>
    <string name="settings_ambient_sound">车厢环境音</string>
    <string name="settings_ambient_sound_summary">专注时播放行驶中的车厢背景声</string>
+    <string name="settings_ambient_volume">环境音量</string>
    <string name="settings_station_announcement">到站发车提示音</string>
    <string name="settings_station_announcement_summary">列车到站、发车时播放提示音</string>
     <string name="settings_keep_screen_on">专注时屏幕常亮</string>

@@ -45,6 +45,7 @@ class UserPreferencesRepository @Inject constructor(
         val FOCUS_STREAK = intPreferencesKey("focus_streak")
         val LAST_GOAL_DATE = stringPreferencesKey("last_goal_date")
         val AMBIENT_SOUND_ENABLED = booleanPreferencesKey("ambient_sound_enabled")
+        val AMBIENT_SOUND_VOLUME = intPreferencesKey("ambient_sound_volume")
         val STATION_ANNOUNCEMENT_ENABLED = booleanPreferencesKey("station_announcement_enabled")
         val KEEP_SCREEN_ON_ENABLED = booleanPreferencesKey("keep_screen_on_enabled")
     }
@@ -94,6 +95,23 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAmbientSoundEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.AMBIENT_SOUND_ENABLED] = enabled
+        }
+    }
+
+    /**
+     * 白噪音环境音量 (0..100)
+     */
+    val ambientSoundVolume: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[Keys.AMBIENT_SOUND_VOLUME] ?: 30
+    }
+
+    /**
+     * 设置白噪音环境音量
+     */
+    suspend fun setAmbientSoundVolume(volume: Int) {
+        val clamped = volume.coerceIn(0, 100)
+        context.dataStore.edit { preferences ->
+            preferences[Keys.AMBIENT_SOUND_VOLUME] = clamped
         }
     }
 
