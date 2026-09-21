@@ -553,7 +553,7 @@ fun MapLibreView(
                 cameraInsetRightDp = cameraInsetRightDp,
                 cameraInsetBottomDp = cameraInsetBottomDp,
                 animate = true,
-                duration = 600
+                duration = 400
             )
             previousTransitionProgress = transitionProgress
             return@LaunchedEffect
@@ -598,7 +598,7 @@ fun MapLibreView(
                             cameraInsetRightDp = cameraInsetRightDp,
                             cameraInsetBottomDp = cameraInsetBottomDp,
                             animate = true,
-                            duration = 800
+                            duration = 480
                         )
                         lastFramingTime = currentTime
                         lastFramedBounds = latchedBounds
