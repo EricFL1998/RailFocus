@@ -1,9 +1,7 @@
 package com.hsr.railfocus.ui.settings
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -38,7 +36,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hsr.railfocus.R
 import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.ui.components.UpdateAvailableDialog
-import java.util.Locale
 
 /**
  * 设置页面
@@ -120,17 +117,6 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    // 移除返回按钮，使用手势返回
-                    /*
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.selection_back),
-                        )
-                    }
-                    */
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
@@ -597,13 +583,4 @@ private fun openAppSettings(context: Context) {
         data = Uri.fromParts("package", context.packageName, null)
     }
     context.startActivity(intent)
-}
-
-private fun findActivity(context: Context): Activity? {
-    var currentContext = context
-    while (currentContext is ContextWrapper) {
-        if (currentContext is Activity) return currentContext
-        currentContext = currentContext.baseContext
-    }
-    return null
 }

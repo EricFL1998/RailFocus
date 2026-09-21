@@ -77,7 +77,7 @@ class DestinationCalculator @Inject constructor(
                 DestinationOption(
                     station = station,
                     travelTimeMinutes = pathResult.totalDurationMin,
-                    distance = pathResult.totalDistanceKm.toDouble(),
+                    distance = pathResult.totalDistanceKm,
                     recommendationScore = 0.0, // 废弃单一分数，改用多级排序
                     pathEdges = pathResult.edges,
                     pathStations = pathResult.path,

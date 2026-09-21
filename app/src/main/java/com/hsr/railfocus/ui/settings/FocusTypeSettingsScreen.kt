@@ -45,14 +45,6 @@ fun FocusTypeSettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_focus_management)) },
-                navigationIcon = {
-                    // 移除返回按钮，使用手势返回
-                    /*
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.selection_back))
-                    }
-                    */
-                },
                 actions = {
                     IconButton(onClick = { showAddDialog = true }) {
                         Icon(Icons.Default.Add, contentDescription = stringResource(R.string.settings_add_scene))

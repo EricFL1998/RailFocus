@@ -10,12 +10,10 @@
     <string name="home_greeting_afternoon">下午好</string>
     <string name="home_greeting_evening">晚上好</string>
     <string name="home_greeting_default">你好</string>
-    <string name="home_location_permission_needed">需要位置权限</string>
     <string name="home_location_placeholder">南京南站</string>
     <string name="home_city_placeholder">南京</string>
 
     <!-- Journey Selection -->
-    <string name="selection_title">选择你的专注旅程</string>
     <string name="selection_search_placeholder">输入车站名或城市名</string>
     <string name="selection_cancel_search">取消搜索</string>
     <string name="selection_clear">清除</string>
@@ -23,7 +21,6 @@
     <string name="selection_duration_minutes">%1$d分钟</string>
     <string name="selection_duration_hours">%1$d小时</string>
     <string name="selection_duration_hours_mins">%1$d小时%2$d分钟</string>
-    <string name="selection_no_destinations">没有找到可选目的地</string>
 
     <!-- Focus Session -->
     <string name="focus_heading">正在前往</string>
@@ -71,9 +68,6 @@
     <string name="history_arrival">到达</string>
     <string name="history_distance">距离</string>
     <string name="history_unit_km">km</string>
-    <string name="history_focus_achieved">专注达成</string>
-    <string name="history_focus_not_achieved">专注未完成</string>
-    <string name="history_task_cancelled">专注未达成</string>
 
     <!-- Data / Statistics -->
     <string name="data_title">数据</string>
@@ -114,7 +108,6 @@
     <string name="data_milestones_summary">%1$d/%2$d 个成就已达成</string>
     <string name="data_milestone_km">累计 %1$d 公里</string>
     <string name="data_milestone_reached">已达成</string>
-    <string name="data_milestone_pending">未达成</string>
     <string name="data_milestone_remaining">还差 %1$d 公里</string>
     <string name="ticket_share">分享车票</string>
     <string name="settings_ambient_sound">车厢环境音</string>
@@ -131,12 +124,9 @@
     <!-- Settings -->
     <string name="settings_title">设置</string>
     <string name="settings_focus_management">专注场景管理</string>
-    <string name="settings_theme">主题模式</string>
     <string name="settings_theme_auto">跟随系统</string>
     <string name="settings_theme_light">浅色模式</string>
     <string name="settings_theme_dark">深色模式</string>
-    <string name="settings_about">关于此应用</string>
-    <string name="settings_version">版本 1.2</string>
     <string name="settings_check_update">检查更新</string>
     <string name="settings_checking_update">正在检查更新…</string>
     <string name="settings_current_version">当前版本 %1$s</string>
@@ -155,7 +145,6 @@
     <string name="settings_confirm_clear">确定清除</string>
     <string name="settings_add_scene">添加场景</string>
     <string name="settings_scene_name">场景名称</string>
-    <string name="settings_scene_name_hint">例如：冥想、小睡</string>
     <string name="settings_scene_icon">场景图标</string>
     <string name="settings_scene_color">场景颜色</string>
     <string name="settings_delete">删除</string>

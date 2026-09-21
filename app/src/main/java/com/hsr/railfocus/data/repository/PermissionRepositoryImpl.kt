@@ -70,14 +70,6 @@ class PermissionRepositoryImpl @Inject constructor(
                     PermissionStatus.GRANTED
                 }
             }
-
-            else -> {
-                // 普通权限
-                when (ContextCompat.checkSelfPermission(context, type.androidPermission)) {
-                    PackageManager.PERMISSION_GRANTED -> PermissionStatus.GRANTED
-                    else -> PermissionStatus.DENIED
-                }
-            }
         }
         
         return PermissionState(
