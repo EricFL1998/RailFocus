@@ -343,35 +343,15 @@ private fun FrequentFlyerCard(
 
                 }
 
-                // 中部：等级大字与等级胶囊一体化整合（左侧居中排列，去掉芯片）
+                // 中部：纯粹大气的唯一卡名大字（不重复显示英文副标题）
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            text = tier.title,
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Black,
-                            color = style.text,
-                            letterSpacing = 1.sp
-                        )
-                        // 与等级大字整合在一起的英文胶囊
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = style.accent.copy(alpha = 0.18f),
-                            border = BorderStroke(1.dp, style.accent.copy(alpha = 0.45f))
-                        ) {
-                            Text(
-                                text = if (tier == MembershipTier.DIAMOND) "BLACK ELITE" else tier.enTitle,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Black,
-                                color = style.accent,
-                                letterSpacing = 1.2.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = tier.title,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black,
+                        color = style.text,
+                        letterSpacing = 1.sp
+                    )
 
                     val validityHint = when {
                         tier == MembershipTier.CLASSIC -> "永久有效"
