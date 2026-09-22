@@ -318,7 +318,7 @@ private fun FrequentFlyerCard(
                 // 顶部：俱乐部Logo与物理芯片 (EMV Chip)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
@@ -332,21 +332,21 @@ private fun FrequentFlyerCard(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "RAIL FOCUS",
+                            text = "Rail Focus Club",
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Black,
-                            color = style.text.copy(alpha = 0.85f),
-                            letterSpacing = 2.sp
+                            fontWeight = FontWeight.Bold,
+                            color = style.text.copy(alpha = 0.8f),
+                            letterSpacing = 1.sp
                         )
                     }
 
 
                 }
 
-                // 中部：卡名与有效期右对齐排布，整体更舒展平衡
+                // 中部：卡名与有效期居左排布
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.End,
+                    horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
