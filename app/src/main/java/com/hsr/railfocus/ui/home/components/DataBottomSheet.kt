@@ -340,8 +340,8 @@ private fun FrequentFlyerCard(
                     )
                     val validityHint = when {
                         tier == MembershipTier.CLASSIC -> "永久有效"
-                        flyerState.isDowngradeWarning -> "距离降级还剩 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
-                        else -> "保级有效剩余 " + flyerState.daysUntilDowngrade + " 天"
+                        flyerState.isDowngradeWarning -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
+                        else -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天"
                     }
                     Text(
                         text = validityHint,
