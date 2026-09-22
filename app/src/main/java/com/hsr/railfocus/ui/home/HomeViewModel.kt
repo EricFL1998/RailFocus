@@ -57,9 +57,9 @@ class HomeViewModel @Inject constructor(
         checkLocationPermission()
         loadNearbyStations()
         checkForUpdateOnLaunch()
-        // 测试注入：写入金卡常客俱乐部数据（定级里程 2,450 分钟）
+        // 测试注入：写入白金卡常客俱乐部数据（定级里程 6,500 分钟，直接激活白金卡等级）
         viewModelScope.launch {
-            preferencesRepository.recordFocusMinutes(2450)
+            preferencesRepository.recordFocusMinutes(6500)
         }
     }
 

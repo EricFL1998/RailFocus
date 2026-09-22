@@ -107,12 +107,12 @@ fun TrainTicketCard(
         }
     }
 
-    // 常客会员卡等级为车票边框与阴影带来专属强化
+    // 常客会员卡等级为车票边框带来显著专属金属质感与色彩
     val cardBorder = when (ticket.memberTierName) {
-        "SILVER" -> BorderStroke(1.dp, Color(0xFFCBD5E0).copy(alpha = 0.6f))
-        "GOLD" -> BorderStroke(1.2.dp, Color(0xFFECC94B).copy(alpha = 0.8f))
-        "PLATINUM" -> BorderStroke(1.2.dp, Color(0xFF90CDF4).copy(alpha = 0.8f))
-        "DIAMOND" -> BorderStroke(1.5.dp, Color(0xFFA5B4FC).copy(alpha = 0.9f))
+        "SILVER" -> BorderStroke(1.5.dp, if (isDark) Color(0xFFCBD5E0) else Color(0xFF94A3B8))
+        "GOLD" -> BorderStroke(2.dp, if (isDark) Color(0xFFF6E05E) else Color(0xFFD97706))
+        "PLATINUM" -> BorderStroke(2.dp, if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7))
+        "DIAMOND" -> BorderStroke(2.5.dp, if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED))
         else -> baseBorder
     }
     val cardElevation = if (isDark) 3.dp else 2.dp
@@ -204,70 +204,88 @@ fun TrainTicketCard(
                         )
                     }
 
-                    // 常客卡等级叠加强化特效 (叠加在任意车型车票上)
+                    // 常客卡等级叠加强化特效 (叠加在任意车型车票上，高能见度全息光泽)
                     when (ticket.memberTierName) {
                         "SILVER" -> {
-                            // 银卡会员：右上角冷银微光漫射
+                            // 银卡会员：右上角冷银微光
                             drawCircle(
                                 brush = Brush.radialGradient(
-                                    colors = listOf(Color(0xFFE2E8F0).copy(alpha = if (isDark) 0.15f else 0.25f), Color.Transparent),
+                                    colors = listOf(Color(0xFFCBD5E0).copy(alpha = if (isDark) 0.22f else 0.35f), Color.Transparent),
                                     center = Offset(size.width * 0.9f, 0f),
-                                    radius = size.width * 0.5f
+                                    radius = size.width * 0.55f
                                 ),
-                                radius = size.width * 0.5f,
+                                radius = size.width * 0.55f,
                                 center = Offset(size.width * 0.9f, 0f)
                             )
                         }
                         "GOLD" -> {
-                            // 金卡会员：尊贵暖金色对角流光暗纹
+                            // 金卡会员：整卡暖金对角流光 + 右上角柔金光晕
                             drawRect(
                                 brush = Brush.linearGradient(
                                     colors = listOf(
-                                        Color(0xFFECC94B).copy(alpha = if (isDark) 0.12f else 0.08f),
+                                        Color(0xFFF59E0B).copy(alpha = if (isDark) 0.18f else 0.14f),
                                         Color.Transparent,
-                                        Color(0xFFD69E2E).copy(alpha = if (isDark) 0.08f else 0.05f)
+                                        Color(0xFFD97706).copy(alpha = if (isDark) 0.12f else 0.08f)
                                     ),
                                     start = Offset.Zero,
                                     end = Offset(size.width, size.height)
                                 )
                             )
-                            // 顶部烫金微光徽章
                             drawCircle(
                                 brush = Brush.radialGradient(
-                                    colors = listOf(Color(0xFFF6E05E).copy(alpha = if (isDark) 0.2f else 0.15f), Color.Transparent),
-                                    center = Offset(size.width * 0.88f, 20f),
-                                    radius = size.width * 0.45f
+                                    colors = listOf(Color(0xFFFBBF24).copy(alpha = if (isDark) 0.28f else 0.2f), Color.Transparent),
+                                    center = Offset(size.width * 0.85f, 20f),
+                                    radius = size.width * 0.5f
                                 ),
-                                radius = size.width * 0.45f,
-                                center = Offset(size.width * 0.88f, 20f)
+                                radius = size.width * 0.5f,
+                                center = Offset(size.width * 0.85f, 20f)
                             )
                         }
                         "PLATINUM" -> {
-                            // 白金卡会员：湛蓝全息科技晶体反光
+                            // 白金卡会员：湛蓝全息科技晶体反光 + 左下到右上的冰蓝高光条纹
                             drawRect(
                                 brush = Brush.linearGradient(
                                     colors = listOf(
-                                        Color(0xFF63B3ED).copy(alpha = if (isDark) 0.15f else 0.1f),
+                                        Color(0xFF0284C7).copy(alpha = if (isDark) 0.22f else 0.16f),
+                                        Color(0xFF38BDF8).copy(alpha = if (isDark) 0.14f else 0.09f),
                                         Color.Transparent,
-                                        Color(0xFF3182CE).copy(alpha = if (isDark) 0.1f else 0.06f)
+                                        Color(0xFF0EA5E9).copy(alpha = if (isDark) 0.16f else 0.12f)
                                     ),
                                     start = Offset(0f, size.height),
                                     end = Offset(size.width, 0f)
                                 )
                             )
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFF38BDF8).copy(alpha = if (isDark) 0.3f else 0.22f), Color.Transparent),
+                                    center = Offset(size.width * 0.88f, 20f),
+                                    radius = size.width * 0.55f
+                                ),
+                                radius = size.width * 0.55f,
+                                center = Offset(size.width * 0.88f, 20f)
+                            )
                         }
                         "DIAMOND" -> {
-                            // 星空黑卡会员：极光紫霓虹光斑与星辰叠层
+                            // 星空黑卡会员：极光紫与星际蓝流光弥散
                             drawRect(
                                 brush = Brush.linearGradient(
                                     colors = listOf(
-                                        Color(0xFF7C3AED).copy(alpha = if (isDark) 0.18f else 0.12f),
-                                        Color(0xFF3B82F6).copy(alpha = if (isDark) 0.12f else 0.08f),
+                                        Color(0xFF7C3AED).copy(alpha = if (isDark) 0.26f else 0.18f),
+                                        Color(0xFF2563EB).copy(alpha = if (isDark) 0.18f else 0.12f),
                                         Color.Transparent
                                     ),
                                     start = Offset.Zero,
                                     end = Offset(size.width, size.height)
                                 )
+                            )
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFFA78BFA).copy(alpha = if (isDark) 0.35f else 0.25f), Color.Transparent),
+                                    center = Offset(size.width * 0.85f, 20f),
+                                    radius = size.width * 0.6f
+                                ),
+                                radius = size.width * 0.6f,
+                                center = Offset(size.width * 0.85f, 20f)
                             )
                         }
                     }

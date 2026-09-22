@@ -57,13 +57,18 @@ class HistoryViewModel @Inject constructor(
     }
 
     private fun observeHistory() {
-        getJourneyHistoryUseCase()
-            .onEach { records ->
+        kotlinx.coroutines.flow.combine(
+            getJourneyHistoryUseCase(),
+            preferencesRepository.frequentFlyerState
+        ) { records, flyerState ->
+            records to flyerState.tier.name
+        }
+            .onEach { (records, currentTierName) ->
                 val tickets = records
                     .asSequence()
                     // 排除进行中的旅程；完成的和取消的（未完成车票）都展示
                     .filter { it.status != com.hsr.railfocus.domain.model.JourneyStatus.ACTIVE }
-                    .map { it.toTrainTicketModel(frequentFlyerState.value.tier.name) }
+                    .map { it.toTrainTicketModel(currentTierName) }
                     .toList()
 
                 val availableTypes = tickets.asSequence().mapNotNull { it.record.focusType }.distinct().sorted().toList()
