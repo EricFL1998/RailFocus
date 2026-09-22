@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,7 +63,8 @@ fun HomeScreen(
     val focusUiState by focusSessionViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    var phase by remember { mutableStateOf(HomePhase.None) }
+    var phase by rememberSaveable { mutableStateOf(HomePhase.None) }
+    var activeDestinationJson by rememberSaveable { mutableStateOf("") }
     var pendingDestination by remember { mutableStateOf<DestinationOption?>(null) }
     var showFocusTypePopup by remember { mutableStateOf(false) }
 
@@ -132,7 +134,12 @@ fun HomeScreen(
         try {
             progressFlow.collect { _ -> }
             if (phase == HomePhase.FocusSession) {
-                focusSessionViewModel.stop()
+                activeDestinationJson = ""
+                if (focusUiState.isCompleted) {
+                    focusSessionViewModel.resetSession()
+                } else {
+                    focusSessionViewModel.stop()
+                }
             }
             phase = HomePhase.None
         } catch (_: Exception) {}
@@ -239,10 +246,15 @@ fun HomeScreen(
                         FocusSessionScreen(
                             onBackHome = {
                                 phase = HomePhase.None
-                                focusSessionViewModel.stop()
+                                activeDestinationJson = ""
+                                if (focusUiState.isCompleted) {
+                                    focusSessionViewModel.resetSession()
+                                } else {
+                                    focusSessionViewModel.stop()
+                                }
                             },
-                            destinationJson = pendingDestination?.toJson()
-                                ?: focusUiState.restoredDestinationJson,
+                            destinationJson = if (activeDestinationJson.isNotEmpty()) activeDestinationJson
+                                else (pendingDestination?.toJson() ?: focusUiState.restoredDestinationJson),
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = this@AnimatedContent,
                         )
@@ -268,9 +280,9 @@ fun HomeScreen(
                 }
             }
 
-            // 进程被杀后恢复：数据库中存在 ACTIVE 旅程时自动回到专注页
-            LaunchedEffect(focusUiState.isRestored) {
-                if (focusUiState.isRestored && phase == HomePhase.None) {
+            // 进程被杀后恢复 或 后台锁屏旅程完成：自动回到专注页展示进行中进度或完成卡片
+            LaunchedEffect(focusUiState.isRestored, focusUiState.isCompleted) {
+                if ((focusUiState.isRestored || focusUiState.isCompleted) && phase == HomePhase.None) {
                     phase = HomePhase.FocusSession
                 }
             }
@@ -302,6 +314,7 @@ fun HomeScreen(
                     focusTypes = focusTypes,
                     onFocusTypeSelected = { focusType, seatNumber ->
                         pendingDestination?.let { destination ->
+                            activeDestinationJson = destination.toJson()
                             try {
                                 context.startForegroundService(
                                     FocusTimerService.createStartIntent(context, destination.toJson())

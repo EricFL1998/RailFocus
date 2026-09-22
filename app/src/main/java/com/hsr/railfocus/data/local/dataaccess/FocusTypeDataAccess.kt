@@ -15,6 +15,9 @@ interface FocusTypeDataAccess {
     @Query("SELECT * FROM focus_types ORDER BY `order` ASC")
     fun getAllFlow(): Flow<List<FocusTypeEntity>>
 
+    @Query("SELECT * FROM focus_types ORDER BY `order` ASC")
+    suspend fun getAllList(): List<FocusTypeEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(focusType: FocusTypeEntity)
 

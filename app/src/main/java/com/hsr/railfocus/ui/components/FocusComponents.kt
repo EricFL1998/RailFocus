@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.HistoryEdu
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,6 +37,10 @@ import androidx.compose.ui.unit.sp
 import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.model.Station
 import com.hsr.railfocus.domain.model.StationFact
+import com.hsr.railfocus.domain.model.MemoryRecall
+import com.hsr.railfocus.domain.model.JourneyJournal
+import com.hsr.railfocus.ui.journal.CompletionJournalCard
+import com.hsr.railfocus.ui.journal.MemoryRecallCard
 import com.hsr.railfocus.ui.focus.FocusType
 import com.hsr.railfocus.ui.theme.RailColors
 
@@ -159,6 +166,10 @@ fun CompletionOverlay(
     stationFact: StationFact?,
     completed: Boolean = true,
     delayMinutes: Int = 0,
+    journal: JourneyJournal? = null,
+    hasJournal: Boolean = (journal != null),
+    memoryRecall: MemoryRecall? = null,
+    onWriteJournal: (() -> Unit)? = null,
     onBackHome: () -> Unit
 ) {
     var showCard by remember { mutableStateOf(false) }
@@ -197,14 +208,14 @@ fun CompletionOverlay(
                 val cardScrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
-                        .padding(32.dp)
+                        .padding(horizontal = 24.dp, vertical = 20.dp)
                         .verticalScroll(cardScrollState),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Surface(
-                            modifier = Modifier.size(80.dp),
+                            modifier = Modifier.size(56.dp),
                             shape = CircleShape,
                             color = if (completed) {
                                 MaterialTheme.colorScheme.primaryContainer
@@ -216,8 +227,8 @@ fun CompletionOverlay(
                                 painter = painterResource(id = R.drawable.ic_bullet_train),
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .padding(16.dp)
-                                    .size(48.dp),
+                                    .padding(12.dp)
+                                    .size(32.dp),
                                 tint = if (completed) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
@@ -227,7 +238,7 @@ fun CompletionOverlay(
                         }
                         
                         val density = LocalDensity.current
-                        val dotOffset = with(density) { 50.dp.toPx() }
+                        val dotOffset = with(density) { 36.dp.toPx() }
                         repeat(6) { i ->
                             val angle = i * 60f
                             Surface(
@@ -279,8 +290,8 @@ fun CompletionOverlay(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -363,6 +374,14 @@ fun CompletionOverlay(
                         }
                     }
 
+                    // 那年今日 / 车站旧忆：再次抵达时，直接展示当年/上次的手账内容
+                    if (completed && memoryRecall != null) {
+                        MemoryRecallCard(
+                            recall = memoryRecall,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     if (completed && stationFact != null) {
                         val categoryIcon = when (stationFact.category) {
                             "美食" -> Icons.Default.Restaurant
@@ -378,7 +397,7 @@ fun CompletionOverlay(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
@@ -406,19 +425,99 @@ fun CompletionOverlay(
                         }
                     }
 
-                    Button(
-                        onClick = onBackHome,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(28.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                            Text(
-                                stringResource(if (completed) R.string.completion_finish else R.string.completion_back_home),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (completed) {
+                            if (hasJournal) {
+                                OutlinedButton(
+                                    onClick = { onWriteJournal?.invoke() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp),
+                                    shape = RoundedCornerShape(25.dp),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                    ),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Done,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.completion_journal_sealed),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    onClick = { onWriteJournal?.invoke() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp),
+                                    shape = RoundedCornerShape(27.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(if (memoryRecall != null) R.string.completion_write_new_journal else R.string.completion_write_journal),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        if (completed) {
+                            OutlinedButton(
+                                onClick = onBackHome,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(27.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                ),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.completion_finish),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = onBackHome,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(28.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.completion_back_home),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -14,8 +14,8 @@ android {
        applicationId = "com.hsr.railfocus"
        minSdk = 26
        targetSdk = 37
-        versionCode = 7
-        versionName = "1.6"
+        versionCode = 8
+        versionName = "1.7"
 
        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -89,6 +89,9 @@ dependencies {
 
     // Vico charts
     implementation(libs.vico.compose.m3)
+
+    // Coil for Compose image loading
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     // MapLibre GL Native (for free OSM tiles)
     implementation("org.maplibre.gl:android-sdk:13.3.1")

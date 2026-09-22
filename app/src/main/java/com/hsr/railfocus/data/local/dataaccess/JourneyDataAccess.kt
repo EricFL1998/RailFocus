@@ -15,6 +15,9 @@ interface JourneyDataAccess {
     @Query("SELECT * FROM journey_records ORDER BY createdAt DESC")
     fun getAllFlow(): Flow<List<JourneyRecordEntity>>
 
+    @Query("SELECT * FROM journey_records ORDER BY createdAt DESC")
+    suspend fun getAllRecords(): List<JourneyRecordEntity>
+
     @Query("SELECT * FROM journey_records WHERE id = :id")
     suspend fun getById(id: String): JourneyRecordEntity?
 

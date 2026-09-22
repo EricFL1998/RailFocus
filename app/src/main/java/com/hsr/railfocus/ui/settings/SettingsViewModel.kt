@@ -7,6 +7,8 @@ import com.hsr.railfocus.data.repository.AppUpdateInfo
 import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
 import com.hsr.railfocus.domain.service.DestinationCalculator
+import com.hsr.railfocus.domain.usecase.ExportUserDataUseCase
+import com.hsr.railfocus.domain.usecase.ImportUserDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +29,8 @@ class SettingsViewModel @Inject constructor(
     private val journeyRepository: com.hsr.railfocus.data.repository.JourneyRepository,
     private val destinationCalculator: DestinationCalculator,
     private val appUpdateRepository: AppUpdateRepository,
+    private val exportUserDataUseCase: ExportUserDataUseCase,
+    private val importUserDataUseCase: ImportUserDataUseCase,
 ) : ViewModel() {
 
     private val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
@@ -147,6 +151,30 @@ class SettingsViewModel @Inject constructor(
     fun deleteFocusType(id: String) {
         viewModelScope.launch {
             focusTypeRepository.deleteFocusType(id)
+        }
+    }
+
+    fun exportData(outputStream: java.io.OutputStream, appVersion: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val result = exportUserDataUseCase.exportToStream(outputStream, appVersion)
+            if (result.isSuccess) {
+                val count = result.getOrNull() ?: 0
+                onResult(true, "已成功导出全部数据（共 $count 条旅程）")
+            } else {
+                onResult(false, result.exceptionOrNull()?.message ?: "导出失败")
+            }
+        }
+    }
+
+    fun importData(inputStream: java.io.InputStream, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val result = importUserDataUseCase.importFromStream(inputStream)
+            val summary = result.getOrNull()
+            if (result.isSuccess && summary != null) {
+                onResult(true, "导入成功：${summary.journeys} 条旅程、${summary.journals} 篇手账、${summary.visitedStations} 个打卡车站")
+            } else {
+                onResult(false, result.exceptionOrNull()?.message ?: "导入失败")
+            }
         }
     }
 

@@ -190,4 +190,16 @@
     <string name="notif_paused">列车晚点</string>
    <string name="notif_remaining_time">剩余时间: %1$s</string>
 
+    <string name="notif_completed_title">旅程已到达：%1$s</string>
+    <string name="notif_completed_content">本次专注已完成，点击查看车票与成就</string>
+    <string name="completion_write_journal">记录旅行手账</string>
+    <string name="completion_journal_saved">已封存旅行手账</string>
+    <string name="completion_write_new_journal">记录本次旅行手账</string>
+    <string name="completion_journal_sealed">手账已封存进时间胶囊</string>
+    <string name="settings_export_data">导出数据备份</string>
+    <string name="settings_export_data_summary">导出全部旅程、手账与打卡记录为 JSON 文件，防止数据丢失</string>
+    <string name="settings_import_data">导入数据备份</string>
+    <string name="settings_import_data_summary">从 JSON 备份文件恢复旅程、手账与打卡记录，同 id 的记录会被覆盖</string>
+    <string name="settings_export_success">数据导出成功</string>
+    <string name="settings_export_failed">数据导出失败：%1$s</string>
 </resources>

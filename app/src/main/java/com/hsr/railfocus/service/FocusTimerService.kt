@@ -24,6 +24,8 @@ import com.hsr.railfocus.ui.widget.FocusTimerWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.hsr.railfocus.domain.service.DestinationOption
 import com.hsr.railfocus.domain.service.JourneyTimerService
+import com.hsr.railfocus.domain.usecase.CompleteJourneyUseCase
+import com.hsr.railfocus.data.repository.JourneyRepository
 import androidx.annotation.RequiresApi
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +49,7 @@ class FocusTimerService : Service() {
     companion object {
         const val CHANNEL_ID = "focus_timer"
         const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_ID_COMPLETED = 1002
 
         const val ACTION_START = "com.hsr.railfocus.ACTION_START_FOCUS"
         const val ACTION_PAUSE = "com.hsr.railfocus.ACTION_PAUSE_FOCUS"
@@ -69,6 +72,12 @@ class FocusTimerService : Service() {
 
     @Inject
     lateinit var timerService: JourneyTimerService
+
+    @Inject
+    lateinit var completeJourneyUseCase: CompleteJourneyUseCase
+
+    @Inject
+    lateinit var journeyRepository: JourneyRepository
 
     @Inject
     lateinit var preferencesRepository: UserPreferencesRepository
@@ -173,6 +182,8 @@ class FocusTimerService : Service() {
 
         if (timerService.state.value is JourneyTimerService.TimerState.Idle) {
             timerService.startWithProgress(path, totalSeconds, serviceScope)
+        } else {
+            timerService.bindScope(serviceScope)
         }
         
         serviceScope.launch {
@@ -272,6 +283,8 @@ class FocusTimerService : Service() {
                     is JourneyTimerService.TimerState.Paused -> updateNotification()
                     is JourneyTimerService.TimerState.Completed -> {
                         stopForeground(STOP_FOREGROUND_REMOVE)
+                        completeActiveJourneyInBackground()
+                        showCompletionNotification()
                         stopSelf()
                     }
                     else -> {}
@@ -463,6 +476,55 @@ class FocusTimerService : Service() {
     private fun createContentPendingIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP }
         return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun completeActiveJourneyInBackground() {
+        serviceScope.launch {
+            try {
+                val active = journeyRepository.getActiveJourney()
+                if (active != null) {
+                    val durationMin = active.plannedDurationMin
+                    val delayMin = timerService.delayMinutes
+                    val tier = preferencesRepository.frequentFlyerState.first().tier.name
+                    completeJourneyUseCase(active.id, durationMin.coerceAtLeast(1), delayMin, tier)
+                    preferencesRepository.recordFocusMinutes(durationMin.coerceAtLeast(1))
+                    pathStations.lastOrNull()?.let { endStation ->
+                        preferencesRepository.saveLastLocation(
+                            com.hsr.railfocus.data.preferences.SavedLocation(
+                                latitude = endStation.lat,
+                                longitude = endStation.lng,
+                                stationId = endStation.id,
+                                stationName = endStation.name,
+                                city = endStation.city
+                            )
+                        )
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun showCompletionNotification() {
+        try {
+            val manager = getSystemService(NotificationManager::class.java)
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                NOTIFICATION_ID_COMPLETED,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle(getString(R.string.notif_completed_title, endStationName))
+                .setContentText(getString(R.string.notif_completed_content))
+                .setSmallIcon(R.drawable.ic_bullet_train)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            manager.notify(NOTIFICATION_ID_COMPLETED, notification)
+        } catch (_: Exception) {}
     }
 
     private fun acquireWakeLock(timeoutSeconds: Int) {

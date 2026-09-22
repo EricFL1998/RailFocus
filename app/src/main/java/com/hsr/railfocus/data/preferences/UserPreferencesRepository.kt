@@ -53,6 +53,42 @@ class UserPreferencesRepository @Inject constructor(
         val MEMBERSHIP_TIER = stringPreferencesKey("membership_tier")
         val TOTAL_LIFETIME_FOCUS_MIN = intPreferencesKey("total_lifetime_focus_min")
         val LAST_FOCUS_TIMESTAMP = longPreferencesKey("last_focus_timestamp")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+    }
+
+    /**
+     * 是否已完成新版功能引导
+     */
+    val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[Keys.ONBOARDING_COMPLETED] ?: false
+    }
+
+    /**
+     * 标记引导已完成
+     */
+    suspend fun setOnboardingCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.ONBOARDING_COMPLETED] = true
+        }
+    }
+
+    /**
+     * 从备份恢复累计统计（总里程、连续打卡、会员等级）
+     */
+    suspend fun restoreStatistics(lifetimeMin: Int, streakDays: Int, tierName: String) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] = lifetimeMin
+            preferences[Keys.FOCUS_STREAK] = streakDays
+            preferences[Keys.LAST_FOCUS_TIMESTAMP] = System.currentTimeMillis()
+            val tier = try {
+                MembershipTier.valueOf(tierName)
+            } catch (_: Exception) {
+                null
+            }
+            if (tier != null) {
+                preferences[Keys.MEMBERSHIP_TIER] = tier.name
+            }
+        }
     }
 
     /**

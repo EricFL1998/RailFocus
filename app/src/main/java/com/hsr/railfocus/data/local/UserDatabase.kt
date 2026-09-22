@@ -8,7 +8,9 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.hsr.railfocus.data.local.dataaccess.FocusTypeDataAccess
 import com.hsr.railfocus.data.local.dataaccess.JourneyDataAccess
+import com.hsr.railfocus.data.local.dataaccess.JournalDataAccess
 import com.hsr.railfocus.data.local.dataaccess.VisitedStationDataAccess
+import com.hsr.railfocus.data.local.entity.JourneyJournalEntity
 import com.hsr.railfocus.data.local.entity.FocusTypeEntity
 import com.hsr.railfocus.data.local.entity.JourneyRecordEntity
 import com.hsr.railfocus.data.local.entity.VisitedStationRecordEntity
@@ -26,14 +28,16 @@ import com.hsr.railfocus.data.local.entity.VisitedStationRecordEntity
         JourneyRecordEntity::class,
         VisitedStationRecordEntity::class,
         FocusTypeEntity::class,
+        JourneyJournalEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = false,
 )
 abstract class UserDatabase : RoomDatabase() {
     abstract fun journeyDataAccess(): JourneyDataAccess
     abstract fun visitedStationDataAccess(): VisitedStationDataAccess
     abstract fun focusTypeDataAccess(): FocusTypeDataAccess
+    abstract fun journalDataAccess(): JournalDataAccess
 
     companion object {
         private const val DATABASE_NAME = "user_data.db"
@@ -66,6 +70,41 @@ abstract class UserDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 4 -> 5：新增 journey_journals 手账表
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `journey_journals` (
+                        `id` TEXT NOT NULL,
+                        `journeyId` TEXT NOT NULL,
+                        `stationId` TEXT NOT NULL,
+                        `stationName` TEXT NOT NULL,
+                        `content` TEXT NOT NULL,
+                        `imagePathsJson` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`journeyId`) REFERENCES `journey_records`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_journey_journals_journeyId` ON `journey_journals` (`journeyId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_journey_journals_stationId` ON `journey_journals` (`stationId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_journey_journals_createdAt` ON `journey_journals` (`createdAt`)")
+            }
+        }
+
+        /**
+         * 5 -> 6：手账表新增 audioPath 与 audioDurationSec 列（语音录音支持）
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE journey_journals ADD COLUMN audioPath TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE journey_journals ADD COLUMN audioDurationSec INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile
         private var INSTANCE: UserDatabase? = null
 
@@ -81,7 +120,7 @@ abstract class UserDatabase : RoomDatabase() {
                 UserDatabase::class.java,
                 DATABASE_NAME
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
         }
     }

@@ -5,6 +5,7 @@ import com.hsr.railfocus.data.local.RailDatabase
 import com.hsr.railfocus.data.local.UserDatabase
 import com.hsr.railfocus.data.local.dataaccess.EdgeDataAccess
 import com.hsr.railfocus.data.local.dataaccess.FocusTypeDataAccess
+import com.hsr.railfocus.data.local.dataaccess.JournalDataAccess
 import com.hsr.railfocus.data.local.dataaccess.JourneyDataAccess
 import com.hsr.railfocus.data.local.dataaccess.StationDataAccess
 import com.hsr.railfocus.data.local.dataaccess.VisitedStationDataAccess
@@ -60,5 +61,10 @@ object AppModule {
     @Provides
     fun provideFocusTypeDataAccess(database: UserDatabase): FocusTypeDataAccess {
         return database.focusTypeDataAccess()
+    }
+
+    @Provides
+    fun provideJournalDataAccess(database: UserDatabase): JournalDataAccess {
+        return database.journalDataAccess()
     }
 }

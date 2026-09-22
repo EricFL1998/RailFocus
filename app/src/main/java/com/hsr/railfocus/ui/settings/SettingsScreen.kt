@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hsr.railfocus.R
+import kotlinx.coroutines.launch
 import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.ui.components.UpdateAvailableDialog
 
@@ -70,6 +71,36 @@ fun SettingsScreen(
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
         } catch (_: Exception) {
             ""
+        }
+    }
+
+    val createDocLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.let { stream ->
+                    viewModel.exportData(stream, appVersion) { success, msg ->
+                        scope.launch {
+                            snackbarHostState.showSnackbar(msg)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                scope.launch {
+                    snackbarHostState.showSnackbar("导出失败: ${e.message}")
+                }
+            }
+        }
+    }
+
+    // 导入备份：先确认，再读取文件
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+    val openDocLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            pendingImportUri = uri
         }
     }
 
@@ -236,6 +267,29 @@ fun SettingsScreen(
                 )
             }
 
+            // 数据备份：导出全部数据
+            SettingsSection(
+                modifier = Modifier.padding(horizontal = 16.dp),
+            ) {
+                SettingsClickableItem(
+                    icon = Icons.Default.FileDownload,
+                    title = stringResource(R.string.settings_export_data),
+                    summary = stringResource(R.string.settings_export_data_summary),
+                    onClick = {
+                        val timeStr = java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.getDefault()).format(java.util.Date())
+                        createDocLauncher.launch("rail_focus_backup_$timeStr.json")
+                    },
+                )
+                SettingsClickableItem(
+                    icon = Icons.Default.FileUpload,
+                    title = stringResource(R.string.settings_import_data),
+                    summary = stringResource(R.string.settings_import_data_summary),
+                    onClick = {
+                        openDocLauncher.launch(arrayOf("application/json"))
+                    },
+                )
+            }
+
             // 清除数据：警告色、独立
             ClearDataSection(
                 onClearClick = { showClearDataDialog = true },
@@ -263,6 +317,41 @@ fun SettingsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showClearDataDialog = false }) {
+                        Text(stringResource(R.string.settings_cancel))
+                    }
+                }
+            )
+        }
+
+        pendingImportUri?.let { uri ->
+            AlertDialog(
+                onDismissRequest = { pendingImportUri = null },
+                title = { Text(stringResource(R.string.settings_import_data)) },
+                text = { Text(stringResource(R.string.settings_import_data_summary)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingImportUri = null
+                            try {
+                                context.contentResolver.openInputStream(uri)?.let { stream ->
+                                    viewModel.importData(stream) { success, msg ->
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(msg)
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("导入失败: ${e.message}")
+                                }
+                            }
+                        }
+                    ) {
+                        Text("导入")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingImportUri = null }) {
                         Text(stringResource(R.string.settings_cancel))
                     }
                 }

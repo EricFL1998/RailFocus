@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 sealed interface Screen {
     @Serializable
-    data object Onboarding : Screen
+    data class Onboarding(val startAtPermissions: Boolean = false) : Screen
 
     @Serializable
     data object Home : Screen

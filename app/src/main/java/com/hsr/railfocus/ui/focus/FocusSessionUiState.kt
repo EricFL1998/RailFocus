@@ -32,6 +32,10 @@ data class FocusSessionUiState(
     val isRestored: Boolean = false,
     /** 恢复旅程时重建的 DestinationOption JSON，用于重启前台服务 */
     val restoredDestinationJson: String = "",
+    /** 当前旅程关联的手账（若已写手账） */
+    val journal: com.hsr.railfocus.domain.model.JourneyJournal? = null,
+    /** 【那年今日 · 车站旧忆】时光唤醒 */
+    val memoryRecall: com.hsr.railfocus.domain.model.MemoryRecall? = null,
 ) {
     val isRunning: Boolean
         get() = !isPaused && !isCompleted && !isStopped

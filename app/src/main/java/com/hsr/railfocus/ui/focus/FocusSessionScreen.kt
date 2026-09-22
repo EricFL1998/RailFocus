@@ -3,6 +3,7 @@ package com.hsr.railfocus.ui.focus
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,13 +24,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hsr.railfocus.R
 import com.hsr.railfocus.service.FocusTimerService
+import com.hsr.railfocus.ui.journal.JournalEditDialog
 import com.hsr.railfocus.ui.components.*
 import org.maplibre.android.geometry.LatLng
 
 /**
  * 专注旅程页面
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun FocusSessionScreen(
     onBackHome: () -> Unit,
@@ -43,6 +45,7 @@ fun FocusSessionScreen(
     val context = LocalContext.current
     val view = LocalView.current
     var showStopConfirm by remember { mutableStateOf(false) }
+    var showJournalDialog by remember { mutableStateOf(false) }
 
     // 屏幕常亮：当用户开启设置且旅程处于进行中时保持屏幕常亮
     DisposableEffect(keepScreenOnEnabled, uiState.isRunning) {
@@ -162,7 +165,9 @@ fun FocusSessionScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // 倒计时
-                CountdownDisplay(remainingSeconds = uiState.remainingSeconds)
+                CountdownDisplay(
+                    remainingSeconds = uiState.remainingSeconds,
+                )
 
                 Spacer(modifier = Modifier.heightIn(min = 24.dp).weight(1f))
 
@@ -188,7 +193,30 @@ fun FocusSessionScreen(
                 focusType = uiState.focusType,
                 stationFact = uiState.stationFact,
                 delayMinutes = uiState.delayMinutes,
+                journal = uiState.journal,
+                memoryRecall = uiState.memoryRecall,
+                onWriteJournal = { showJournalDialog = true },
                 onBackHome = onBackHome
+            )
+        }
+
+        if (showJournalDialog) {
+            val initialImages = uiState.journal?.imagePaths?.map { android.net.Uri.fromFile(java.io.File(it)) } ?: emptyList()
+            JournalEditDialog(
+                startStation = uiState.startStation.name,
+                endStation = uiState.endStation.name,
+                seatNumber = uiState.seatNumber,
+                carriageNumber = uiState.carriageNumber,
+                initialContent = uiState.journal?.content ?: "",
+                initialImages = initialImages,
+                initialAudioPath = uiState.journal?.audioPath,
+                initialAudioDurationSec = uiState.journal?.audioDurationSec ?: 0,
+                onDismiss = { showJournalDialog = false },
+                onSave = { text, images, audioPath, audioDurationSec ->
+                    viewModel.saveJournal(text, images, audioPath, audioDurationSec) {
+                        showJournalDialog = false
+                    }
+                }
             )
         }
         // 取消后的"未完成"车票

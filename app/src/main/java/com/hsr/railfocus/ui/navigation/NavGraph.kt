@@ -53,7 +53,9 @@ fun RailFocusNavGraph(
         ) {
             // 引导页
             composable<Screen.Onboarding> {
+                val route = it.toRoute<Screen.Onboarding>()
                 OnboardingScreen(
+                    startAtPermissions = route.startAtPermissions,
                     onComplete = {
                         navController.navigate(Screen.Home) {
                             popUpTo<Screen.Onboarding> { inclusive = true }

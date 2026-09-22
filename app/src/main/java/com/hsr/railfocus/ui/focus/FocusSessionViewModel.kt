@@ -11,10 +11,13 @@ import com.hsr.railfocus.domain.service.JourneyTimerService
 import com.hsr.railfocus.domain.usecase.CancelJourneyUseCase
 import com.hsr.railfocus.domain.usecase.CompleteJourneyUseCase
 import com.hsr.railfocus.domain.usecase.StartJourneyUseCase
+import com.hsr.railfocus.domain.usecase.GetMemoryRecallUseCase
 import android.content.Context
 import android.content.Intent
 import com.hsr.railfocus.service.FocusTimerService
 import com.hsr.railfocus.data.repository.JourneyRepository
+import com.hsr.railfocus.data.repository.JournalRepository
+import com.hsr.railfocus.util.JournalImageManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +50,8 @@ class FocusSessionViewModel @Inject constructor(
     private val completeJourneyUseCase: CompleteJourneyUseCase,
     private val cancelJourneyUseCase: CancelJourneyUseCase,
     private val journeyRepository: JourneyRepository,
+    private val journalRepository: JournalRepository,
+    private val getMemoryRecallUseCase: GetMemoryRecallUseCase,
     private val preferencesRepository: com.hsr.railfocus.data.preferences.UserPreferencesRepository,
 ) : ViewModel() {
 
@@ -79,7 +84,13 @@ class FocusSessionViewModel @Inject constructor(
                 return@launch
             }
 
-            // 2. Recover from SavedStateHandle if present (for backward compatibility/deep links)
+            // 2. 检查是否刚刚在后台完成了旅程，恢复已完成状态以展示完成卡片
+            if (timerService.state.value is JourneyTimerService.TimerState.Completed) {
+                recoverCompletedSession()
+                return@launch
+            }
+
+            // 3. Recover from SavedStateHandle if present (for backward compatibility/deep links)
             val destination: DestinationOption? = savedStateHandle.get<String>(ARG_DESTINATION_JSON)
                 ?.let { DestinationOption.fromJson(it) }
 
@@ -212,8 +223,48 @@ class FocusSessionViewModel @Inject constructor(
                 overallProgress = progress.overallProgress,
                 currentStation = progress.currentSegmentStartStation,
                 nextStation = progress.nextStation,
-                currentSpeed = progress.currentSpeed
+                currentSpeed = progress.currentSpeed,
+                isRestored = true
             )
+        }
+    }
+
+    private suspend fun recoverCompletedSession() {
+        val path = timerService.getCurrentPath()
+        val history = journeyRepository.getJourneyHistoryFlow().first()
+        val latest = history.firstOrNull()
+        val startStation = path?.path?.firstOrNull() ?: latest?.startStation ?: Station.DEFAULT
+        val endStation = path?.path?.lastOrNull() ?: latest?.endStation ?: Station.DEFAULT
+        val totalSec = latest?.let { it.plannedDurationMin * 60 } ?: 0
+        val existingJournal = latest?.id?.let { journalRepository.getByJourneyId(it) }
+
+        _uiState.update {
+            it.copy(
+                journeyId = latest?.id,
+                isRestored = true,
+                startStation = startStation,
+                endStation = endStation,
+                path = path ?: latest?.path,
+                remainingSeconds = 0,
+                totalSeconds = totalSec,
+                isCompleted = true,
+                delayMinutes = latest?.delayMinutes ?: timerService.delayMinutes,
+                focusType = latest?.focusType?.let { name -> FocusType.DEFAULT_LIST.find { it.displayName == name } },
+                seatNumber = latest?.seatNumber,
+                carriageNumber = latest?.carriageNumber,
+                journal = existingJournal,
+            )
+        }
+        loadStationFact()
+        checkMemoryRecall(endStation.id, latest?.id)
+    }
+
+    private fun checkMemoryRecall(stationId: String, currentJourneyId: String?) {
+        viewModelScope.launch {
+            try {
+                val recall = getMemoryRecallUseCase(stationId, currentJourneyId)
+                _uiState.update { it.copy(memoryRecall = recall) }
+            } catch (_: Exception) {}
         }
     }
 
@@ -239,6 +290,7 @@ class FocusSessionViewModel @Inject constructor(
                         val currentDelay = timerService.delayMinutes
                         _uiState.update { it.copy(isCompleted = true, delayMinutes = currentDelay) }
                        loadStationFact()
+                        checkMemoryRecall(_uiState.value.endStation.id, _uiState.value.journeyId)
                         finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED)
                         saveLastLocation()
                         
@@ -364,6 +416,78 @@ class FocusSessionViewModel @Inject constructor(
        finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.CANCELLED)
 
         // Stop the foreground service to dismiss notification
+        context.stopService(Intent(context, FocusTimerService::class.java))
+    }
+
+    /**
+     * 保存旅行手账（图文、印章贴纸）
+     */
+    fun saveJournal(
+        content: String,
+        images: List<android.net.Uri>,
+        audioPath: String? = null,
+        audioDurationSec: Int = 0,
+        sticker: String? = null,
+        onComplete: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                val state = _uiState.value
+                val jId = state.journeyId ?: journeyRepository.getJourneyHistoryFlow().first().firstOrNull()?.id ?: return@launch
+                
+                val savedImagePaths = images.mapNotNull { uri ->
+                    JournalImageManager.saveImageFromUri(context, jId, uri)
+                }
+
+                // 语音临时文件在 cacheDir，系统可能随时清掉；
+                // 保存时迁移到 files/journals/{journeyId}/，与图片一样长期保留
+                val durableAudioPath = audioPath?.let { path ->
+                    val src = java.io.File(path)
+                    if (!src.exists()) {
+                        null
+                    } else if (path.startsWith(context.filesDir.absolutePath)) {
+                        path
+                    } else {
+                        try {
+                            val dir = java.io.File(context.filesDir, "journals/$jId").apply { mkdirs() }
+                            val target = java.io.File(dir, "audio_${src.name}")
+                            src.copyTo(target, overwrite = true)
+                            src.delete()
+                            target.absolutePath
+                        } catch (_: Exception) {
+                            path
+                        }
+                    }
+                }
+
+                val fullContent = if (!sticker.isNullOrBlank()) {
+                    if (content.isBlank()) "【$sticker】" else "$content\n\n【$sticker】"
+                } else {
+                    content
+                }
+
+                val saved = journalRepository.saveJournal(
+                    journeyId = jId,
+                    stationId = state.endStation.id,
+                    stationName = state.endStation.name,
+                    content = fullContent,
+                    imagePaths = savedImagePaths,
+                    audioPath = durableAudioPath,
+                    audioDurationSec = audioDurationSec,
+                )
+                _uiState.update { it.copy(journal = saved) }
+                onComplete()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun resetSession() {
+        timerService.stop()
+        _uiState.value = FocusSessionUiState()
+        hasFinished = false
+        lastCheckpointRemaining = -1
         context.stopService(Intent(context, FocusTimerService::class.java))
     }
 
