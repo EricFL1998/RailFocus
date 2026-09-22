@@ -377,7 +377,7 @@ private fun FrequentFlyerCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "定级里程 " + flyerState.totalFocusMinutes + " MIN",
+                            text = "累计时长 " + flyerState.totalFocusMinutes + " MIN",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = style.text.copy(alpha = 0.75f),
