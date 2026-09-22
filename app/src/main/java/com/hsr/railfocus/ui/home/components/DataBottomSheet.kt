@@ -241,57 +241,81 @@ private fun FrequentFlyerCard(
         (currentInTier.toFloat() / tierSpan).coerceIn(0f, 1f)
     } else 1f
 
-    val (cardGradient, cardBorderColor, textColor, badgeColor) = when (tier) {
-        MembershipTier.CLASSIC -> listOf(
-            Brush.linearGradient(listOf(Color(0xFF2E3440), Color(0xFF1E222A))),
-            Color(0xFF4C566A),
-            Color(0xFFE5E9F0),
-            Color(0xFF88C0D0),
+    val style = when (tier) {
+        MembershipTier.CLASSIC -> MetalCardStyle(
+            bg = Brush.linearGradient(listOf(Color(0xFF333842), Color(0xFF1E222A), Color(0xFF14171E))),
+            sheen = Brush.linearGradient(listOf(Color(0xFFE2E8F0).copy(alpha = 0.12f), Color.Transparent, Color(0xFF94A3B8).copy(alpha = 0.08f))),
+            border = BorderStroke(1.dp, Color(0xFF64748B).copy(alpha = 0.5f)),
+            text = Color(0xFFF1F5F9),
+            accent = Color(0xFF94A3B8),
+            isGoldChip = false
         )
-        MembershipTier.SILVER -> listOf(
-            Brush.linearGradient(listOf(Color(0xFF4A5568), Color(0xFF2D3748), Color(0xFF1A202C))),
-            Color(0xFFCBD5E0),
-            Color(0xFFF7FAFC),
-            Color(0xFFE2E8F0),
+        MembershipTier.SILVER -> MetalCardStyle(
+            bg = Brush.linearGradient(listOf(Color(0xFF475569), Color(0xFF1E293B), Color(0xFF0F172A))),
+            sheen = Brush.linearGradient(listOf(Color(0xFFFFFFFF).copy(alpha = 0.22f), Color.Transparent, Color(0xFFCBD5E1).copy(alpha = 0.15f))),
+            border = BorderStroke(1.2.dp, Color(0xFFE2E8F0).copy(alpha = 0.8f)),
+            text = Color(0xFFF8FAFC),
+            accent = Color(0xFFCBD5E1),
+            isGoldChip = false
         )
-        MembershipTier.GOLD -> listOf(
-            Brush.linearGradient(listOf(Color(0xFF6B4E1B), Color(0xFF422F0E), Color(0xFF291B06))),
-            Color(0xFFECC94B),
-            Color(0xFFFFFAF0),
-            Color(0xFFF6E05E),
+        MembershipTier.GOLD -> MetalCardStyle(
+            bg = Brush.linearGradient(listOf(Color(0xFF452E07), Color(0xFF261903), Color(0xFF170F02))),
+            sheen = Brush.linearGradient(listOf(Color(0xFFFDE68A).copy(alpha = 0.28f), Color.Transparent, Color(0xFFF59E0B).copy(alpha = 0.15f))),
+            border = BorderStroke(1.5.dp, Color(0xFFF59E0B).copy(alpha = 0.85f)),
+            text = Color(0xFFFFFBEB),
+            accent = Color(0xFFFBBF24),
+            isGoldChip = true
         )
-        MembershipTier.PLATINUM -> listOf(
-            Brush.linearGradient(listOf(Color(0xFF2D3748), Color(0xFF1A202C), Color(0xFF171923))),
-            Color(0xFF90CDF4),
-            Color(0xFFEDF2F7),
-            Color(0xFF63B3ED),
+        MembershipTier.PLATINUM -> MetalCardStyle(
+            bg = Brush.linearGradient(listOf(Color(0xFF0C2B45), Color(0xFF061826), Color(0xFF020B12))),
+            sheen = Brush.linearGradient(listOf(Color(0xFF7DD3FC).copy(alpha = 0.25f), Color.Transparent, Color(0xFF0284C7).copy(alpha = 0.16f))),
+            border = BorderStroke(1.5.dp, Color(0xFF38BDF8).copy(alpha = 0.85f)),
+            text = Color(0xFFF0F9FF),
+            accent = Color(0xFF38BDF8),
+            isGoldChip = false
         )
-        MembershipTier.DIAMOND -> listOf(
-            Brush.linearGradient(listOf(Color(0xFF0F172A), Color(0xFF020617), Color(0xFF090D16))),
-            Color(0xFF818CF8),
-            Color(0xFFF8FAFC),
-            Color(0xFFA5B4FC),
+        MembershipTier.DIAMOND -> MetalCardStyle(
+            bg = Brush.linearGradient(listOf(Color(0xFF1E1035), Color(0xFF0F071D), Color(0xFF05020A))),
+            sheen = Brush.linearGradient(listOf(Color(0xFFC084FC).copy(alpha = 0.3f), Color.Transparent, Color(0xFF6366F1).copy(alpha = 0.2f))),
+            border = BorderStroke(1.5.dp, Color(0xFFA855F7).copy(alpha = 0.9f)),
+            text = Color(0xFFFAF5FF),
+            accent = Color(0xFFC084FC),
+            isGoldChip = true
         )
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(205.dp),
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, cardBorderColor as Color),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = style.border,
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(cardGradient as Brush)
-                .padding(20.dp)
+                .background(style.bg)
         ) {
+            // 1. 金属拉丝斜切全息反光层
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawRect(style.sheen)
+                // 实体物理卡顶部的微光高光边缘线
+                drawLine(
+                    color = Color.White.copy(alpha = 0.25f),
+                    start = Offset(0f, 1f),
+                    end = Offset(size.width, 1f),
+                    strokeWidth = 1.5f
+                )
+            }
+
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 22.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
+                // 顶部：俱乐部Logo与物理芯片 (EMV Chip)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -304,52 +328,84 @@ private fun FrequentFlyerCard(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_bullet_train),
                             contentDescription = null,
-                            tint = badgeColor as Color,
+                            tint = style.accent,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "RAIL FOCUS CLUB",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = "RAIL FOCUS PASSENGER CLUB",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Black,
-                            color = (textColor as Color).copy(alpha = 0.7f),
-                            letterSpacing = 1.5.sp
+                            color = style.text.copy(alpha = 0.85f),
+                            letterSpacing = 1.6.sp
                         )
                     }
 
+                    // 右上角实体卡级徽章
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = (badgeColor as Color).copy(alpha = 0.2f),
-                        border = BorderStroke(1.dp, (badgeColor as Color).copy(alpha = 0.5f))
+                        color = style.accent.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, style.accent.copy(alpha = 0.4f))
                     ) {
                         Text(
                             text = if (tier == MembershipTier.DIAMOND) "BLACK ELITE" else tier.enTitle,
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = badgeColor as Color,
+                            fontWeight = FontWeight.Black,
+                            color = style.accent,
+                            letterSpacing = 1.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = tier.title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                        color = textColor as Color,
-                    )
-                    val validityHint = when {
-                        tier == MembershipTier.CLASSIC -> "永久有效"
-                        flyerState.isDowngradeWarning -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
-                        else -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天"
+                // 中部：实体芯片 (EMV Chip) + 等级大字
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 金属拉丝实体智能芯片
+                    Surface(
+                        modifier = Modifier
+                            .width(42.dp)
+                            .height(32.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (style.isGoldChip) Color(0xFFE6B800) else Color(0xFFCBD5E1),
+                        border = BorderStroke(0.8.dp, Color(0xFF475569).copy(alpha = 0.6f))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val strokeW = 1.dp.toPx()
+                                val chipLineColor = Color(0xFF1E293B).copy(alpha = 0.35f)
+                                drawLine(chipLineColor, Offset(size.width * 0.35f, 0f), Offset(size.width * 0.35f, size.height), strokeW)
+                                drawLine(chipLineColor, Offset(size.width * 0.65f, 0f), Offset(size.width * 0.65f, size.height), strokeW)
+                                drawLine(chipLineColor, Offset(0f, size.height * 0.5f), Offset(size.width, size.height * 0.5f), strokeW)
+                            }
+                        }
                     }
-                    Text(
-                        text = validityHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (flyerState.isDowngradeWarning) Color(0xFFEF5350) else (textColor as Color).copy(alpha = 0.6f)
-                    )
+
+                    // 等级名称与保级状态
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = tier.title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Black,
+                            color = style.text,
+                            letterSpacing = 1.sp
+                        )
+                        val validityHint = when {
+                            tier == MembershipTier.CLASSIC -> "永久有效"
+                            flyerState.isDowngradeWarning -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
+                            else -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天"
+                        }
+                        Text(
+                            text = validityHint,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (flyerState.isDowngradeWarning) Color(0xFFEF5350) else style.text.copy(alpha = 0.6f)
+                        )
+                    }
                 }
 
+                // 底部：压印卡号、定级里程与流光进度条
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -357,41 +413,44 @@ private fun FrequentFlyerCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "定级里程 " + flyerState.totalFocusMinutes + " 分钟",
+                            text = "定级里程 " + flyerState.totalFocusMinutes + " MIN",
                             style = MaterialTheme.typography.labelSmall,
-                            color = (textColor as Color).copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold,
+                            color = style.text.copy(alpha = 0.75f),
+                            letterSpacing = 1.sp
                         )
                         if (nextTier != null) {
                             val remaining = (nextTier.requiredMinutes - flyerState.totalFocusMinutes).coerceAtLeast(0)
                             Text(
-                                text = "升至" + nextTier.title + "还需 " + remaining + " 分钟",
+                                text = "升至" + nextTier.title + "需 " + remaining + " 分钟",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = badgeColor as Color,
+                                color = style.accent,
                             )
                         } else {
                             Text(
                                 text = "已达到最高等级",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = badgeColor as Color,
+                                color = style.accent,
                             )
                         }
                     }
 
+                    // 进度条（内嵌凹槽质感）
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Color.White.copy(alpha = 0.15f))
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(2.5.dp))
+                            .background(Color.Black.copy(alpha = 0.35f))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(progress)
                                 .fillMaxHeight()
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(badgeColor as Color)
+                                .clip(RoundedCornerShape(2.5.dp))
+                                .background(style.accent)
                         )
                     }
                 }
@@ -1450,3 +1509,12 @@ private fun calculateDataStats(records: List<com.hsr.railfocus.domain.model.Jour
         topDestinations = topDestinations,
     )
 }
+
+private data class MetalCardStyle(
+    val bg: Brush,
+    val sheen: Brush,
+    val border: BorderStroke,
+    val text: Color,
+    val accent: Color,
+    val isGoldChip: Boolean
+)
