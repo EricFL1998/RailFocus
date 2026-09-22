@@ -340,69 +340,49 @@ private fun FrequentFlyerCard(
                         )
                     }
 
-                    // 右上角实体卡级徽章
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = style.accent.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, style.accent.copy(alpha = 0.4f))
-                    ) {
-                        Text(
-                            text = if (tier == MembershipTier.DIAMOND) "BLACK ELITE" else tier.enTitle,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Black,
-                            color = style.accent,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
+
                 }
 
-                // 中部：实体芯片 (EMV Chip) + 等级大字
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 金属拉丝实体智能芯片
-                    Surface(
-                        modifier = Modifier
-                            .width(42.dp)
-                            .height(32.dp),
-                        shape = RoundedCornerShape(6.dp),
-                        color = if (style.isGoldChip) Color(0xFFE6B800) else Color(0xFFCBD5E1),
-                        border = BorderStroke(0.8.dp, Color(0xFF475569).copy(alpha = 0.6f))
+                // 中部：等级大字与等级胶囊一体化整合（左侧居中排列，去掉芯片）
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val strokeW = 1.dp.toPx()
-                                val chipLineColor = Color(0xFF1E293B).copy(alpha = 0.35f)
-                                drawLine(chipLineColor, Offset(size.width * 0.35f, 0f), Offset(size.width * 0.35f, size.height), strokeW)
-                                drawLine(chipLineColor, Offset(size.width * 0.65f, 0f), Offset(size.width * 0.65f, size.height), strokeW)
-                                drawLine(chipLineColor, Offset(0f, size.height * 0.5f), Offset(size.width, size.height * 0.5f), strokeW)
-                            }
-                        }
-                    }
-
-                    // 等级名称与保级状态
-                    Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = tier.title,
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Black,
                             color = style.text,
                             letterSpacing = 1.sp
                         )
-                        val validityHint = when {
-                            tier == MembershipTier.CLASSIC -> "永久有效"
-                            flyerState.isDowngradeWarning -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
-                            else -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天"
+                        // 与等级大字整合在一起的英文胶囊
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = style.accent.copy(alpha = 0.18f),
+                            border = BorderStroke(1.dp, style.accent.copy(alpha = 0.45f))
+                        ) {
+                            Text(
+                                text = if (tier == MembershipTier.DIAMOND) "BLACK ELITE" else tier.enTitle,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Black,
+                                color = style.accent,
+                                letterSpacing = 1.2.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
                         }
-                        Text(
-                            text = validityHint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (flyerState.isDowngradeWarning) Color(0xFFEF5350) else style.text.copy(alpha = 0.6f)
-                        )
                     }
+
+                    val validityHint = when {
+                        tier == MembershipTier.CLASSIC -> "永久有效"
+                        flyerState.isDowngradeWarning -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
+                        else -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天"
+                    }
+                    Text(
+                        text = validityHint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (flyerState.isDowngradeWarning) Color(0xFFEF5350) else style.text.copy(alpha = 0.65f)
+                    )
                 }
 
                 // 底部：压印卡号、定级里程与流光进度条
