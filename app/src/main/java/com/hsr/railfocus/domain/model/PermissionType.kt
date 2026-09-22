@@ -43,6 +43,14 @@ enum class PermissionType(
         title = "应用使用统计",
         description = "检测您是否使用分心应用，帮助保持专注",
         icon = "bar_chart",
+    ),
+
+    RECORD_AUDIO(
+        androidPermission = android.Manifest.permission.RECORD_AUDIO,
+        priority = PermissionPriority.IMPORTANT,
+        title = "麦克风权限",
+        description = "用于在旅行手账中录制语音留念，封存当年的原声",
+        icon = "record_voice_over",
     );
 }
 

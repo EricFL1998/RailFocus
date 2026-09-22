@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.rememberNavController
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
 import com.hsr.railfocus.ui.navigation.RailFocusNavGraph
+import com.hsr.railfocus.service.FocusTimerService
 import com.hsr.railfocus.ui.theme.RailFocusTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -53,5 +54,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 服务据此判断应用是否在前台：前台完成旅程时不再弹"已到达"通知
+        FocusTimerService.isAppInForeground = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        FocusTimerService.isAppInForeground = false
     }
 }

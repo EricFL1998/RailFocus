@@ -57,6 +57,13 @@ class PermissionRepositoryImpl @Inject constructor(
                 }
             }
 
+            PermissionType.RECORD_AUDIO -> {
+                when (ContextCompat.checkSelfPermission(context, type.androidPermission)) {
+                    PackageManager.PERMISSION_GRANTED -> PermissionStatus.GRANTED
+                    else -> PermissionStatus.DENIED
+                }
+            }
+
             PermissionType.NOTIFICATIONS -> {
                 // POST_NOTIFICATIONS 是 API 33 才引入的运行时权限；
                 // 低版本系统不认识该字符串，checkSelfPermission 会永久返回 DENIED，

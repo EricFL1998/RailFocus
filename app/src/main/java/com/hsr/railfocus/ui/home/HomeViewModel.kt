@@ -56,11 +56,8 @@ class HomeViewModel @Inject constructor(
     init {
         checkLocationPermission()
         loadNearbyStations()
+        observeSavedLocationChanges()
         checkForUpdateOnLaunch()
-        // 测试注入：写入金卡常客俱乐部数据（累计专注 5,000 分钟，达标新金卡门槛）
-        viewModelScope.launch {
-            preferencesRepository.recordFocusMinutes(5000)
-        }
     }
 
     /**
@@ -85,6 +82,31 @@ class HomeViewModel @Inject constructor(
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
     } catch (_: Exception) {
         null
+    }
+
+    /**
+     * 监听保存位置的变化：旅程完成后 lastLocation 会更新到终点，
+     * 主页位置需要即时跟随，而不是停留在打开应用时读取的旧值。
+     */
+    private fun observeSavedLocationChanges() {
+        viewModelScope.launch {
+            preferencesRepository.lastLocation.collect { saved ->
+                val stationId = saved?.stationId ?: return@collect
+                if (stationId == _uiState.value.currentStation.id) return@collect
+                try {
+                    val station = stationRepository.getAllStations()
+                        .find { it.id == stationId } ?: return@collect
+                    _uiState.value = _uiState.value.copy(
+                        currentStation = station,
+                        currentLocation = LatLng(station.lat, station.lng),
+                        currentStationName = station.city,
+                        currentStationDisplayName = station.name,
+                        greeting = getGreeting(),
+                        isLoading = false,
+                    )
+                } catch (_: Exception) {}
+            }
+        }
     }
 
     private fun loadNearbyStations() {

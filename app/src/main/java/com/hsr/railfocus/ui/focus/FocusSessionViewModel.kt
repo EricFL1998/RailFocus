@@ -293,6 +293,8 @@ class FocusSessionViewModel @Inject constructor(
                         checkMemoryRecall(_uiState.value.endStation.id, _uiState.value.journeyId)
                         finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED)
                         saveLastLocation()
+                        // 应用在前台展示完成卡片时，撤掉"已到达"通知，避免通知残留
+                        dismissCompletionNotification()
                         
                         // Stop the foreground service to dismiss notification
                         context.stopService(Intent(context, FocusTimerService::class.java))
@@ -398,6 +400,18 @@ class FocusSessionViewModel @Inject constructor(
                 )
             )
         }
+    }
+
+    /**
+     * 取消"已到达"完成通知；仅在应用已展示完成卡片时调用，
+     * 锁屏/后台场景保留通知供用户点击回到应用
+     */
+    private fun dismissCompletionNotification() {
+        try {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
+                as android.app.NotificationManager
+            manager.cancel(FocusTimerService.NOTIFICATION_ID_COMPLETED)
+        } catch (_: Exception) {}
     }
 
     fun pause() {

@@ -73,7 +73,6 @@ fun SettingsScreen(
             ""
         }
     }
-
     val createDocLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->

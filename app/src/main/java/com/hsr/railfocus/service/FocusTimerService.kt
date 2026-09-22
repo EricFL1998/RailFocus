@@ -56,6 +56,10 @@ class FocusTimerService : Service() {
         const val ACTION_RESUME = "com.hsr.railfocus.ACTION_RESUME_FOCUS"
         const val ACTION_STOP = "com.hsr.railfocus.ACTION_STOP_FOCUS"
 
+        /** 应用是否在前台；前台完成旅程时不再弹"已到达"通知，由完成卡片直接呈现 */
+        @Volatile
+        var isAppInForeground = false
+
         const val EXTRA_DESTINATION_JSON = "destination_json"
 
         private const val AMBIENT_NORMAL_VOLUME = 0.3f
@@ -505,6 +509,8 @@ class FocusTimerService : Service() {
     }
 
     private fun showCompletionNotification() {
+        // 应用在前台时会直接展示完成卡片，无需再弹通知
+        if (isAppInForeground) return
         try {
             val manager = getSystemService(NotificationManager::class.java)
             val intent = Intent(this, MainActivity::class.java).apply {

@@ -114,6 +114,9 @@ fun OnboardingScreen(
                 startAtPermissions = startAtPermissions,
                 onRequestPermission = { type ->
                     when (type) {
+                        PermissionType.RECORD_AUDIO -> {
+                            permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                        }
                         PermissionType.NOTIFICATIONS -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -433,6 +436,7 @@ private fun PermissionCard(
     onRequestPermission: () -> Unit
 ) {
     val icon = when (permissionState.type) {
+        PermissionType.RECORD_AUDIO -> Icons.Default.RecordVoiceOver
         PermissionType.NOTIFICATIONS -> Icons.Default.Notifications
         PermissionType.SYSTEM_ALERT_WINDOW -> Icons.Default.PictureInPicture
         PermissionType.DO_NOT_DISTURB -> Icons.Default.DoNotDisturb
