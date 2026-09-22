@@ -1,6 +1,7 @@
 package com.hsr.railfocus.ui.home.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -82,10 +83,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.data.preferences.DailyGoalState
+import com.hsr.railfocus.domain.model.FrequentFlyerState
+import com.hsr.railfocus.domain.model.MembershipTier
 import com.hsr.railfocus.R
 import com.hsr.railfocus.ui.history.HistoryUiState
 import com.hsr.railfocus.ui.history.HistoryViewModel
@@ -104,6 +108,7 @@ import kotlin.math.roundToInt
 fun DataContent(
     uiState: HistoryUiState,
     dailyGoal: DailyGoalState = DailyGoalState(45, 0, 0),
+    frequentFlyer: FrequentFlyerState = FrequentFlyerState(),
     onGoalSelected: (Int) -> Unit = {},
     onAllJourneysClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -139,9 +144,8 @@ fun DataContent(
         }
 
         // 专注目标与总里程：页面顶部的两张主卡
-        DailyGoalCard(
-            dailyGoal = dailyGoal,
-            onGoalSelected = onGoalSelected,
+        FrequentFlyerCard(
+            flyerState = frequentFlyer,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -201,6 +205,7 @@ fun DataBottomSheet(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dailyGoal by viewModel.dailyGoalState.collectAsStateWithLifecycle()
+    val frequentFlyer by viewModel.frequentFlyerState.collectAsStateWithLifecycle()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -215,10 +220,183 @@ fun DataBottomSheet(
         DataContent(
             uiState = uiState,
             dailyGoal = dailyGoal,
+            frequentFlyer = frequentFlyer,
             onGoalSelected = viewModel::setDailyGoal,
             onAllJourneysClick = onAllJourneysClick,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+@Composable
+private fun FrequentFlyerCard(
+    flyerState: FrequentFlyerState,
+    modifier: Modifier = Modifier,
+) {
+    val tier = flyerState.tier
+    val nextTier = tier.nextTier
+    val progress = if (nextTier != null) {
+        val tierSpan = (nextTier.requiredMinutes - tier.requiredMinutes).coerceAtLeast(1)
+        val currentInTier = (flyerState.totalFocusMinutes - tier.requiredMinutes).coerceAtLeast(0)
+        (currentInTier.toFloat() / tierSpan).coerceIn(0f, 1f)
+    } else 1f
+
+    val (cardGradient, cardBorderColor, textColor, badgeColor) = when (tier) {
+        MembershipTier.CLASSIC -> listOf(
+            Brush.linearGradient(listOf(Color(0xFF2E3440), Color(0xFF1E222A))),
+            Color(0xFF4C566A),
+            Color(0xFFE5E9F0),
+            Color(0xFF88C0D0),
+        )
+        MembershipTier.SILVER -> listOf(
+            Brush.linearGradient(listOf(Color(0xFF4A5568), Color(0xFF2D3748), Color(0xFF1A202C))),
+            Color(0xFFCBD5E0),
+            Color(0xFFF7FAFC),
+            Color(0xFFE2E8F0),
+        )
+        MembershipTier.GOLD -> listOf(
+            Brush.linearGradient(listOf(Color(0xFF6B4E1B), Color(0xFF422F0E), Color(0xFF291B06))),
+            Color(0xFFECC94B),
+            Color(0xFFFFFAF0),
+            Color(0xFFF6E05E),
+        )
+        MembershipTier.PLATINUM -> listOf(
+            Brush.linearGradient(listOf(Color(0xFF2D3748), Color(0xFF1A202C), Color(0xFF171923))),
+            Color(0xFF90CDF4),
+            Color(0xFFEDF2F7),
+            Color(0xFF63B3ED),
+        )
+        MembershipTier.DIAMOND -> listOf(
+            Brush.linearGradient(listOf(Color(0xFF0F172A), Color(0xFF020617), Color(0xFF090D16))),
+            Color(0xFF818CF8),
+            Color(0xFFF8FAFC),
+            Color(0xFFA5B4FC),
+        )
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, cardBorderColor as Color),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(cardGradient as Brush)
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_bullet_train),
+                            contentDescription = null,
+                            tint = badgeColor as Color,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "RAIL FOCUS CLUB",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Black,
+                            color = (textColor as Color).copy(alpha = 0.7f),
+                            letterSpacing = 1.5.sp
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = (badgeColor as Color).copy(alpha = 0.2f),
+                        border = BorderStroke(1.dp, (badgeColor as Color).copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = tier.enTitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = badgeColor as Color,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = tier.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        color = textColor as Color,
+                    )
+                    val validityHint = when {
+                        tier == MembershipTier.CLASSIC -> "永久有效"
+                        flyerState.isDowngradeWarning -> "距离降级还剩 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
+                        else -> "保级有效剩余 " + flyerState.daysUntilDowngrade + " 天"
+                    }
+                    Text(
+                        text = validityHint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (flyerState.isDowngradeWarning) Color(0xFFEF5350) else (textColor as Color).copy(alpha = 0.6f)
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "定级里程 " + flyerState.totalFocusMinutes + " 分钟",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = (textColor as Color).copy(alpha = 0.7f),
+                        )
+                        if (nextTier != null) {
+                            val remaining = (nextTier.requiredMinutes - flyerState.totalFocusMinutes).coerceAtLeast(0)
+                            Text(
+                                text = "升至" + nextTier.title + "还需 " + remaining + " 分钟",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = badgeColor as Color,
+                            )
+                        } else {
+                            Text(
+                                text = "已达成最高星空等级",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = badgeColor as Color,
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progress)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(badgeColor as Color)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

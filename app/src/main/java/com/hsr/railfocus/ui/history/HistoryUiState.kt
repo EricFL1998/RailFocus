@@ -48,4 +48,5 @@ data class TrainTicketModel(
     val completionStatus: String,  // e.g. "已完成"
     val focusState: String,        // e.g. "专注达成"
     val delayMinutes: Int = 0,     // 晚点分钟数
+    val memberTierName: String? = null, // 常客会员身份标识 e.g. "GOLD"
 )

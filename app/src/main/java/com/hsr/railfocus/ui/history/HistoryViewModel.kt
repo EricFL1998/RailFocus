@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hsr.railfocus.data.preferences.DailyGoalState
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
+import com.hsr.railfocus.domain.model.FrequentFlyerState
 import com.hsr.railfocus.domain.model.JourneyRecord
 import com.hsr.railfocus.domain.usecase.GetJourneyHistoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,6 +45,9 @@ class HistoryViewModel @Inject constructor(
     val dailyGoalState: StateFlow<DailyGoalState> = preferencesRepository.dailyGoalState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DailyGoalState(45, 0, 0))
 
+    val frequentFlyerState: StateFlow<FrequentFlyerState> = preferencesRepository.frequentFlyerState
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FrequentFlyerState())
+
     fun setDailyGoal(minutes: Int) {
         viewModelScope.launch { preferencesRepository.setDailyGoal(minutes) }
     }
@@ -59,7 +63,7 @@ class HistoryViewModel @Inject constructor(
                     .asSequence()
                     // 排除进行中的旅程；完成的和取消的（未完成车票）都展示
                     .filter { it.status != com.hsr.railfocus.domain.model.JourneyStatus.ACTIVE }
-                    .map { it.toTrainTicketModel() }
+                    .map { it.toTrainTicketModel(frequentFlyerState.value.tier.name) }
                     .toList()
 
                 val availableTypes = tickets.asSequence().mapNotNull { it.record.focusType }.distinct().sorted().toList()
@@ -122,7 +126,7 @@ class HistoryViewModel @Inject constructor(
         private val SEAT_LETTERS = listOf("A", "B", "C", "D", "F")
         private val SEAT_CLASSES = listOf("二等座", "一等座", "商务座")
 
-        fun JourneyRecord.toTrainTicketModel(): TrainTicketModel {
+        fun JourneyRecord.toTrainTicketModel(tierName: String? = null): TrainTicketModel {
             val ticketDate = DATE_FORMAT.format(Date(createdAt))
             val departureTime = TIME_FORMAT.format(Date(createdAt))
             val arrivalTime = completedAt?.let { TIME_FORMAT.format(Date(it)) } ?: "---"
@@ -165,6 +169,7 @@ class HistoryViewModel @Inject constructor(
                     "专注未达成"
                 },
                 delayMinutes = delayMinutes,
+                memberTierName = tierName,
             )
         }
 

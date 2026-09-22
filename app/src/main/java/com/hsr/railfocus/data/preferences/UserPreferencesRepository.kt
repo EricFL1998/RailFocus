@@ -13,6 +13,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.hsr.railfocus.domain.model.FrequentFlyerState
+import com.hsr.railfocus.domain.model.MembershipTier
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,6 +50,9 @@ class UserPreferencesRepository @Inject constructor(
         val AMBIENT_SOUND_VOLUME = intPreferencesKey("ambient_sound_volume")
         val STATION_ANNOUNCEMENT_ENABLED = booleanPreferencesKey("station_announcement_enabled")
         val KEEP_SCREEN_ON_ENABLED = booleanPreferencesKey("keep_screen_on_enabled")
+        val MEMBERSHIP_TIER = stringPreferencesKey("membership_tier")
+        val TOTAL_LIFETIME_FOCUS_MIN = intPreferencesKey("total_lifetime_focus_min")
+        val LAST_FOCUS_TIMESTAMP = longPreferencesKey("last_focus_timestamp")
     }
 
     /**
@@ -116,6 +121,50 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     /**
+     * 铁道常客俱乐部会员状态（支持航司级定级里程与掉级机制）
+     */
+    val frequentFlyerState: Flow<FrequentFlyerState> = context.dataStore.data.map { preferences ->
+        val totalMinutes = preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] ?: 0
+        val lastTimestamp = preferences[Keys.LAST_FOCUS_TIMESTAMP] ?: 0L
+        val rawTierName = preferences[Keys.MEMBERSHIP_TIER] ?: MembershipTier.CLASSIC.name
+        val currentTier = try {
+            MembershipTier.valueOf(rawTierName)
+        } catch (_: Exception) {
+            MembershipTier.CLASSIC
+        }
+
+        // 计算掉级状态：如果距离上次出行超过保级天数，逐级衰减
+        val now = System.currentTimeMillis()
+        var evaluatedTier = currentTier
+        var daysUntilDowngrade = Int.MAX_VALUE
+        var isWarning = false
+
+        if (currentTier != MembershipTier.CLASSIC && lastTimestamp > 0L) {
+            val elapsedDays = ((now - lastTimestamp) / (1000L * 3600 * 24)).toInt()
+            val validity = currentTier.validityDays
+            val remainingDays = validity - elapsedDays
+
+            if (remainingDays <= 0) {
+                // 超期降级
+                evaluatedTier = currentTier.prevTier
+                daysUntilDowngrade = evaluatedTier.validityDays
+            } else {
+                daysUntilDowngrade = remainingDays
+                if (remainingDays <= 7) {
+                    isWarning = true
+                }
+            }
+        }
+
+        FrequentFlyerState(
+            tier = evaluatedTier,
+            totalFocusMinutes = totalMinutes,
+            daysUntilDowngrade = daysUntilDowngrade,
+            isDowngradeWarning = isWarning,
+        )
+    }
+
+    /**
      * 每日专注目标与连续打卡状态。
      * 跨天时当日的累计分钟会自动归零显示。
      */
@@ -157,6 +206,24 @@ class UserPreferencesRepository @Inject constructor(
             val newTotal = base + minutes
             preferences[Keys.TODAY_FOCUS_MIN] = newTotal
             preferences[Keys.TODAY_DATE] = todayStr
+
+            // 累计常客里程与保级刷新
+            val currentLifetime = preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] ?: 0
+            val newLifetime = currentLifetime + minutes
+            preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] = newLifetime
+            preferences[Keys.LAST_FOCUS_TIMESTAMP] = System.currentTimeMillis()
+
+            // 根据累计有效里程判定是否晋升更高等级
+            val currentTier = try {
+                MembershipTier.valueOf(preferences[Keys.MEMBERSHIP_TIER] ?: MembershipTier.CLASSIC.name)
+            } catch (_: Exception) {
+                MembershipTier.CLASSIC
+            }
+            val possibleTiers = MembershipTier.entries.filter { newLifetime >= it.requiredMinutes }
+            val highestEligible = possibleTiers.maxByOrNull { it.requiredMinutes } ?: MembershipTier.CLASSIC
+            if (highestEligible.ordinal > currentTier.ordinal) {
+                preferences[Keys.MEMBERSHIP_TIER] = highestEligible.name
+            }
 
             val goal = preferences[Keys.DAILY_GOAL_MIN] ?: DEFAULT_DAILY_GOAL_MIN
             if (newTotal >= goal) {

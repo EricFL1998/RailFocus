@@ -392,6 +392,33 @@ fun TrainTicketCard(
                         )
                     }
                 }
+                // 常客会员专属身份钢印/徽章（根据不同等级带来车票专属视觉差异）
+                ticket.memberTierName?.let { tierName ->
+                    val (tierLabel, tierBadgeBg, tierBadgeColor) = when (tierName) {
+                        "SILVER" -> Triple("银卡专享", Color(0xFF718096).copy(alpha = 0.2f), if (isDark) Color(0xFFE2E8F0) else Color(0xFF4A5568))
+                        "GOLD" -> Triple("金卡尊享", Color(0xFFD69E2E).copy(alpha = 0.2f), if (isDark) Color(0xFFF6E05E) else Color(0xFFB7791F))
+                        "PLATINUM" -> Triple("白金会员", Color(0xFF3182CE).copy(alpha = 0.2f), if (isDark) Color(0xFF63B3ED) else Color(0xFF2B6CB0))
+                        "DIAMOND" -> Triple("星空黑卡", Color(0xFF553C9A).copy(alpha = 0.25f), if (isDark) Color(0xFFB794F4) else Color(0xFF6B46C1))
+                        else -> null
+                    } ?: Triple(null, Color.Transparent, Color.Transparent)
+
+                    if (tierLabel != null) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = tierBadgeBg,
+                            border = BorderStroke(0.5.dp, tierBadgeColor.copy(alpha = 0.5f)),
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Text(
+                                text = tierLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = tierBadgeColor,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
            }
 
            Spacer(modifier = Modifier.weight(1f))
