@@ -371,7 +371,7 @@ private fun FrequentFlyerCard(
                             )
                         } else {
                             Text(
-                                text = "已达成最高星空等级",
+                                text = "已达到最高等级",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = badgeColor as Color,
