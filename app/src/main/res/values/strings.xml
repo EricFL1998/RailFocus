@@ -115,7 +115,28 @@
     <string name="data_milestone_reached">已达成</string>
     <string name="data_milestone_remaining">还差 %1$d 公里</string>
     <string name="ticket_share">分享车票</string>
-   <string name="settings_ambient_sound">车厢环境音</string>
+
+    <!-- Train Series Labels -->
+    <string name="train_series_intercity">城际</string>
+    <string name="train_series_harmony">和谐号</string>
+    <string name="train_series_fuxing">复兴号</string>
+    <string name="train_series_sleeper">动卧</string>
+
+    <!-- Frequent Flyer Club -->
+    <string name="club_brand_name">Rail Focus Club</string>
+    <string name="club_tier_classic">经典会员</string>
+    <string name="club_tier_silver">银卡会员</string>
+    <string name="club_tier_gold">金卡会员</string>
+    <string name="club_tier_platinum">白金卡会员</string>
+    <string name="club_tier_diamond">星空黑卡</string>
+    <string name="club_validity_permanent">永久有效</string>
+    <string name="club_validity_remaining">有效期剩余 %1$d 天</string>
+    <string name="club_validity_warning">有效期剩余 %1$d 天，请及时出行保级</string>
+    <string name="club_total_focus_minutes">累计时长 %1$d MIN</string>
+    <string name="club_upgrade_required">升至%1$s需 %2$d 分钟</string>
+    <string name="club_max_tier_reached">已达到最高等级</string>
+
+    <string name="settings_ambient_sound">车厢环境音</string>
    <string name="settings_ambient_sound_summary">专注时播放行驶中的车厢背景声</string>
     <string name="settings_ambient_volume">环境音量</string>
    <string name="settings_station_announcement">到站发车提示音</string>

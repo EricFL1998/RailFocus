@@ -78,30 +78,30 @@ fun TrainTicketCard(
     val (containerColor, baseBorder, seriesBadgeBg, seriesBadgeColor, seriesLabel) = when (ticket.trainSeries) {
         TrainSeries.C_SERIES -> {
             if (isDark) {
-                tuple5(Color(0xFF13201B), BorderStroke(1.dp, Color(0xFF233830)), Color(0xFF004D40).copy(alpha = 0.45f), Color(0xFF80CBC4), "城际")
+                tuple5(Color(0xFF13201B), BorderStroke(1.dp, Color(0xFF233830)), Color(0xFF004D40).copy(alpha = 0.45f), Color(0xFF80CBC4), stringResource(R.string.train_series_intercity))
             } else {
-                tuple5(Color(0xFFFBFDFB), BorderStroke(1.dp, Color(0xFFE0F2F1)), Color(0xFFE0F2F1), Color(0xFF00796B), "城际")
+                tuple5(Color(0xFFFBFDFB), BorderStroke(1.dp, Color(0xFFE0F2F1)), Color(0xFFE0F2F1), Color(0xFF00796B), stringResource(R.string.train_series_intercity))
             }
         }
         TrainSeries.D_SERIES -> {
             if (isDark) {
-                tuple5(Color(0xFF131D28), BorderStroke(1.dp, Color(0xFF223547)), Color(0xFF0D47A1).copy(alpha = 0.45f), Color(0xFF90CAF9), "和谐号")
+                tuple5(Color(0xFF131D28), BorderStroke(1.dp, Color(0xFF223547)), Color(0xFF0D47A1).copy(alpha = 0.45f), Color(0xFF90CAF9), stringResource(R.string.train_series_harmony))
             } else {
-                tuple5(Color(0xFFF9FBFE), BorderStroke(1.dp, Color(0xFFE3F2FD)), Color(0xFFE3F2FD), Color(0xFF1976D2), "和谐号")
+                tuple5(Color(0xFFF9FBFE), BorderStroke(1.dp, Color(0xFFE3F2FD)), Color(0xFFE3F2FD), Color(0xFF1976D2), stringResource(R.string.train_series_harmony))
             }
         }
         TrainSeries.G_SERIES -> {
             if (isDark) {
-                tuple5(Color(0xFF211A14), BorderStroke(1.dp, Color(0xFF3D2F22)), Color(0xFF5D4037).copy(alpha = 0.5f), Color(0xFFFFD54F), "复兴号")
+                tuple5(Color(0xFF211A14), BorderStroke(1.dp, Color(0xFF3D2F22)), Color(0xFF5D4037).copy(alpha = 0.5f), Color(0xFFFFD54F), stringResource(R.string.train_series_fuxing))
             } else {
-                tuple5(Color(0xFFFFFDF8), BorderStroke(1.dp, Color(0xFFFFECB3)), Color(0xFFFFF8E1), Color(0xFFC67D00), "复兴号")
+                tuple5(Color(0xFFFFFDF8), BorderStroke(1.dp, Color(0xFFFFECB3)), Color(0xFFFFF8E1), Color(0xFFC67D00), stringResource(R.string.train_series_fuxing))
             }
         }
         TrainSeries.SLEEPER -> {
             if (isDark) {
-                tuple5(Color(0xFF0C101D), BorderStroke(1.dp, Color(0xFF222D4A)), Color(0xFF1E284E), Color(0xFF9FA8DA), "动卧")
+                tuple5(Color(0xFF0C101D), BorderStroke(1.dp, Color(0xFF222D4A)), Color(0xFF1E284E), Color(0xFF9FA8DA), stringResource(R.string.train_series_sleeper))
             } else {
-                tuple5(Color(0xFF131A30), BorderStroke(1.dp, Color(0xFF2D3B62)), Color(0xFF232F55), Color(0xFFBAC7FF), "动卧")
+                tuple5(Color(0xFF131A30), BorderStroke(1.dp, Color(0xFF2D3B62)), Color(0xFF232F55), Color(0xFFBAC7FF), stringResource(R.string.train_series_sleeper))
             }
         }
     }

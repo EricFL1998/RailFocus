@@ -332,7 +332,7 @@ private fun FrequentFlyerCard(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Rail Focus Club",
+                            text = stringResource(R.string.club_brand_name),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = style.text.copy(alpha = 0.8f),
@@ -350,7 +350,7 @@ private fun FrequentFlyerCard(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = tier.title,
+                        text = stringResource(tier.titleRes),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Black,
                         color = style.text,
@@ -358,9 +358,9 @@ private fun FrequentFlyerCard(
                     )
 
                     val validityHint = when {
-                        tier == MembershipTier.CLASSIC -> "永久有效"
-                        flyerState.isDowngradeWarning -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天，请及时出行保级"
-                        else -> "有效期剩余 " + flyerState.daysUntilDowngrade + " 天"
+                        tier == MembershipTier.CLASSIC -> stringResource(R.string.club_validity_permanent)
+                        flyerState.isDowngradeWarning -> stringResource(R.string.club_validity_warning, flyerState.daysUntilDowngrade)
+                        else -> stringResource(R.string.club_validity_remaining, flyerState.daysUntilDowngrade)
                     }
                     Text(
                         text = validityHint,
@@ -377,7 +377,7 @@ private fun FrequentFlyerCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "累计时长 " + flyerState.totalFocusMinutes + " MIN",
+                            text = stringResource(R.string.club_total_focus_minutes, flyerState.totalFocusMinutes),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = style.text.copy(alpha = 0.75f),
@@ -386,14 +386,14 @@ private fun FrequentFlyerCard(
                         if (nextTier != null) {
                             val remaining = (nextTier.requiredMinutes - flyerState.totalFocusMinutes).coerceAtLeast(0)
                             Text(
-                                text = "升至" + nextTier.title + "需 " + remaining + " 分钟",
+                                text = stringResource(R.string.club_upgrade_required, stringResource(nextTier.titleRes), remaining),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = style.accent,
                             )
                         } else {
                             Text(
-                                text = "已达到最高等级",
+                                text = stringResource(R.string.club_max_tier_reached),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = style.accent,
