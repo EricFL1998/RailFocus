@@ -64,6 +64,23 @@ class PermissionRepositoryImpl @Inject constructor(
                 }
             }
 
+            PermissionType.LOCATION -> {
+                // 精确或粗略位置任一授予即视为可用，与 LocationManager 的实际判定保持一致
+                val fineGranted = ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                ) == PackageManager.PERMISSION_GRANTED
+                val coarseGranted = ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                ) == PackageManager.PERMISSION_GRANTED
+                if (fineGranted || coarseGranted) {
+                    PermissionStatus.GRANTED
+                } else {
+                    PermissionStatus.DENIED
+                }
+            }
+
             PermissionType.NOTIFICATIONS -> {
                 // POST_NOTIFICATIONS 是 API 33 才引入的运行时权限；
                 // 低版本系统不认识该字符串，checkSelfPermission 会永久返回 DENIED，

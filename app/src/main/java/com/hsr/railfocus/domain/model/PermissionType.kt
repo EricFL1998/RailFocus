@@ -51,6 +51,14 @@ enum class PermissionType(
         title = "麦克风权限",
         description = "用于在旅行手账中录制语音留念，封存当年的原声",
         icon = "record_voice_over",
+    ),
+    
+    LOCATION(
+        androidPermission = android.Manifest.permission.ACCESS_FINE_LOCATION,
+        priority = PermissionPriority.IMPORTANT,
+        title = "位置权限",
+        description = "用于定位当前所在车站，推荐附近可到达的目的地",
+        icon = "location_on",
     );
 }
 

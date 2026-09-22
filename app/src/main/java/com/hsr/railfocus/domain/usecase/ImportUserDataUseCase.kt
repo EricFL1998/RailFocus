@@ -138,6 +138,28 @@ class ImportUserDataUseCase @Inject constructor(
                 )
             }
 
+            // 6. 主页位置：不单独备份位置，取最近一次旅程的终点恢复；
+            //    主页通过 lastLocation 流程即时跟随，导入后无需重新定位
+            try {
+                val lastJourney = backup.journeys.maxByOrNull { it.completedAt ?: it.createdAt }
+                val path = lastJourney?.let {
+                    appJson.decodeFromString<com.hsr.railfocus.domain.model.PathResult>(it.pathJson)
+                }
+                path?.path?.lastOrNull()?.let { endStation ->
+                    preferencesRepository.saveLastLocation(
+                        com.hsr.railfocus.data.preferences.SavedLocation(
+                            latitude = endStation.lat,
+                            longitude = endStation.lng,
+                            stationId = endStation.id,
+                            stationName = endStation.name,
+                            city = endStation.city,
+                        )
+                    )
+                }
+            } catch (_: Exception) {
+                // 位置恢复失败不影响其他数据
+            }
+
             Result.success(
                 ImportSummary(
                     journeys = backup.journeys.size,

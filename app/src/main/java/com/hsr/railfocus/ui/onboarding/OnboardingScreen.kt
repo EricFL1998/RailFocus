@@ -90,6 +90,13 @@ fun OnboardingScreen(
         viewModel.checkPermissions()
     }
 
+    // 位置权限需要同时请求精确与粗略定位
+    val locationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { _ ->
+        viewModel.checkPermissions()
+    }
+
     // 特殊权限请求启动器（跳转设置页）
     val settingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
@@ -116,6 +123,14 @@ fun OnboardingScreen(
                     when (type) {
                         PermissionType.RECORD_AUDIO -> {
                             permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                        }
+                        PermissionType.LOCATION -> {
+                            locationLauncher.launch(
+                                arrayOf(
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                    android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                                )
+                            )
                         }
                         PermissionType.NOTIFICATIONS -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -437,6 +452,7 @@ private fun PermissionCard(
 ) {
     val icon = when (permissionState.type) {
         PermissionType.RECORD_AUDIO -> Icons.Default.RecordVoiceOver
+        PermissionType.LOCATION -> Icons.Default.LocationOn
         PermissionType.NOTIFICATIONS -> Icons.Default.Notifications
         PermissionType.SYSTEM_ALERT_WINDOW -> Icons.Default.PictureInPicture
         PermissionType.DO_NOT_DISTURB -> Icons.Default.DoNotDisturb
