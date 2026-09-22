@@ -332,19 +332,23 @@ private fun FrequentFlyerCard(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "RAIL FOCUS PASSENGER CLUB",
+                            text = "RAIL FOCUS",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Black,
                             color = style.text.copy(alpha = 0.85f),
-                            letterSpacing = 1.6.sp
+                            letterSpacing = 2.sp
                         )
                     }
 
 
                 }
 
-                // 中部：纯粹大气的唯一卡名大字（不重复显示英文副标题）
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // 中部：卡名与有效期右对齐排布，整体更舒展平衡
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
                         text = tier.title,
                         style = MaterialTheme.typography.headlineLarge,
