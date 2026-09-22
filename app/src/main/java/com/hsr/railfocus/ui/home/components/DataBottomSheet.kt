@@ -322,7 +322,7 @@ private fun FrequentFlyerCard(
                         border = BorderStroke(1.dp, (badgeColor as Color).copy(alpha = 0.5f))
                     ) {
                         Text(
-                            text = tier.enTitle,
+                            text = if (tier == MembershipTier.DIAMOND) "BLACK ELITE" else tier.enTitle,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = badgeColor as Color,
