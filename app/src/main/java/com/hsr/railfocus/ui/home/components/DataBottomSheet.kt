@@ -347,14 +347,14 @@ private fun FrequentFlyerCard(
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
                         text = tier.title,
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Black,
                         color = style.text,
-                        letterSpacing = 1.sp
+                        letterSpacing = 1.2.sp
                     )
 
                     val validityHint = when {
