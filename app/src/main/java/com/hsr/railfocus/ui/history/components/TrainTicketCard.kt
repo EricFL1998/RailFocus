@@ -75,7 +75,7 @@ fun TrainTicketCard(
     }
 
     // 依据不同车型（C/D/G/动卧）定制票面质感与边框，并在深色模式下保持低饱和舒适度
-    val (containerColor, cardBorder, seriesBadgeBg, seriesBadgeColor, seriesLabel) = when (ticket.trainSeries) {
+    val (containerColor, baseBorder, seriesBadgeBg, seriesBadgeColor, seriesLabel) = when (ticket.trainSeries) {
         TrainSeries.C_SERIES -> {
             if (isDark) {
                 tuple5(Color(0xFF13201B), BorderStroke(1.dp, Color(0xFF233830)), Color(0xFF004D40).copy(alpha = 0.45f), Color(0xFF80CBC4), "城际")
@@ -98,13 +98,21 @@ fun TrainTicketCard(
             }
         }
         TrainSeries.SLEEPER -> {
-            // 动卧：深邃星空夜行风格，在浅色/深色模式下均保持标志性墨蓝夜空底色
             if (isDark) {
                 tuple5(Color(0xFF0C101D), BorderStroke(1.dp, Color(0xFF222D4A)), Color(0xFF1E284E), Color(0xFF9FA8DA), "动卧")
             } else {
                 tuple5(Color(0xFF131A30), BorderStroke(1.dp, Color(0xFF2D3B62)), Color(0xFF232F55), Color(0xFFBAC7FF), "动卧")
             }
         }
+    }
+
+    // 完成该次旅程时所拥有的常客会员等级为车票赋予专属新样式
+    val cardBorder = when (ticket.memberTierName) {
+        "SILVER" -> BorderStroke(1.5.dp, if (isDark) Color(0xFFCBD5E0) else Color(0xFF94A3B8))
+        "GOLD" -> BorderStroke(2.dp, if (isDark) Color(0xFFF6E05E) else Color(0xFFD97706))
+        "PLATINUM" -> BorderStroke(2.dp, if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7))
+        "DIAMOND" -> BorderStroke(2.5.dp, if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED))
+        else -> baseBorder
     }
     val cardElevation = if (isDark) 3.dp else 2.dp
 
@@ -165,9 +173,9 @@ fun TrainTicketCard(
             elevation = CardDefaults.cardElevation(defaultElevation = cardElevation),
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
-                if (isSleeper) {
-                    // 动卧专属星空粒子背景与微弱极光流动
-                    Canvas(modifier = Modifier.matchParentSize()) {
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    if (isSleeper) {
+                        // 动卧专属星空粒子背景与微弱极光流动
                         val starCount = 38
                         val seed = ticket.record.id.hashCode()
                         val random = java.util.Random(seed.toLong())
@@ -192,6 +200,88 @@ fun TrainTicketCard(
                             radius = size.width * 0.6f,
                             center = Offset(size.width * 0.85f, size.height * 0.15f)
                         )
+                    }
+
+                    // 仅当此张车票是在高等级会员身份下达成时，才永久印刻对应的尊荣视觉样式
+                    when (ticket.memberTierName) {
+                        "SILVER" -> {
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFFCBD5E0).copy(alpha = if (isDark) 0.22f else 0.35f), Color.Transparent),
+                                    center = Offset(size.width * 0.9f, 0f),
+                                    radius = size.width * 0.55f
+                                ),
+                                radius = size.width * 0.55f,
+                                center = Offset(size.width * 0.9f, 0f)
+                            )
+                        }
+                        "GOLD" -> {
+                            drawRect(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFF59E0B).copy(alpha = if (isDark) 0.18f else 0.14f),
+                                        Color.Transparent,
+                                        Color(0xFFD97706).copy(alpha = if (isDark) 0.12f else 0.08f)
+                                    ),
+                                    start = Offset.Zero,
+                                    end = Offset(size.width, size.height)
+                                )
+                            )
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFFFBBF24).copy(alpha = if (isDark) 0.28f else 0.2f), Color.Transparent),
+                                    center = Offset(size.width * 0.85f, 20f),
+                                    radius = size.width * 0.5f
+                                ),
+                                radius = size.width * 0.5f,
+                                center = Offset(size.width * 0.85f, 20f)
+                            )
+                        }
+                        "PLATINUM" -> {
+                            drawRect(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF0284C7).copy(alpha = if (isDark) 0.22f else 0.16f),
+                                        Color(0xFF38BDF8).copy(alpha = if (isDark) 0.14f else 0.09f),
+                                        Color.Transparent,
+                                        Color(0xFF0EA5E9).copy(alpha = if (isDark) 0.16f else 0.12f)
+                                    ),
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, 0f)
+                                )
+                            )
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFF38BDF8).copy(alpha = if (isDark) 0.3f else 0.22f), Color.Transparent),
+                                    center = Offset(size.width * 0.88f, 20f),
+                                    radius = size.width * 0.55f
+                                ),
+                                radius = size.width * 0.55f,
+                                center = Offset(size.width * 0.88f, 20f)
+                            )
+                        }
+                        "DIAMOND" -> {
+                            drawRect(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF7C3AED).copy(alpha = if (isDark) 0.26f else 0.18f),
+                                        Color(0xFF2563EB).copy(alpha = if (isDark) 0.18f else 0.12f),
+                                        Color.Transparent
+                                    ),
+                                    start = Offset.Zero,
+                                    end = Offset(size.width, size.height)
+                                )
+                            )
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFFA78BFA).copy(alpha = if (isDark) 0.35f else 0.25f), Color.Transparent),
+                                    center = Offset(size.width * 0.85f, 20f),
+                                    radius = size.width * 0.6f
+                                ),
+                                radius = size.width * 0.6f,
+                                center = Offset(size.width * 0.85f, 20f)
+                            )
+                        }
                     }
                 }
         Column(

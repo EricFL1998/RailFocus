@@ -27,7 +27,7 @@ import com.hsr.railfocus.data.local.entity.VisitedStationRecordEntity
         VisitedStationRecordEntity::class,
         FocusTypeEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class UserDatabase : RoomDatabase() {
@@ -57,6 +57,15 @@ abstract class UserDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 3 -> 4：旅程表新增 earnedTier 列（完成该次旅程时用户所处的常客等级）。
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE journey_records ADD COLUMN earnedTier TEXT DEFAULT NULL")
+            }
+        }
+
         @Volatile
         private var INSTANCE: UserDatabase? = null
 
@@ -72,7 +81,7 @@ abstract class UserDatabase : RoomDatabase() {
                 UserDatabase::class.java,
                 DATABASE_NAME
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
         }
     }

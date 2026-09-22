@@ -21,8 +21,8 @@ interface JourneyDataAccess {
    @Query("SELECT * FROM journey_records WHERE status = 'ACTIVE' LIMIT 1")
    suspend fun getActiveJourney(): JourneyRecordEntity?
 
-    @Query("UPDATE journey_records SET actualDurationMin = :actualDurationMin, completedAt = :completedAt, delayMinutes = :delayMinutes WHERE id = :id")
-    suspend fun updateCompletion(id: String, actualDurationMin: Int, completedAt: Long, delayMinutes: Int = 0)
+    @Query("UPDATE journey_records SET actualDurationMin = :actualDurationMin, completedAt = :completedAt, delayMinutes = :delayMinutes, earnedTier = :earnedTier WHERE id = :id")
+    suspend fun updateCompletion(id: String, actualDurationMin: Int, completedAt: Long, delayMinutes: Int = 0, earnedTier: String? = null)
 
    @Query("UPDATE journey_records SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: String, status: String)

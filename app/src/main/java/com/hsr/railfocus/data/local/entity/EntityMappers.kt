@@ -48,6 +48,7 @@ fun JourneyRecordEntity.toDomain(
         seatNumber = seatNumber,
         carriageNumber = carriageNumber,
         delayMinutes = delayMinutes,
+        earnedTier = earnedTier,
     )
 }
 
@@ -67,5 +68,6 @@ fun JourneyRecord.toEntity(pathJson: String): JourneyRecordEntity {
         seatNumber = seatNumber,
         carriageNumber = carriageNumber,
         delayMinutes = delayMinutes,
+        earnedTier = earnedTier,
     )
 }

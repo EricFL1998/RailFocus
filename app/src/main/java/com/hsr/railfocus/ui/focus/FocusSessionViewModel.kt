@@ -20,6 +20,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
@@ -292,34 +293,36 @@ class FocusSessionViewModel @Inject constructor(
         hasFinished = true
        val state = _uiState.value
        val path = state.path ?: return
-       val actualDurationMin = ((state.totalSeconds - state.remainingSeconds) / 60).coerceAtLeast(0)
+        val actualDurationMin = ((state.totalSeconds - state.remainingSeconds) / 60).coerceAtLeast(0)
         val delayMinutes = timerService.delayMinutes
 
-       viewModelScope.launch {
-           try {
-               val journeyId = state.journeyId
-               if (journeyId != null) {
-                   when (status) {
-                       com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED ->
-                            completeJourneyUseCase(journeyId, actualDurationMin.coerceAtLeast(1), delayMinutes)
-                       else ->
+        viewModelScope.launch {
+            try {
+                val tierToRecord = preferencesRepository.frequentFlyerState.first().tier.name
+                val journeyId = state.journeyId
+                if (journeyId != null) {
+                    when (status) {
+                        com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED ->
+                            completeJourneyUseCase(journeyId, actualDurationMin.coerceAtLeast(1), delayMinutes, tierToRecord)
+                        else ->
                             cancelJourneyUseCase(journeyId, actualDurationMin, delayMinutes)
-                   }
-               } else {
-                   startJourneyUseCase(
-                       startStation = state.startStation,
-                       endStation = state.endStation,
-                       path = path,
-                       plannedDurationMin = state.totalSeconds / 60,
-                       actualDurationMin = actualDurationMin,
-                       status = status,
-                       focusType = state.focusType?.displayName,
-                       seatNumber = state.seatNumber,
-                       carriageNumber = state.carriageNumber,
-                       completedAt = System.currentTimeMillis(),
+                    }
+                } else {
+                    startJourneyUseCase(
+                        startStation = state.startStation,
+                        endStation = state.endStation,
+                        path = path,
+                        plannedDurationMin = state.totalSeconds / 60,
+                        actualDurationMin = actualDurationMin,
+                        status = status,
+                        focusType = state.focusType?.displayName,
+                        seatNumber = state.seatNumber,
+                        carriageNumber = state.carriageNumber,
+                        completedAt = System.currentTimeMillis(),
                         delayMinutes = delayMinutes,
-                   )
-               }
+                        earnedTier = tierToRecord,
+                    )
+                }
                 // 只有完成的旅程计入每日目标与连续打卡
                 if (status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED) {
                     preferencesRepository.recordFocusMinutes(actualDurationMin.coerceAtLeast(1))

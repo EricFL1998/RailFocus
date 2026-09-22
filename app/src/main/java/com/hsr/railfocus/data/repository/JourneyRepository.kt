@@ -107,12 +107,13 @@ class JourneyRepository @Inject constructor(
    /**
     * 完成旅程
     */
-    suspend fun completeJourney(journeyId: String, actualDurationMin: Int, delayMinutes: Int = 0) {
+    suspend fun completeJourney(journeyId: String, actualDurationMin: Int, delayMinutes: Int = 0, earnedTier: String? = null) {
        journeyDataAccess.updateCompletion(
            id = journeyId,
            actualDurationMin = actualDurationMin,
            completedAt = System.currentTimeMillis(),
-            delayMinutes = delayMinutes,
+           delayMinutes = delayMinutes,
+            earnedTier = earnedTier,
        )
        journeyDataAccess.updateStatus(journeyId, "COMPLETED")
 

@@ -23,6 +23,7 @@ class CompleteJourneyUseCase @Inject constructor(
         journeyId: String,
         actualDurationMin: Int,
         delayMinutes: Int = 0,
+        earnedTier: String? = null,
     ): JourneyRecord? {
         return try {
             // 1. 获取旅程记录
@@ -35,7 +36,7 @@ class CompleteJourneyUseCase @Inject constructor(
             }
             
             // 3. 完成旅程
-            journeyRepository.completeJourney(journeyId, actualDurationMin, delayMinutes)
+            journeyRepository.completeJourney(journeyId, actualDurationMin, delayMinutes, earnedTier)
             
             // 4. 返回更新后的记录
             journeyRepository.getJourneyById(journeyId)

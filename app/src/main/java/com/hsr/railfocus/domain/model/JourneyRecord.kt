@@ -22,4 +22,5 @@ data class JourneyRecord(
     val seatNumber: String? = null,
     val carriageNumber: String? = null,
     val delayMinutes: Int = 0,
+    val earnedTier: String? = null,
 )
