@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -24,6 +27,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val focusTypeRepository: com.hsr.railfocus.data.repository.FocusTypeRepository,
     private val journeyRepository: com.hsr.railfocus.data.repository.JourneyRepository,
@@ -142,7 +146,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun addFocusType(focusType: com.hsr.railfocus.ui.focus.FocusType) {
+    fun addFocusType(focusType: com.hsr.railfocus.domain.model.FocusType) {
         viewModelScope.launch {
             focusTypeRepository.saveFocusType(focusType)
         }
@@ -185,6 +189,12 @@ class SettingsViewModel @Inject constructor(
             userPreferencesRepository.clearLastLocation()
             destinationCalculator.clearCache()
             userPreferencesRepository.setThemeMode("auto")
+            try {
+                val dir = File(context.filesDir, "journals")
+                if (dir.exists()) {
+                    dir.deleteRecursively()
+                }
+            } catch (_: Exception) {}
         }
     }
 }

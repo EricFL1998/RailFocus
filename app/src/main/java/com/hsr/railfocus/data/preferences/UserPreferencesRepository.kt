@@ -44,8 +44,6 @@ class UserPreferencesRepository @Inject constructor(
         val DAILY_GOAL_MIN = intPreferencesKey("daily_goal_min")
         val TODAY_FOCUS_MIN = intPreferencesKey("today_focus_min")
         val TODAY_DATE = stringPreferencesKey("today_focus_date")
-        val FOCUS_STREAK = intPreferencesKey("focus_streak")
-        val LAST_GOAL_DATE = stringPreferencesKey("last_goal_date")
         val AMBIENT_SOUND_ENABLED = booleanPreferencesKey("ambient_sound_enabled")
         val AMBIENT_SOUND_VOLUME = intPreferencesKey("ambient_sound_volume")
         val STATION_ANNOUNCEMENT_ENABLED = booleanPreferencesKey("station_announcement_enabled")
@@ -73,12 +71,11 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     /**
-     * 从备份恢复累计统计（总里程、连续打卡、会员等级）
+     * 从备份恢复累计统计（总里程、会员等级）
      */
-    suspend fun restoreStatistics(lifetimeMin: Int, streakDays: Int, tierName: String) {
+    suspend fun restoreStatistics(lifetimeMin: Int, tierName: String, streakDays: Int = 0) {
         context.dataStore.edit { preferences ->
             preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] = lifetimeMin
-            preferences[Keys.FOCUS_STREAK] = streakDays
             preferences[Keys.LAST_FOCUS_TIMESTAMP] = System.currentTimeMillis()
             val tier = try {
                 MembershipTier.valueOf(tierName)
@@ -157,6 +154,27 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     /**
+     * 检查并持久化超期降级状态
+     */
+    suspend fun checkAndPersistDowngrade() {
+        context.dataStore.edit { preferences ->
+            val lastTimestamp = preferences[Keys.LAST_FOCUS_TIMESTAMP] ?: 0L
+            val rawTierName = preferences[Keys.MEMBERSHIP_TIER] ?: MembershipTier.CLASSIC.name
+            val currentTier = try {
+                MembershipTier.valueOf(rawTierName)
+            } catch (_: Exception) {
+                MembershipTier.CLASSIC
+            }
+            if (currentTier != MembershipTier.CLASSIC && lastTimestamp > 0L) {
+                val elapsedDays = ((System.currentTimeMillis() - lastTimestamp) / (1000L * 3600 * 24)).toInt()
+                if (elapsedDays > currentTier.validityDays) {
+                    preferences[Keys.MEMBERSHIP_TIER] = currentTier.prevTier.name
+                }
+            }
+        }
+    }
+
+    /**
      * 铁道常客俱乐部会员状态（支持航司级定级里程与掉级机制）
      */
     val frequentFlyerState: Flow<FrequentFlyerState> = context.dataStore.data.map { preferences ->
@@ -201,7 +219,7 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     /**
-     * 每日专注目标与连续打卡状态。
+     * 每日专注目标状态。
      * 跨天时当日的累计分钟会自动归零显示。
      */
     val dailyGoalState: Flow<DailyGoalState> = context.dataStore.data.map { preferences ->
@@ -214,7 +232,6 @@ class UserPreferencesRepository @Inject constructor(
         DailyGoalState(
             goalMin = preferences[Keys.DAILY_GOAL_MIN] ?: DEFAULT_DAILY_GOAL_MIN,
             todayFocusMin = todayMin,
-            streakDays = preferences[Keys.FOCUS_STREAK] ?: 0,
         )
     }
 
@@ -229,8 +246,6 @@ class UserPreferencesRepository @Inject constructor(
 
     /**
      * 记录一次已完成的专注时长（分钟）。
-     * 只有计入后当日累计达到目标才更新连续天数：
-     * 昨天达成过则 +1，否则重置为 1；当天已达成则不变。
      */
     suspend fun recordFocusMinutes(minutes: Int) {
         if (minutes <= 0) return
@@ -247,30 +262,29 @@ class UserPreferencesRepository @Inject constructor(
             val currentLifetime = preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] ?: 0
             val newLifetime = currentLifetime + minutes
             preferences[Keys.TOTAL_LIFETIME_FOCUS_MIN] = newLifetime
+
+            val lastTimestamp = preferences[Keys.LAST_FOCUS_TIMESTAMP] ?: 0L
             preferences[Keys.LAST_FOCUS_TIMESTAMP] = System.currentTimeMillis()
 
-            // 根据累计有效里程判定是否晋升更高等级
-            val currentTier = try {
-                MembershipTier.valueOf(preferences[Keys.MEMBERSHIP_TIER] ?: MembershipTier.CLASSIC.name)
+            // 根据超期情况计算当前有效等级基准
+            val rawTierName = preferences[Keys.MEMBERSHIP_TIER] ?: MembershipTier.CLASSIC.name
+            val storedTier = try {
+                MembershipTier.valueOf(rawTierName)
             } catch (_: Exception) {
                 MembershipTier.CLASSIC
             }
-            val possibleTiers = MembershipTier.entries.filter { newLifetime >= it.requiredMinutes }
-            val highestEligible = possibleTiers.maxByOrNull { it.requiredMinutes } ?: MembershipTier.CLASSIC
-            if (highestEligible.ordinal > currentTier.ordinal) {
-                preferences[Keys.MEMBERSHIP_TIER] = highestEligible.name
+            val activeTier = if (storedTier != MembershipTier.CLASSIC && lastTimestamp > 0L) {
+                val elapsedDays = ((System.currentTimeMillis() - lastTimestamp) / (1000L * 3600 * 24)).toInt()
+                if (elapsedDays > storedTier.validityDays) storedTier.prevTier else storedTier
+            } else {
+                storedTier
             }
 
-            val goal = preferences[Keys.DAILY_GOAL_MIN] ?: DEFAULT_DAILY_GOAL_MIN
-            if (newTotal >= goal) {
-                val lastGoal = preferences[Keys.LAST_GOAL_DATE]
-                if (lastGoal != todayStr) {
-                    val yesterdayStr = today.minusDays(1).toString()
-                    val current = preferences[Keys.FOCUS_STREAK] ?: 0
-                    preferences[Keys.FOCUS_STREAK] = if (lastGoal == yesterdayStr) current + 1 else 1
-                    preferences[Keys.LAST_GOAL_DATE] = todayStr
-                }
-            }
+            // 根据累计有效里程判定是否晋升更高等级
+            val possibleTiers = MembershipTier.entries.filter { newLifetime >= it.requiredMinutes }
+            val highestEligible = possibleTiers.maxByOrNull { it.requiredMinutes } ?: MembershipTier.CLASSIC
+            val finalTier = if (highestEligible.ordinal > activeTier.ordinal) highestEligible else activeTier
+            preferences[Keys.MEMBERSHIP_TIER] = finalTier.name
         }
     }
 
@@ -365,7 +379,6 @@ const val DEFAULT_DAILY_GOAL_MIN = 45
 data class DailyGoalState(
     val goalMin: Int,
     val todayFocusMin: Int,
-    val streakDays: Int,
 )
 
 /**

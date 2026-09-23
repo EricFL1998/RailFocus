@@ -107,7 +107,7 @@ import kotlin.math.roundToInt
 @Composable
 fun DataContent(
     uiState: HistoryUiState,
-    dailyGoal: DailyGoalState = DailyGoalState(45, 0, 0),
+    dailyGoal: DailyGoalState = DailyGoalState(45, 0),
     frequentFlyer: FrequentFlyerState = FrequentFlyerState(),
     onGoalSelected: (Int) -> Unit = {},
     onAllJourneysClick: () -> Unit = {},
@@ -602,22 +602,7 @@ private fun DailyGoalCard(
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        )
-                        Text(
-                            text = stringResource(R.string.data_streak_days, dailyGoal.streakDays),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+
                 }
             }
 

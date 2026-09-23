@@ -1,7 +1,7 @@
 package com.hsr.railfocus.data.repository
 
 import com.hsr.railfocus.data.local.dataaccess.FocusTypeDataAccess
-import com.hsr.railfocus.ui.focus.FocusType
+import com.hsr.railfocus.domain.model.FocusType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

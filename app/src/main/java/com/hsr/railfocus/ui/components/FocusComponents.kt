@@ -41,7 +41,7 @@ import com.hsr.railfocus.domain.model.MemoryRecall
 import com.hsr.railfocus.domain.model.JourneyJournal
 import com.hsr.railfocus.ui.journal.CompletionJournalCard
 import com.hsr.railfocus.ui.journal.MemoryRecallCard
-import com.hsr.railfocus.ui.focus.FocusType
+import com.hsr.railfocus.ui.focus.*
 import com.hsr.railfocus.ui.theme.RailColors
 
 @Composable

@@ -9,11 +9,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import java.util.UUID
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.hsr.railfocus.util.JournalImageManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JournalRepository @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val journalDataAccess: JournalDataAccess,
 ) {
     suspend fun saveJournal(
@@ -73,7 +77,16 @@ class JournalRepository @Inject constructor(
     }
 
     suspend fun deleteById(id: String) {
+        val existing = journalDataAccess.getById(id)
         journalDataAccess.deleteById(id)
+        if (existing != null) {
+            JournalImageManager.deleteJournalImages(context, existing.journeyId)
+        }
+    }
+
+    suspend fun deleteByJourneyId(journeyId: String) {
+        journalDataAccess.deleteByJourneyId(journeyId)
+        JournalImageManager.deleteJournalImages(context, journeyId)
     }
 
     private fun JourneyJournalEntity.toDomain(): JourneyJournal {

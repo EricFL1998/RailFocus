@@ -74,7 +74,7 @@ fun SettingsScreen(
         }
     }
     val createDocLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json"),
+        contract = ActivityResultContracts.CreateDocument("application/zip"),
     ) { uri ->
         if (uri != null) {
             try {
@@ -276,7 +276,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.settings_export_data_summary),
                     onClick = {
                         val timeStr = java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.getDefault()).format(java.util.Date())
-                        createDocLauncher.launch("rail_focus_backup_$timeStr.json")
+                        createDocLauncher.launch("rail_focus_backup_$timeStr.zip")
                     },
                 )
                 SettingsClickableItem(
@@ -284,7 +284,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_import_data),
                     summary = stringResource(R.string.settings_import_data_summary),
                     onClick = {
-                        openDocLauncher.launch(arrayOf("application/json"))
+                        openDocLauncher.launch(arrayOf("application/zip", "application/octet-stream", "application/json", "*/*"))
                     },
                 )
             }

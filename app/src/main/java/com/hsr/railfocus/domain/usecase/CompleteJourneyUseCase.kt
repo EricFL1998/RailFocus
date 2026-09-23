@@ -7,7 +7,7 @@ import javax.inject.Inject
 /**
  * 完成旅程 UseCase
  * 
- * 记录旅程完成时间和实际时长，更新访问记录
+ * 记录旅程完成时间和实际时长，更新访问记录。原子排他，防止前后台同时结算导致时长翻倍。
  */
 class CompleteJourneyUseCase @Inject constructor(
     private val journeyRepository: JourneyRepository,
@@ -17,7 +17,7 @@ class CompleteJourneyUseCase @Inject constructor(
      * 
      * @param journeyId 旅程ID
      * @param actualDurationMin 实际时长（分钟）
-     * @return 完成的旅程记录，如果失败则返回null
+     * @return 成功完成则返回最新记录；若该旅程已被其他流程完成/取消则返回 null
      */
     suspend operator fun invoke(
         journeyId: String,
@@ -26,20 +26,17 @@ class CompleteJourneyUseCase @Inject constructor(
         earnedTier: String? = null,
     ): JourneyRecord? {
         return try {
-            // 1. 获取旅程记录
-            val journey = journeyRepository.getJourneyById(journeyId)
-                ?: return null
-            
-            // 2. 验证状态（已完成的旅程不能再完成）
-            if (journey.completedAt != null) {
-                return null
+            val success = journeyRepository.completeJourney(
+                journeyId = journeyId,
+                actualDurationMin = actualDurationMin,
+                delayMinutes = delayMinutes,
+                earnedTier = earnedTier,
+            )
+            if (success) {
+                journeyRepository.getJourneyById(journeyId)
+            } else {
+                null
             }
-            
-            // 3. 完成旅程
-            journeyRepository.completeJourney(journeyId, actualDurationMin, delayMinutes, earnedTier)
-            
-            // 4. 返回更新后的记录
-            journeyRepository.getJourneyById(journeyId)
         } catch (_: Exception) {
             null
         }

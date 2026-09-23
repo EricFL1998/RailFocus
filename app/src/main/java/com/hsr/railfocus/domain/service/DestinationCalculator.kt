@@ -4,6 +4,8 @@ import com.hsr.railfocus.data.graph.RailGraph
 import com.hsr.railfocus.data.local.dataaccess.VisitedStationDataAccess
 import com.hsr.railfocus.domain.model.Station
 import com.hsr.railfocus.util.appJson
+import java.util.Collections
+import java.util.LinkedHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.encodeToString
@@ -26,13 +28,20 @@ class DestinationCalculator @Inject constructor(
     private val railGraph: RailGraph,
     private val visitedStationDataAccess: VisitedStationDataAccess
 ) {
-    // 简单的内存缓存：(出发站ID, 时长) -> 目的地列表
-    private val cache = mutableMapOf<Pair<String, Int>, List<DestinationOption>>()
-
     companion object {
         /** 缓存上限，防止长时间使用后无界增长 */
         private const val MAX_CACHE_ENTRIES = 50
     }
+
+    // 线程安全的严格 LRU 内存缓存：(出发站ID, 时长) -> 目的地列表，杜绝并发并发修改异常
+    private val cache: MutableMap<Pair<String, Int>, List<DestinationOption>> =
+        Collections.synchronizedMap(
+            object : LinkedHashMap<Pair<String, Int>, List<DestinationOption>>(MAX_CACHE_ENTRIES, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<String, Int>, List<DestinationOption>>?): Boolean {
+                    return size > MAX_CACHE_ENTRIES
+                }
+            }
+        )
 
     /**
      * 根据时长计算可达目的地。
@@ -78,7 +87,7 @@ class DestinationCalculator @Inject constructor(
                     station = station,
                     travelTimeMinutes = pathResult.totalDurationMin,
                     distance = pathResult.totalDistanceKm,
-                    recommendationScore = 0.0, // 废弃单一分数，改用多级排序
+                    recommendationScore = 0.0,
                     pathEdges = pathResult.edges,
                     pathStations = pathResult.path,
                     isVisited = isVisited
@@ -90,15 +99,11 @@ class DestinationCalculator @Inject constructor(
         // 1. 未访问的站在前，已访问的站在后
         // 2. 在每一组内，按时长从小到大排序 (Shorter to Longer)
         val sortedResults = results.sortedWith(
-            compareBy<DestinationOption> { it.isVisited } // false (0) < true (1)
+            compareBy<DestinationOption> { it.isVisited }
                 .thenBy { it.travelTimeMinutes }
         )
 
         cache[cacheKey] = sortedResults
-        while (cache.size > MAX_CACHE_ENTRIES) {
-            // 简单淘汰策略：移除最早插入的一条
-            cache.remove(cache.keys.first())
-        }
         return sortedResults
     }
 

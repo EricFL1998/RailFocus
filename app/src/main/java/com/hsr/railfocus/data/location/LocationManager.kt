@@ -86,12 +86,13 @@ class LocationManager @Inject constructor(
     }
 
     /**
-     * 原生 Android 定位兜底方案
+     * 原生 Android 定位兜底方案（包含单次短时监听重试，解决冷启动缓存为空问题）
      */
-    private fun getNativeLocation(): Location? {
+    @SuppressLint("MissingPermission")
+    private suspend fun getNativeLocation(): Location? {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
         
-        return try {
+        val cached = try {
             val providers = lm.getProviders(true)
             var bestLocation: Location? = null
             
@@ -104,6 +105,46 @@ class LocationManager @Inject constructor(
             bestLocation
         } catch (_: SecurityException) {
             null
+        } catch (_: Exception) {
+            null
+        }
+
+        if (cached != null) return cached
+
+        return try {
+            kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+                    val listener = object : android.location.LocationListener {
+                        override fun onLocationChanged(loc: Location) {
+                            try { lm.removeUpdates(this) } catch (_: Exception) {}
+                            if (cont.isActive) cont.resumeWith(Result.success(loc))
+                        }
+                        override fun onProviderDisabled(provider: String) {}
+                        override fun onProviderEnabled(provider: String) {}
+                        @Deprecated("Deprecated in Java")
+                        override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+                    }
+                    cont.invokeOnCancellation {
+                        try { lm.removeUpdates(listener) } catch (_: Exception) {}
+                    }
+                    try {
+                        val provider = when {
+                            lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ->
+                                android.location.LocationManager.GPS_PROVIDER
+                            lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) ->
+                                android.location.LocationManager.NETWORK_PROVIDER
+                            else -> lm.getProviders(true).firstOrNull()
+                        }
+                        if (provider != null) {
+                            lm.requestSingleUpdate(provider, listener, android.os.Looper.getMainLooper())
+                        } else {
+                            if (cont.isActive) cont.resumeWith(Result.success(null))
+                        }
+                    } catch (_: Exception) {
+                        if (cont.isActive) cont.resumeWith(Result.success(null))
+                    }
+                }
+            }
         } catch (_: Exception) {
             null
         }

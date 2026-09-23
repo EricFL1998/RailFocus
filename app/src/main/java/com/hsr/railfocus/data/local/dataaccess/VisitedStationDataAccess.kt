@@ -11,6 +11,9 @@ interface VisitedStationDataAccess {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(record: VisitedStationRecordEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(records: List<VisitedStationRecordEntity>)
+
     @Query("SELECT DISTINCT stationId FROM visited_station_records")
     suspend fun getAllVisitedStationIds(): List<String>
 

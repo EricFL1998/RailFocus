@@ -30,6 +30,7 @@ import com.hsr.railfocus.MainActivity
 import com.hsr.railfocus.R
 import com.hsr.railfocus.data.repository.JourneyRepository
 import com.hsr.railfocus.domain.model.JourneyRecord
+import com.hsr.railfocus.domain.service.JourneyTimerService
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -46,11 +47,17 @@ class FocusTimerWidget : androidx.glance.appwidget.GlanceAppWidget() {
             WidgetDependencies::class.java,
         )
         val active = deps.journeyRepository().getActiveJourney()
+        val timer = deps.journeyTimerService()
+        val remaining = if (timer.state.value is JourneyTimerService.TimerState.Running) {
+            timer.getRemainingSeconds()
+        } else {
+            active?.remainingSec
+        }
 
         provideContent {
             GlanceTheme {
                 if (active != null) {
-                    ActiveJourneyContent(active)
+                    ActiveJourneyContent(active, remaining)
                 } else {
                     IdleContent()
                 }
@@ -59,8 +66,8 @@ class FocusTimerWidget : androidx.glance.appwidget.GlanceAppWidget() {
     }
 
     @Composable
-    private fun ActiveJourneyContent(journey: JourneyRecord) {
-        val remainingSec = journey.remainingSec ?: (journey.plannedDurationMin * 60)
+    private fun ActiveJourneyContent(journey: JourneyRecord, currentRemaining: Int?) {
+        val remainingSec = currentRemaining ?: journey.remainingSec ?: (journey.plannedDurationMin * 60)
         val totalSec = (journey.plannedDurationMin * 60).coerceAtLeast(1)
         val progress = (1f - remainingSec.toFloat() / totalSec).coerceIn(0f, 1f)
         val remainingLabel = formatRemaining(remainingSec)
@@ -157,4 +164,5 @@ class FocusTimerWidget : androidx.glance.appwidget.GlanceAppWidget() {
 @InstallIn(SingletonComponent::class)
 interface WidgetDependencies {
     fun journeyRepository(): JourneyRepository
+    fun journeyTimerService(): JourneyTimerService
 }

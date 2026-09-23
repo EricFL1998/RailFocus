@@ -43,7 +43,7 @@ class HistoryViewModel @Inject constructor(
 
     /** 每日专注目标与连续打卡状态 */
     val dailyGoalState: StateFlow<DailyGoalState> = preferencesRepository.dailyGoalState
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DailyGoalState(45, 0, 0))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DailyGoalState(45, 0))
 
     val frequentFlyerState: StateFlow<FrequentFlyerState> = preferencesRepository.frequentFlyerState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FrequentFlyerState())

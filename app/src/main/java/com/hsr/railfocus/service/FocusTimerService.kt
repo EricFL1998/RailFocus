@@ -109,6 +109,48 @@ class FocusTimerService : Service() {
     // 站台播报播放器（进出站广播音）
     private var announcementPlayer: MediaPlayer? = null
 
+    private var audioManager: android.media.AudioManager? = null
+    private var audioFocusRequest: android.media.AudioFocusRequest? = null
+
+    private fun requestAudioFocus(): Boolean {
+        if (audioManager == null) {
+            audioManager = getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+        }
+        val am = audioManager ?: return false
+        val playbackAttributes = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+        val focusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setAudioAttributes(playbackAttributes)
+            .setAcceptsDelayedFocusGain(false)
+            .setOnAudioFocusChangeListener { focusChange ->
+                when (focusChange) {
+                    android.media.AudioManager.AUDIOFOCUS_LOSS -> pauseAmbience()
+                    android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pauseAmbience()
+                    android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                        ambientPlayer?.setVolume(AMBIENT_DUCK_VOLUME, AMBIENT_DUCK_VOLUME)
+                    }
+                    android.media.AudioManager.AUDIOFOCUS_GAIN -> {
+                        if (announcementPlayer == null) {
+                            ambientPlayer?.setVolume(currentAmbientVolumeFraction, currentAmbientVolumeFraction)
+                            resumeAmbience()
+                        }
+                    }
+                }
+            }
+            .build()
+        audioFocusRequest = focusRequest
+        return am.requestAudioFocus(focusRequest) == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonAudioFocus() {
+        audioFocusRequest?.let { req ->
+            audioManager?.abandonAudioFocusRequest(req)
+            audioFocusRequest = null
+        }
+    }
+
     // 站台播报开关（由偏好流量持续同步，开关后无需重启旅程即生效）
     @Volatile
     private var stationAnnouncementEnabled = false
@@ -233,6 +275,7 @@ class FocusTimerService : Service() {
      */
     private fun playStationAnnouncement(soundRes: Int, onComplete: (() -> Unit)? = null) {
         if (!stationAnnouncementEnabled) return
+        requestAudioFocus()
         runCatching {
             announcementPlayer?.let { player ->
                 player.setOnCompletionListener(null)
@@ -287,9 +330,14 @@ class FocusTimerService : Service() {
                     is JourneyTimerService.TimerState.Paused -> updateNotification()
                     is JourneyTimerService.TimerState.Completed -> {
                         stopForeground(STOP_FOREGROUND_REMOVE)
-                        completeActiveJourneyInBackground()
-                        showCompletionNotification()
-                        stopSelf()
+                        serviceScope.launch {
+                            try {
+                                completeActiveJourneyInBackground()
+                                showCompletionNotification()
+                            } finally {
+                                stopSelf()
+                            }
+                        }
                     }
                     else -> {}
                 }
@@ -300,7 +348,8 @@ class FocusTimerService : Service() {
             .onEach { progress ->
                 if (progress != null) {
                     updateNotification()
-                    updateWidgetThrottled()
+                    val remaining = timerService.getRemainingSeconds()
+                    updateWidgetThrottled(remaining)
                 }
             }
             .launchIn(serviceScope)
@@ -360,12 +409,18 @@ class FocusTimerService : Service() {
         manager.notify(NOTIFICATION_ID, buildNotification())
     }
 
-    /** 小组件刷新节流：每 5 秒最多一次，避免频繁跨进程刷新 */
-    private fun updateWidgetThrottled() {
+    /** 小组件刷新节流：每 5 秒最多一次，避免频繁跨进程刷新，同时同步 remainingSec 到数据库 */
+    private fun updateWidgetThrottled(remainingSeconds: Int) {
         val now = System.currentTimeMillis()
         if (now - lastWidgetUpdateMs < 5_000) return
         lastWidgetUpdateMs = now
         serviceScope.launch {
+            runCatching {
+                val active = journeyRepository.getActiveJourney()
+                if (active != null) {
+                    journeyRepository.updateRemaining(active.id, remainingSeconds)
+                }
+            }
             runCatching {
                 val manager = GlanceAppWidgetManager(this@FocusTimerService)
                 manager.getGlanceIds(FocusTimerWidget::class.java).forEach { id ->
@@ -482,30 +537,28 @@ class FocusTimerService : Service() {
         return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
-    private fun completeActiveJourneyInBackground() {
-        serviceScope.launch {
-            try {
-                val active = journeyRepository.getActiveJourney()
-                if (active != null) {
-                    val durationMin = active.plannedDurationMin
-                    val delayMin = timerService.delayMinutes
-                    val tier = preferencesRepository.frequentFlyerState.first().tier.name
-                    completeJourneyUseCase(active.id, durationMin.coerceAtLeast(1), delayMin, tier)
-                    preferencesRepository.recordFocusMinutes(durationMin.coerceAtLeast(1))
-                    pathStations.lastOrNull()?.let { endStation ->
-                        preferencesRepository.saveLastLocation(
-                            com.hsr.railfocus.data.preferences.SavedLocation(
-                                latitude = endStation.lat,
-                                longitude = endStation.lng,
-                                stationId = endStation.id,
-                                stationName = endStation.name,
-                                city = endStation.city
-                            )
+    private suspend fun completeActiveJourneyInBackground() {
+        try {
+            val active = journeyRepository.getActiveJourney() ?: return
+            val durationMin = active.plannedDurationMin
+            val delayMin = timerService.delayMinutes
+            val tier = preferencesRepository.frequentFlyerState.first().tier.name
+            val completed = completeJourneyUseCase(active.id, durationMin.coerceAtLeast(1), delayMin, tier)
+            if (completed != null) {
+                preferencesRepository.recordFocusMinutes(durationMin.coerceAtLeast(1))
+                pathStations.lastOrNull()?.let { endStation ->
+                    preferencesRepository.saveLastLocation(
+                        com.hsr.railfocus.data.preferences.SavedLocation(
+                            latitude = endStation.lat,
+                            longitude = endStation.lng,
+                            stationId = endStation.id,
+                            stationName = endStation.name,
+                            city = endStation.city
                         )
-                    }
+                    )
                 }
-            } catch (_: Exception) {}
-        }
+            }
+        } catch (_: Exception) {}
     }
 
     private fun showCompletionNotification() {
@@ -544,15 +597,17 @@ class FocusTimerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // 旅程结束/取消后立即刷新小组件，避免残留旧的倒计时
-        kotlinx.coroutines.runBlocking {
+        // 旅程结束/取消后异步刷新小组件，避免主线程 runBlocking 阻塞产生 ANR
+        val appContext = applicationContext
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             runCatching {
-                val manager = GlanceAppWidgetManager(this@FocusTimerService)
+                val manager = GlanceAppWidgetManager(appContext)
                 manager.getGlanceIds(FocusTimerWidget::class.java).forEach { id ->
-                    FocusTimerWidget().update(this@FocusTimerService, id)
+                    FocusTimerWidget().update(appContext, id)
                 }
             }
         }
+        abandonAudioFocus()
         runCatching { ambientPlayer?.stop() }
         ambientPlayer?.release()
         ambientPlayer = null

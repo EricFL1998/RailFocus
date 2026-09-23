@@ -67,27 +67,33 @@ class RailGraph @Inject constructor(
                 fun durationOf(distanceKm: Double): Int =
                     speedModel.computeTravelTimeMinutes(distanceKm.toFloat())
 
+                val seenEdges = mutableSetOf<Pair<String, String>>()
                 for (edge in edges) {
                     val distKm = edge.distanceKm ?: 0.0
+                    val dur = durationOf(distKm)
 
-                    // 正向边
-                    adjacency.getOrPut(edge.fromStationId) { mutableListOf() }
-                        .add(
-                            Edge(
-                                toStationId = edge.toStationId,
-                                distanceKm = distKm,
-                                durationMin = durationOf(distKm),
+                    // 正向边（去重添加）
+                    if (seenEdges.add(edge.fromStationId to edge.toStationId)) {
+                        adjacency.getOrPut(edge.fromStationId) { mutableListOf() }
+                            .add(
+                                Edge(
+                                    toStationId = edge.toStationId,
+                                    distanceKm = distKm,
+                                    durationMin = dur,
+                                )
                             )
-                        )
-                    // 反向边（铁路是无向图，A↔B）
-                    adjacency.getOrPut(edge.toStationId) { mutableListOf() }
-                        .add(
-                            Edge(
-                                toStationId = edge.fromStationId,
-                                distanceKm = distKm,
-                                durationMin = durationOf(distKm),
+                    }
+                    // 反向边（去重添加，铁路是无向图，A↔B）
+                    if (seenEdges.add(edge.toStationId to edge.fromStationId)) {
+                        adjacency.getOrPut(edge.toStationId) { mutableListOf() }
+                            .add(
+                                Edge(
+                                    toStationId = edge.fromStationId,
+                                    distanceKm = distKm,
+                                    durationMin = dur,
+                                )
                             )
-                        )
+                    }
                 }
 
                 adjacency

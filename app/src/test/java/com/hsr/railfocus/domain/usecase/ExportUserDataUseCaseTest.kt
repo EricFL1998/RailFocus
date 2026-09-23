@@ -7,6 +7,7 @@ import com.hsr.railfocus.data.local.dataaccess.VisitedStationDataAccess
 import com.hsr.railfocus.data.local.entity.FocusTypeEntity
 import com.hsr.railfocus.data.local.entity.JourneyJournalEntity
 import com.hsr.railfocus.data.local.entity.JourneyRecordEntity
+import com.hsr.railfocus.data.preferences.DailyGoalState
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
 import com.hsr.railfocus.domain.model.AppBackupData
 import com.hsr.railfocus.domain.model.FrequentFlyerState
@@ -21,7 +22,9 @@ import kotlinx.serialization.decodeFromString
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.zip.ZipInputStream
 
 class ExportUserDataUseCaseTest {
 
@@ -50,7 +53,7 @@ class ExportUserDataUseCaseTest {
     }
 
     @Test
-    fun testExportAllData_serializesAndRecoversSuccessfully() = runTest {
+    fun testExportAllData_serializesAndRecoversSuccessfullyFromZip() = runTest {
         val dummyJourney = JourneyRecordEntity(
             id = "j_001",
             startStationId = "南京南",
@@ -79,7 +82,7 @@ class ExportUserDataUseCaseTest {
             stationId = "北京南",
             stationName = "北京南",
             content = "京沪线飞驰，手账留念。",
-            imagePathsJson = "[\"img1.jpg\"]",
+            imagePathsJson = """["img1.jpg"]""",
             audioDurationSec = 15,
             createdAt = 2000L,
             updatedAt = 2000L,
@@ -93,7 +96,7 @@ class ExportUserDataUseCaseTest {
             FrequentFlyerState(tier = MembershipTier.PLATINUM, totalFocusMinutes = 3600)
         )
         every { preferencesRepository.dailyGoalState } returns flowOf(
-            com.hsr.railfocus.data.preferences.DailyGoalState(goalMin = 60, todayFocusMin = 30, streakDays = 7)
+            DailyGoalState(goalMin = 60, todayFocusMin = 30)
         )
 
         val outputStream = ByteArrayOutputStream()
@@ -105,8 +108,22 @@ class ExportUserDataUseCaseTest {
         val exportedBytes = outputStream.toByteArray()
         assertTrue(exportedBytes.isNotEmpty())
 
-        val jsonString = String(exportedBytes, Charsets.UTF_8)
-        val backupData: AppBackupData = appJson.decodeFromString(jsonString)
+        val zipIn = ZipInputStream(ByteArrayInputStream(exportedBytes))
+        var jsonString: String? = null
+        var entry = zipIn.nextEntry
+        while (entry != null) {
+            if (entry.name == "data.json") {
+                val out = ByteArrayOutputStream()
+                zipIn.copyTo(out)
+                jsonString = out.toString("UTF-8")
+                break
+            }
+            zipIn.closeEntry()
+            entry = zipIn.nextEntry
+        }
+
+        assertNotNull("导出的 ZIP 中必须包含 data.json", jsonString)
+        val backupData: AppBackupData = appJson.decodeFromString(jsonString!!)
 
         assertEquals("1.7", backupData.appVersion)
         assertEquals(1, backupData.journeys.size)
@@ -116,8 +133,7 @@ class ExportUserDataUseCaseTest {
         assertEquals(1, backupData.journals.size)
         assertEquals("京沪线飞驰，手账留念。", backupData.journals.first().content)
         assertEquals(3600, backupData.statistics?.lifetimeFocusMin)
-        assertEquals(7, backupData.statistics?.focusStreak)
+        assertEquals(0, backupData.statistics?.focusStreak)
         assertEquals("PLATINUM", backupData.statistics?.membershipTier)
     }
 }
-

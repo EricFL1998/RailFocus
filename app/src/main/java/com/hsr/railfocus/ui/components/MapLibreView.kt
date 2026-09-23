@@ -128,7 +128,7 @@ fun MapLibreView(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            if (!mapDestroyed) {
+            if (lifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED && !mapDestroyed) {
                 mapDestroyed = true
                 mapView.onDestroy()
             }

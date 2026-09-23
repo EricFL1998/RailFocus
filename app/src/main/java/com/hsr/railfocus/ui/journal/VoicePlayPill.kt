@@ -66,9 +66,18 @@ fun VoicePlayPill(
                         }
                         setOnCompletionListener {
                             isPlaying = false
+                            try {
+                                seekTo(0)
+                            } catch (_: Exception) {}
                         }
                         prepare()
                     }
+                } else {
+                    try {
+                        if (!player!!.isPlaying && player!!.currentPosition >= player!!.duration - 50) {
+                            player?.seekTo(0)
+                        }
+                    } catch (_: Exception) {}
                 }
                 player?.start()
                 isPlaying = true

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.R
-import com.hsr.railfocus.ui.focus.FocusType
+import com.hsr.railfocus.ui.focus.*
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)

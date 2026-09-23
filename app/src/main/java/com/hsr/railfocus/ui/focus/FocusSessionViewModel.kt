@@ -356,8 +356,12 @@ class FocusSessionViewModel @Inject constructor(
                 val journeyId = state.journeyId
                 if (journeyId != null) {
                     when (status) {
-                        com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED ->
-                            completeJourneyUseCase(journeyId, actualDurationMin.coerceAtLeast(1), delayMinutes, tierToRecord)
+                        com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED -> {
+                            val completed = completeJourneyUseCase(journeyId, actualDurationMin.coerceAtLeast(1), delayMinutes, tierToRecord)
+                            if (completed != null) {
+                                preferencesRepository.recordFocusMinutes(actualDurationMin.coerceAtLeast(1))
+                            }
+                        }
                         else ->
                             cancelJourneyUseCase(journeyId, actualDurationMin, delayMinutes)
                     }
@@ -376,10 +380,9 @@ class FocusSessionViewModel @Inject constructor(
                         delayMinutes = delayMinutes,
                         earnedTier = tierToRecord,
                     )
-                }
-                // 只有完成的旅程计入每日目标与连续打卡
-                if (status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED) {
-                    preferencesRepository.recordFocusMinutes(actualDurationMin.coerceAtLeast(1))
+                    if (status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED) {
+                        preferencesRepository.recordFocusMinutes(actualDurationMin.coerceAtLeast(1))
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }

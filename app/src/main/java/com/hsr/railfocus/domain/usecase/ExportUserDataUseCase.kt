@@ -1,6 +1,5 @@
 package com.hsr.railfocus.domain.usecase
 
-import android.util.Base64
 import com.hsr.railfocus.data.local.dataaccess.FocusTypeDataAccess
 import com.hsr.railfocus.data.local.dataaccess.JournalDataAccess
 import com.hsr.railfocus.data.local.dataaccess.JourneyDataAccess
@@ -14,10 +13,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import java.io.File
 import java.io.OutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 
 /**
- * 导出全部用户数据 UseCase
+ * 导出全部用户数据 UseCase - 流式 ZIP 容器实现
  */
 class ExportUserDataUseCase @Inject constructor(
     private val journeyDataAccess: JourneyDataAccess,
@@ -26,23 +27,6 @@ class ExportUserDataUseCase @Inject constructor(
     private val journalDataAccess: JournalDataAccess,
     private val preferencesRepository: UserPreferencesRepository,
 ) {
-    /**
-     * 读取媒体文件并编码为 base64，文件不存在时跳过
-     */
-    private fun encodeMediaFile(absolutePath: String?): BackupMediaFile? {
-        if (absolutePath.isNullOrBlank()) return null
-        return try {
-            val file = File(absolutePath)
-            if (!file.exists() || !file.isFile) return null
-            BackupMediaFile(
-                fileName = file.name,
-                base64 = Base64.encodeToString(file.readBytes(), Base64.NO_WRAP),
-            )
-        } catch (_: Exception) {
-            null
-        }
-    }
-
     suspend fun generateBackupData(appVersion: String = "1.7"): AppBackupData = withContext(Dispatchers.IO) {
         val journeys = journeyDataAccess.getAllRecords().map { entity ->
             BackupJourneyRecord(
@@ -78,11 +62,6 @@ class ExportUserDataUseCase @Inject constructor(
         }
 
         val journals = journalDataAccess.getAllJournals().map { entity ->
-            val imagePaths = try {
-                appJson.decodeFromString<List<String>>(entity.imagePathsJson)
-            } catch (_: Exception) {
-                emptyList()
-            }
             BackupJournal(
                 id = entity.id,
                 journeyId = entity.journeyId,
@@ -94,21 +73,20 @@ class ExportUserDataUseCase @Inject constructor(
                 audioDurationSec = entity.audioDurationSec,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt,
-                imageFiles = imagePaths.mapNotNull { encodeMediaFile(it) },
-                audioFile = encodeMediaFile(entity.audioPath),
+                imageFiles = emptyList(),
+                audioFile = null,
             )
         }
 
         val flyerState = preferencesRepository.frequentFlyerState.first()
-        val dailyState = preferencesRepository.dailyGoalState.first()
         val stats = BackupStatistics(
             lifetimeFocusMin = flyerState.totalFocusMinutes,
-            focusStreak = dailyState.streakDays,
+            focusStreak = 0,
             membershipTier = flyerState.tier.name,
         )
 
         AppBackupData(
-            exportVersion = 1,
+            exportVersion = 2,
             exportedAt = System.currentTimeMillis(),
             appVersion = appVersion,
             journeys = journeys,
@@ -123,14 +101,54 @@ class ExportUserDataUseCase @Inject constructor(
         try {
             val data = generateBackupData(appVersion)
             val jsonString = appJson.encodeToString(data)
-            outputStream.use { stream ->
-                stream.write(jsonString.toByteArray(Charsets.UTF_8))
-                stream.flush()
+
+            ZipOutputStream(outputStream.buffered()).use { zipOut ->
+                // 1. 写入元数据 data.json
+                zipOut.putNextEntry(ZipEntry("data.json"))
+                zipOut.write(jsonString.toByteArray(Charsets.UTF_8))
+                zipOut.closeEntry()
+
+                // 2. 流式写入手账媒体文件（图片与音频）
+                val addedEntries = mutableSetOf<String>()
+                val allJournals = journalDataAccess.getAllJournals()
+                for (journal in allJournals) {
+                    val jId = journal.journeyId
+                    val imagePaths: List<String> = try {
+                        appJson.decodeFromString(journal.imagePathsJson)
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+
+                    for (p in imagePaths) {
+                        writeMediaEntry(zipOut, jId, p, addedEntries)
+                    }
+                    journal.audioPath?.let { audioPath ->
+                        writeMediaEntry(zipOut, jId, audioPath, addedEntries)
+                    }
+                }
+                zipOut.flush()
             }
             Result.success(data.journeys.size)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-}
 
+    private fun writeMediaEntry(
+        zipOut: ZipOutputStream,
+        journeyId: String,
+        filePath: String,
+        addedEntries: MutableSet<String>,
+    ) {
+        val file = File(filePath)
+        if (!file.exists() || !file.isFile) return
+        val entryName = "media/journals/$journeyId/${file.name}"
+        if (!addedEntries.add(entryName)) return
+
+        zipOut.putNextEntry(ZipEntry(entryName))
+        file.inputStream().buffered().use { input ->
+            input.copyTo(zipOut, bufferSize = 8192)
+        }
+        zipOut.closeEntry()
+    }
+}
