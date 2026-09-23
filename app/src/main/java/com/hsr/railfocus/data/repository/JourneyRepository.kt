@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.map
 import com.hsr.railfocus.util.appJson
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
-import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
+import java.util.LinkedHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,11 +28,19 @@ class JourneyRepository @Inject constructor(
     private val stationDataAccess: StationDataAccess,
     private val visitedStationDataAccess: VisitedStationDataAccess,
 ) {
-    // 内存路径缓存：避免倒计时高频落库检查点时反复解析全部历史行程的复杂 JSON
-    private val pathResultCache = ConcurrentHashMap<String, PathResult>()
+    // 内存路径缓存：避免倒计时高频落库检查点时反复解析全部历史行程的复杂 JSON。
+    // 有界 LRU：key 为完整 pathJson（数 KB/条），防止多年使用后无界增长
+    private val pathResultCache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, PathResult>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PathResult>): Boolean =
+                size > 32
+        }
+    )
 
     fun getJourneyHistoryFlow(): Flow<List<JourneyRecord>> {
-        return journeyDataAccess.getAllFlow().map { entities ->
+        // 只查询已完成/已取消的历史：计时期间高频写入 ACTIVE 行的 remainingSec
+        // 不会触发历史流全表重算（否则每 5 秒唤醒所有订阅者）
+        return journeyDataAccess.getCompletedHistoryFlow().map { entities ->
             if (entities.isEmpty()) return@map emptyList()
 
             // 批量查询站点避免 N+1

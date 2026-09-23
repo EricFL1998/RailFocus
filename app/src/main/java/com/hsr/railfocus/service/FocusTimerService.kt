@@ -172,14 +172,7 @@ class FocusTimerService : Service() {
                 pauseAmbience()
                 updateNotification()
             }
-            ACTION_RESUME -> {
-                // 恢复时重新计算结束时间
-                val remaining = timerService.getRemainingSeconds()
-                absoluteEndTimeMillis = System.currentTimeMillis() + (remaining * 1000L)
-                timerService.resume(serviceScope)
-                resumeAmbience()
-                updateNotification()
-            }
+            ACTION_RESUME -> handleResume()
             ACTION_STOP -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -240,6 +233,65 @@ class FocusTimerService : Service() {
 
         observeStationAnnouncementPreference()
         observeTimer()
+    }
+
+    private fun handleResume() {
+        // 进程存活：直接恢复暂停中的计时
+        if (timerService.state.value is JourneyTimerService.TimerState.Paused) {
+            val remaining = timerService.getRemainingSeconds()
+            absoluteEndTimeMillis = System.currentTimeMillis() + (remaining * 1000L)
+            timerService.resume(serviceScope)
+            resumeAmbience()
+            updateNotification()
+            return
+        }
+        // 进程被杀后从通知恢复：计时器单例已随进程重建为 Idle，resume() 是 no-op，
+        // 必须从数据库检查点恢复旅程，否则 ACTIVE 旅程将永远无人完成
+        if (timerService.state.value !is JourneyTimerService.TimerState.Idle) return
+        serviceScope.launch {
+            val active = journeyRepository.getActiveJourney() ?: run {
+                stopSelf()
+                return@launch
+            }
+            val total = active.plannedDurationMin * 60
+            val remaining = (active.remainingSec ?: total).coerceIn(0, total)
+            val destination = DestinationOption(
+                station = active.endStation,
+                travelTimeMinutes = active.plannedDurationMin,
+                distance = active.path.totalDistanceKm,
+                recommendationScore = 0.0,
+                pathEdges = active.path.edges,
+                pathStations = active.path.path,
+                isVisited = false,
+            )
+            destinationJson = destination.toJson()
+            totalSeconds = total
+            startStationName = active.startStation.name
+            endStationName = active.endStation.name
+            pathStations = active.path.path
+            absoluteEndTimeMillis = System.currentTimeMillis() + remaining * 1000L
+
+            createNotificationChannel()
+            val notification = buildNotification()
+            try {
+                if (Build.VERSION.SDK_INT >= 34) {
+                    startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
+            } catch (_: Exception) {}
+
+            acquireWakeLock(remaining)
+
+            timerService.restoreProgress(active.path, total, remaining, serviceScope)
+
+            if (preferencesRepository.ambientSoundEnabled.first()) {
+                startAmbience()
+            }
+            observeStationAnnouncementPreference()
+            observeTimer()
+            updateNotification()
+        }
     }
 
    private fun observeStationAnnouncementPreference() {
@@ -356,13 +408,13 @@ class FocusTimerService : Service() {
 
         val upcomingJob = timerService.upcomingArrival
             .onEach { station ->
-                announce("\u524d\u65b9\u5230\u7ad9\uff1a" + station.name, vibrate = false)
+                announce(getString(R.string.notif_upcoming_station, station.name), vibrate = false)
             }
             .launchIn(serviceScope)
 
        val arrivalJob = timerService.stationArrival
            .onEach { station ->
-              announce("\u5df2\u5230\u8fbe\uff1a" + station.name, vibrate = true)
+              announce(getString(R.string.notif_arrived_station, station.name), vibrate = true)
                 // 进站停车广播；发车广播由停靠结束事件触发
                 playStationAnnouncement(R.raw.train_arrival_announcement)
             }
@@ -509,7 +561,7 @@ class FocusTimerService : Service() {
     }
 
    private fun buildFallbackNotification(isPaused: Boolean, currentSegmentIndex: Int): Notification {
-        val statusSuffix = if (isPaused) " · 列车晚点" else ""
+        val statusSuffix = if (isPaused) " · " + getString(R.string.notif_paused) else ""
        return Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("$startStationName → $endStationName")
             .setContentText((arrivalAnnouncement ?: currentStationLabel(currentSegmentIndex)) + statusSuffix)

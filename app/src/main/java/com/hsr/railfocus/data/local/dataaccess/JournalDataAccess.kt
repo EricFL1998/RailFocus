@@ -40,5 +40,8 @@ interface JournalDataAccess {
 
     @Query("DELETE FROM journey_journals WHERE journeyId = :journeyId")
     suspend fun deleteByJourneyId(journeyId: String)
+
+    @Query("DELETE FROM journey_journals")
+    suspend fun deleteAll()
 }
 

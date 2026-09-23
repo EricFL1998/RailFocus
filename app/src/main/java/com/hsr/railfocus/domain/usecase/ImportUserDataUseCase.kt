@@ -49,6 +49,9 @@ class ImportUserDataUseCase @Inject constructor(
 
     suspend fun importFromStream(inputStream: InputStream): Result<ImportSummary> = withContext(Dispatchers.IO) {
         try {
+            // 导入语义为还原：先清除旧的手账媒体目录，避免旧手账的孤儿文件残留
+            File(context.filesDir, "journals").deleteRecursively()
+
             val buffered = BufferedInputStream(inputStream)
             buffered.mark(4)
             val header = ByteArray(4)
@@ -74,31 +77,32 @@ class ImportUserDataUseCase @Inject constructor(
     private suspend fun importFromZip(inputStream: InputStream): Result<ImportSummary> {
         var backupData: AppBackupData? = null
         val restoredMediaMap = mutableMapOf<String, String>()
-        val zipIn = ZipInputStream(inputStream)
-
-        var entry = zipIn.nextEntry
-        while (entry != null) {
-            val name = entry.name
-            if (name == "data.json") {
-                val out = ByteArrayOutputStream()
-                zipIn.copyTo(out, bufferSize = 8192)
-                val jsonString = out.toString("UTF-8")
-                backupData = appJson.decodeFromString<AppBackupData>(jsonString)
-            } else if (name.startsWith("media/journals/")) {
-                val parts = name.split('/')
-                if (parts.size >= 4) {
-                    val journeyId = parts[2]
-                    val fileName = File(parts.last()).name
-                    val dir = File(context.filesDir, "journals/$journeyId").apply { mkdirs() }
-                    val targetFile = File(dir, fileName)
-                    FileOutputStream(targetFile).use { fileOut ->
-                        zipIn.copyTo(fileOut, bufferSize = 8192)
+        // use {} 保证解析中途异常时流一定关闭
+        ZipInputStream(inputStream).use { zipIn ->
+            var entry = zipIn.nextEntry
+            while (entry != null) {
+                val name = entry.name
+                if (name == "data.json") {
+                    val out = ByteArrayOutputStream()
+                    zipIn.copyTo(out, bufferSize = 8192)
+                    val jsonString = out.toString("UTF-8")
+                    backupData = appJson.decodeFromString<AppBackupData>(jsonString)
+                } else if (name.startsWith("media/journals/")) {
+                    val parts = name.split('/')
+                    if (parts.size >= 4) {
+                        val journeyId = parts[2]
+                        val fileName = File(parts.last()).name
+                        val dir = File(context.filesDir, "journals/$journeyId").apply { mkdirs() }
+                        val targetFile = File(dir, fileName)
+                        FileOutputStream(targetFile).use { fileOut ->
+                            zipIn.copyTo(fileOut, bufferSize = 8192)
+                        }
+                        restoredMediaMap["$journeyId/$fileName"] = targetFile.absolutePath
                     }
-                    restoredMediaMap["$journeyId/$fileName"] = targetFile.absolutePath
                 }
+                zipIn.closeEntry()
+                entry = zipIn.nextEntry
             }
-            zipIn.closeEntry()
-            entry = zipIn.nextEntry
         }
 
         val backup = backupData ?: return Result.failure(Exception("备份文件不包含有效的 data.json 数据"))
@@ -131,6 +135,12 @@ class ImportUserDataUseCase @Inject constructor(
         restoredMediaMap: Map<String, String>,
     ): Result<ImportSummary> {
         userDatabase.withTransaction {
+            // 0. 清空旧数据：导入为还原语义，避免与已有数据合并产生重复记录
+            journeyDataAccess.deleteAll()
+            visitedStationDataAccess.deleteAll()
+            focusTypeDataAccess.deleteAll()
+            journalDataAccess.deleteAll()
+
             // 1. 旅程
             for (record in backup.journeys) {
                 journeyDataAccess.insert(

@@ -90,22 +90,23 @@ fun MapLibreView(
     val onPrimaryContainerArgb = remember(colorScheme) { colorScheme.onPrimaryContainer.toArgb() }
     val primaryArgb = remember(colorScheme) { colorScheme.primary.toArgb() }
 
-    var styleLoaded by remember { mutableStateOf(false) }
-    var mapDestroyed by remember { mutableStateOf(false) }
+    // 复用池中的 MapView 时沿用其样式状态，避免每次导航都整包重载样式
+    var styleLoaded by remember { mutableStateOf(pooledStyleIsDark) }
 
     DisposableEffect(Unit) {
         MapLibre.getInstance(context)
         onDispose { }
     }
 
+    // 跨页面复用 MapView：导航往返不再反复创建原生 GL 上下文。
+    // 池中实例在离开组合时回收（不销毁），Activity 销毁时统一 onDestroy。
     val mapView = remember {
-        // localIdeographFontFamily：中文等地名标注用系统字体本地渲染，无需打包字形
-        MapView(context, org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(context)
-            .textureMode(true)
-            .localIdeographFontFamily("sans-serif")).apply {
-            onCreate(Bundle())
-            setBackgroundColor(if (isDarkMode) "#1a1a1a".toColorInt() else "#f5f0e8".toColorInt())
-        }
+        acquirePooledMapView() ?: MapView(
+            context,
+            org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(context)
+                .textureMode(true)
+                .localIdeographFontFamily("sans-serif")
+        ).apply { onCreate(Bundle()) }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -115,22 +116,21 @@ fun MapLibreView(
                 Lifecycle.Event.ON_RESUME -> mapView.onResume()
                 Lifecycle.Event.ON_PAUSE -> mapView.onPause()
                 Lifecycle.Event.ON_STOP -> mapView.onStop()
-                // ON_DESTROY 与 onDispose 都可能触发，保证只销毁一次
-                Lifecycle.Event.ON_DESTROY -> {
-                    if (!mapDestroyed) {
-                        mapDestroyed = true
-                        mapView.onDestroy()
-                    }
-                }
+                // ON_DESTROY 与 onDispose 都可能触发，统一走幂等销毁
+                Lifecycle.Event.ON_DESTROY -> destroyPooledMapViews()
                 else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            if (lifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED && !mapDestroyed) {
-                mapDestroyed = true
-                mapView.onDestroy()
+            if (lifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                // Activity 销毁：池中实例与当前实例一并销毁（幂等）
+                destroyPooledMapViews()
+                destroyMapView(mapView)
+            } else {
+                // 导航离开组合：回收到池中，供下一个地图页复用
+                recycleMapView(mapView)
             }
         }
     }
@@ -658,14 +658,16 @@ fun MapLibreView(
         }
     }
 
-    // 记录上一次应用的模式，用于在 update 时强制刷新样式
-    var lastAppliedDarkMode by remember { mutableStateOf<Boolean?>(null) }
+    // 记录上一次应用的模式，用于在 update 时强制刷新样式；
+    // 复用池中的 MapView 时从其样式状态初始化，避免每次导航都整包重载样式
+    var lastAppliedDarkMode by remember { mutableStateOf<Boolean?>(pooledStyleIsDark) }
 
     Box(modifier = modifier) {
     AndroidView(
         modifier = Modifier.matchParentSize(),
         factory = { mapView },
         update = { view ->
+            view.setBackgroundColor(if (isDarkMode) "#1a1a1a".toColorInt() else "#f5f0e8".toColorInt())
             view.getMapAsync { map ->
                 mapInstance = map
                 if (enableGestures != lastAppliedGestures) {
@@ -701,6 +703,7 @@ fun MapLibreView(
                     lastAppliedDarkMode = isDarkMode
                     map.setStyle(Style.Builder().fromJson(createMinimalOSMStyle(isDarkMode))) { style ->
                         styleLoaded = isDarkMode
+                        pooledStyleIsDark = isDarkMode
                         updateMapLayers(
                             style = style,
                             context = context,
@@ -1564,4 +1567,55 @@ private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
             })
         })
     }.toString()
+}
+// ---------- MapView 跨页面复用池 ----------
+//
+// 四个页面（首页/专注/全部旅程/路线选择）共用本组件，导航往返时旧实现会对每个
+// 新组合新建 MapView 且从不在离开组合时 onDestroy，原生 GL 上下文随导航次数无界
+// 累积。这里改为：离开组合时回收到池，进入组合时优先复用；Activity 销毁时统一
+// 销毁池内与在用的全部实例。共享元素转场期间可能同时存在两个组合，池容量天然
+// 有界（最大并发地图数），不会无限增长。
+
+private val mapViewPool = java.util.ArrayList<MapView>()
+
+/** 池中（或曾入池）实例最近一次成功加载的样式暗色标记，供新组合免重载初始化 */
+@Volatile
+private var pooledStyleIsDark: Boolean? = null
+
+/** 已销毁实例集合：保证每个 MapView 的 onDestroy 全局至多调用一次 */
+private val destroyedMapViews = java.util.Collections.newSetFromMap(
+    java.util.concurrent.ConcurrentHashMap<MapView, Boolean>()
+)
+
+private fun acquirePooledMapView(): MapView? {
+    synchronized(mapViewPool) {
+        while (mapViewPool.isNotEmpty()) {
+            val candidate = mapViewPool.removeAt(mapViewPool.size - 1)
+            if (!destroyedMapViews.contains(candidate)) return candidate
+        }
+    }
+    return null
+}
+
+private fun recycleMapView(view: MapView) {
+    if (destroyedMapViews.contains(view)) return
+    synchronized(mapViewPool) {
+        if (!mapViewPool.contains(view)) mapViewPool.add(view)
+    }
+}
+
+private fun destroyMapView(view: MapView) {
+    if (destroyedMapViews.add(view)) {
+        pooledStyleIsDark = null
+        view.onDestroy()
+    }
+}
+
+private fun destroyPooledMapViews() {
+    val views: List<MapView>
+    synchronized(mapViewPool) {
+        views = mapViewPool.toList()
+        mapViewPool.clear()
+    }
+    views.forEach(::destroyMapView)
 }

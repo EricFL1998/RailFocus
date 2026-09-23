@@ -109,9 +109,9 @@ class ExportUserDataUseCase @Inject constructor(
                 zipOut.closeEntry()
 
                 // 2. 流式写入手账媒体文件（图片与音频）
+                // 复用 generateBackupData 已查询的手账列表，避免重复全表查询
                 val addedEntries = mutableSetOf<String>()
-                val allJournals = journalDataAccess.getAllJournals()
-                for (journal in allJournals) {
+                for (journal in data.journals) {
                     val jId = journal.journeyId
                     val imagePaths: List<String> = try {
                         appJson.decodeFromString(journal.imagePathsJson)

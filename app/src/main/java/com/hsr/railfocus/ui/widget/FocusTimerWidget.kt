@@ -9,6 +9,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.background
@@ -134,11 +135,11 @@ class FocusTimerWidget : androidx.glance.appwidget.GlanceAppWidget() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "暂无进行中的专注",
+                    text = LocalContext.current.getString(R.string.widget_idle_title),
                     style = TextStyle(color = ColorProvider(Color.White)),
                 )
                 Text(
-                    text = "点击开始",
+                    text = LocalContext.current.getString(R.string.widget_idle_action),
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         color = ColorProvider(Color.White),

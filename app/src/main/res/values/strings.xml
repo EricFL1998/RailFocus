@@ -192,6 +192,10 @@
 
     <string name="notif_completed_title">旅程已到达：%1$s</string>
     <string name="notif_completed_content">本次专注已完成，点击查看车票与成就</string>
+   <string name="notif_upcoming_station">前方到站: %1$s</string>
+   <string name="notif_arrived_station">已到达: %1$s</string>
+   <string name="widget_idle_title">暂无进行中的专注</string>
+   <string name="widget_idle_action">点击开始</string>
     <string name="completion_write_journal">记录旅行手账</string>
     <string name="completion_journal_saved">已封存旅行手账</string>
     <string name="completion_write_new_journal">记录本次旅行手账</string>
