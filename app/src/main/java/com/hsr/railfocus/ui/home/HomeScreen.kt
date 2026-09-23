@@ -462,12 +462,13 @@ private fun HomeMenuContent(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(16.dp)
-                .fillMaxWidth()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, bottom = 18.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // 核心主操作：“开始旅程”大胶囊（全宽、居中、视觉中心）
             with(sharedTransitionScope) {
                 Button(
                     onClick = onStartJourney,
@@ -482,11 +483,17 @@ private fun HomeMenuContent(
                                 boundsTransform = { _, _ -> spring(stiffness = 300f, dampingRatio = 0.8f) }
                             )
                     } else {
-                        Modifier.fillMaxWidth().height(64.dp)
+                        Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
                     },
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 3.dp,
+                        pressedElevation = 1.dp
                     )
                 ) {
                     BulletTrainIcon(
@@ -503,87 +510,66 @@ private fun HomeMenuContent(
                 }
             }
 
-            with(sharedTransitionScope) {
-                Surface(
-                    modifier = if (animatedVisibilityScope != null) {
-                        Modifier
-                            .fillMaxWidth()
-                            .sharedBounds(
-                                rememberSharedContentState(key = "menu-panel"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
-                                boundsTransform = { _, _ -> spring(stiffness = 300f, dampingRatio = 0.8f) }
-                            )
-                    } else {
-                        Modifier.fillMaxWidth()
-                    },
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 2.dp,
+            // 下方：双子并排入口卡片（轻量优雅，去列表分割线）
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 左侧：“我的”色调胶囊按钮（与主按钮完全同构的次级填充样式，去边框）
+                FilledTonalButton(
+                    onClick = onMyJourneysClick,
+                    shape = RoundedCornerShape(27.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp)
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        MenuRow(
-                            title = stringResource(R.string.home_my_journeys),
-                            leadingIcon = {
-                                BulletTrainIcon(
-                                    contentDescription = null,
-                                    size = 28.dp,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = onMyJourneysClick,
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                        )
-                        MenuRow(
-                            title = stringResource(R.string.home_data),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Public,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(28.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            onClick = onDataClick,
-                        )
-                    }
+                    BulletTrainIcon(
+                        contentDescription = null,
+                        size = 22.dp,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.home_my_journeys),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // 右侧：“数据”色调胶囊按钮（与主按钮完全同构的次级填充样式，去边框）
+                FilledTonalButton(
+                    onClick = onDataClick,
+                    shape = RoundedCornerShape(27.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Public,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.home_data),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MenuRow(
-    title: String,
-    leadingIcon: @Composable () -> Unit,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        leadingIcon()
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.size(24.dp)
-        )
     }
 }
 
