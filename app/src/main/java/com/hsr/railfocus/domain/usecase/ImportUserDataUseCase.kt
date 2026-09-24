@@ -49,9 +49,6 @@ class ImportUserDataUseCase @Inject constructor(
 
     suspend fun importFromStream(inputStream: InputStream): Result<ImportSummary> = withContext(Dispatchers.IO) {
         try {
-            // 导入语义为还原：先清除旧的手账媒体目录，避免旧手账的孤儿文件残留
-            File(context.filesDir, "journals").deleteRecursively()
-
             val buffered = BufferedInputStream(inputStream)
             buffered.mark(4)
             val header = ByteArray(4)
@@ -77,6 +74,10 @@ class ImportUserDataUseCase @Inject constructor(
     private suspend fun importFromZip(inputStream: InputStream): Result<ImportSummary> {
         var backupData: AppBackupData? = null
         val restoredMediaMap = mutableMapOf<String, String>()
+        // 媒体先解压到 cache 临时目录：等 data.json 解析成功、确认备份有效后，
+        // 再删除旧媒体并移入正式目录，避免选错文件时误删已有手账媒体
+        val tempRoot = File(context.cacheDir, "import_media_tmp")
+        tempRoot.deleteRecursively()
         // use {} 保证解析中途异常时流一定关闭
         ZipInputStream(inputStream).use { zipIn ->
             var entry = zipIn.nextEntry
@@ -92,7 +93,7 @@ class ImportUserDataUseCase @Inject constructor(
                     if (parts.size >= 4) {
                         val journeyId = parts[2]
                         val fileName = File(parts.last()).name
-                        val dir = File(context.filesDir, "journals/$journeyId").apply { mkdirs() }
+                        val dir = File(tempRoot, journeyId).apply { mkdirs() }
                         val targetFile = File(dir, fileName)
                         FileOutputStream(targetFile).use { fileOut ->
                             zipIn.copyTo(fileOut, bufferSize = 8192)
@@ -105,13 +106,37 @@ class ImportUserDataUseCase @Inject constructor(
             }
         }
 
-        val backup = backupData ?: return Result.failure(Exception("备份文件不包含有效的 data.json 数据"))
-        return saveBackupData(backup, restoredMediaMap)
+        val backup = backupData ?: run {
+            tempRoot.deleteRecursively()
+            return Result.failure(Exception("备份文件不包含有效的 data.json 数据"))
+        }
+
+        // 备份有效：删除旧媒体目录，把临时文件移入正式位置
+        File(context.filesDir, "journals").deleteRecursively()
+        val finalMediaMap = mutableMapOf<String, String>()
+        for ((key, tempPath) in restoredMediaMap) {
+            val tempFile = File(tempPath)
+            val jId = tempFile.parentFile?.name ?: continue
+            val targetDir = File(context.filesDir, "journals/$jId").apply { mkdirs() }
+            val target = File(targetDir, tempFile.name)
+            try {
+                val ok = tempFile.renameTo(target) || run {
+                    tempFile.copyTo(target, overwrite = true)
+                    tempFile.delete()
+                    true
+                }
+                if (ok) finalMediaMap[key] = target.absolutePath
+            } catch (_: Exception) {}
+        }
+        tempRoot.deleteRecursively()
+        return saveBackupData(backup, finalMediaMap)
     }
 
     private suspend fun importFromLegacyJson(inputStream: InputStream): Result<ImportSummary> {
         val jsonString = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         val backup = appJson.decodeFromString<AppBackupData>(jsonString)
+        // 备份解析成功后再删除旧媒体，避免选错文件时误删已有手账
+        File(context.filesDir, "journals").deleteRecursively()
         val restoredMediaMap = mutableMapOf<String, String>()
 
         for (journal in backup.journals) {
