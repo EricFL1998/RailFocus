@@ -1,5 +1,7 @@
 package com.hsr.railfocus.ui.history
 
+import android.content.Context
+import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.model.JourneyRecord
 import com.hsr.railfocus.domain.model.PathResult
 import com.hsr.railfocus.domain.model.Station
@@ -43,7 +45,7 @@ class HistoryViewModelTest {
         getJourneyHistoryUseCase = mockk()
         every { getJourneyHistoryUseCase.invoke() } returns flowOf(emptyList())
 
-        val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
+        val viewModel = HistoryViewModel(createContext(), getJourneyHistoryUseCase, mockk(relaxed = true))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -58,7 +60,7 @@ class HistoryViewModelTest {
         getJourneyHistoryUseCase = mockk()
         every { getJourneyHistoryUseCase.invoke() } returns flowOf(listOf(record))
 
-        val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
+        val viewModel = HistoryViewModel(createContext(), getJourneyHistoryUseCase, mockk(relaxed = true))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -85,7 +87,7 @@ class HistoryViewModelTest {
         getJourneyHistoryUseCase = mockk()
         every { getJourneyHistoryUseCase.invoke() } returns flowOf(listOf(cancelled))
 
-        val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
+        val viewModel = HistoryViewModel(createContext(), getJourneyHistoryUseCase, mockk(relaxed = true))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -108,7 +110,7 @@ class HistoryViewModelTest {
         getJourneyHistoryUseCase = mockk()
         every { getJourneyHistoryUseCase.invoke() } returns flowOf(listOf(active))
 
-        val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
+        val viewModel = HistoryViewModel(createContext(), getJourneyHistoryUseCase, mockk(relaxed = true))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -123,7 +125,7 @@ class HistoryViewModelTest {
         getJourneyHistoryUseCase = mockk()
         every { getJourneyHistoryUseCase.invoke() } returns flow
 
-        val viewModel = HistoryViewModel(getJourneyHistoryUseCase, mockk(relaxed = true))
+        val viewModel = HistoryViewModel(createContext(), getJourneyHistoryUseCase, mockk(relaxed = true))
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.isEmpty)
 
@@ -133,6 +135,16 @@ class HistoryViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isEmpty)
         assertEquals(1, state.tickets.size)
+    }
+
+    private fun createContext(): Context {
+        val context = mockk<Context>()
+        every { context.getString(R.string.ticket_status_completed) } returns "已完成"
+        every { context.getString(R.string.history_status_cancelled) } returns "已退票"
+        every { context.getString(R.string.ticket_focus_achieved) } returns "专注达成"
+        every { context.getString(R.string.ticket_focus_missed) } returns "专注未完成"
+        every { context.getString(R.string.ticket_focus_unachieved) } returns "专注未达成"
+        return context
     }
 
     private fun createCompletedJourney(): JourneyRecord {

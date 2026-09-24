@@ -1,9 +1,12 @@
 package com.hsr.railfocus.domain.usecase
 
+import android.content.Context
+import com.hsr.railfocus.R
 import com.hsr.railfocus.data.repository.JournalRepository
 import com.hsr.railfocus.domain.model.JourneyJournal
 import com.hsr.railfocus.domain.model.RecallType
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -14,12 +17,21 @@ import java.util.Calendar
 class GetMemoryRecallUseCaseTest {
 
     private lateinit var journalRepository: JournalRepository
+    private lateinit var context: Context
     private lateinit var useCase: GetMemoryRecallUseCase
 
     @Before
     fun setup() {
         journalRepository = mockk()
-        useCase = GetMemoryRecallUseCase(journalRepository)
+        context = mockk()
+        every { context.getString(R.string.recall_msg_tomorrow) } returns "明天，是你曾在这里停留的日子。提前抵达，期待相逢。"
+        every { context.getString(R.string.recall_msg_future, any()) } answers {
+            "${secondArg<Array<Any>>().first()}天后，是你曾在这里停留的日子。提前抵达，期待相逢。"
+        }
+        every { context.getString(R.string.recall_msg_past, any()) } answers {
+            "${secondArg<Array<Any>>().first()}天前，你曾在这里停留。错过的风景，期待未来重逢。"
+        }
+        useCase = GetMemoryRecallUseCase(context, journalRepository)
     }
 
     @Test

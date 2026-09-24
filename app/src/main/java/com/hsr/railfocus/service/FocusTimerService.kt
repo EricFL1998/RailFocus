@@ -198,7 +198,7 @@ class FocusTimerService : Service() {
         )
         totalSeconds = destination.travelTimeMinutes * 60
 
-        startStationName = destination.pathStations.firstOrNull()?.name ?: "出发站"
+        startStationName = destination.pathStations.firstOrNull()?.name ?: getString(R.string.notif_start_fallback)
         endStationName = destination.station.name
         pathStations = destination.pathStations
 

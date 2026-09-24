@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.model.MemoryRecall
 import com.hsr.railfocus.domain.model.RecallType
 import java.io.File
@@ -77,7 +79,7 @@ fun MemoryRecallCard(
                                     modifier = Modifier.size(13.dp),
                                 )
                                 Text(
-                                    text = "那年今日",
+                                    text = stringResource(R.string.recall_card_title),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                 )
@@ -85,7 +87,7 @@ fun MemoryRecallCard(
                         }
 
                         Text(
-                            text = if (recall.yearsAgo > 0) "${recall.yearsAgo}年前的今天" else "曾经的今天",
+                            text = if (recall.yearsAgo > 0) stringResource(R.string.recall_years_ago, recall.yearsAgo) else stringResource(R.string.recall_same_day),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -98,7 +100,7 @@ fun MemoryRecallCard(
                             val model = resolveImageModel(imagePaths.first())
                             AsyncImage(
                                 model = model,
-                                contentDescription = "当年照片",
+                                contentDescription = stringResource(R.string.recall_photo_cd),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -114,7 +116,7 @@ fun MemoryRecallCard(
                                     val model = resolveImageModel(path)
                                     AsyncImage(
                                         model = model,
-                                        contentDescription = "当年照片",
+                                        contentDescription = stringResource(R.string.recall_photo_cd),
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .weight(1f)
@@ -152,7 +154,7 @@ fun MemoryRecallCard(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         Text(
-                            text = "写于 ${recall.formattedDateTime} · ${recall.journal.stationName}站",
+                            text = stringResource(R.string.recall_written_at, recall.formattedDateTime, recall.journal.stationName),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -193,7 +195,7 @@ fun MemoryRecallCard(
                                 modifier = Modifier.size(13.dp),
                             )
                             Text(
-                                text = "即将重逢",
+                                text = stringResource(R.string.recall_upcoming_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -216,7 +218,7 @@ fun MemoryRecallCard(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         Text(
-                            text = "当年写于 ${recall.formattedDate} · ${recall.journal.stationName}站",
+                            text = stringResource(R.string.recall_past_written, recall.formattedDate, recall.journal.stationName),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -257,7 +259,7 @@ fun MemoryRecallCard(
                                 modifier = Modifier.size(13.dp),
                             )
                             Text(
-                                text = "车站旧忆",
+                                text = stringResource(R.string.recall_revisit_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -280,7 +282,7 @@ fun MemoryRecallCard(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         Text(
-                            text = "上次停留于 ${recall.formattedDate} · ${recall.journal.stationName}站",
+                            text = stringResource(R.string.recall_last_stay, recall.formattedDate, recall.journal.stationName),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )

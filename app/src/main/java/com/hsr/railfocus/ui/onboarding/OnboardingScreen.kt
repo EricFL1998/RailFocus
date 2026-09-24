@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.model.PermissionPriority
 import com.hsr.railfocus.domain.model.PermissionState
 import com.hsr.railfocus.domain.model.PermissionStatus
@@ -41,35 +43,35 @@ import kotlinx.coroutines.launch
 /** 功能亮点页数据 */
 private data class FeaturePage(
     val icon: ImageVector,
-    val title: String,
-    val subtitle: String,
-    val description: String,
+    val title: Int,
+    val subtitle: Int,
+    val description: Int,
 )
 
 private val featurePages = listOf(
     FeaturePage(
         icon = Icons.Default.Route,
-        title = "沉浸专注旅程",
-        subtitle = "选一座出发站，再选一座终点",
-        description = "把每一次专注当作一段车程。计时、环境音、到站播报全程伴随，锁屏或切后台也不会中断，准点抵达后自动封存旅程。",
+        title = R.string.onboarding_feature_journey_title,
+        subtitle = R.string.onboarding_feature_journey_subtitle,
+        description = R.string.onboarding_feature_journey_desc,
     ),
     FeaturePage(
         icon = Icons.Default.AutoAwesome,
-        title = "旅行手账",
-        subtitle = "封存此刻的心情",
-        description = "旅程结束时，写下一句话，配上两三张照片，或录一段 60 秒语音。当次封存，不留空白，文字、照片与语音一起收进时间胶囊。",
+        title = R.string.onboarding_feature_journal_title,
+        subtitle = R.string.onboarding_feature_journal_subtitle,
+        description = R.string.onboarding_feature_journal_desc,
     ),
     FeaturePage(
         icon = Icons.Default.DateRange,
-        title = "那年今日",
-        subtitle = "故地重游，旧账自开",
-        description = "每年的同一天再次经过，当年的手账会静静唤醒。未来三天内是重逢的期许，错过的日子里也有熟悉的问候。",
+        title = R.string.onboarding_feature_recall_title,
+        subtitle = R.string.onboarding_feature_recall_subtitle,
+        description = R.string.onboarding_feature_recall_desc,
     ),
     FeaturePage(
         icon = Icons.Default.EmojiEvents,
-        title = "常客俱乐部",
-        subtitle = "专注里程，一路升级",
-        description = "连续打卡与累计里程会提升你的会员等级。全部数据随时可以导出备份，专注成果永不丢失。",
+        title = R.string.onboarding_feature_club_title,
+        subtitle = R.string.onboarding_feature_club_subtitle,
+        description = R.string.onboarding_feature_club_desc,
     ),
 )
 
@@ -212,7 +214,7 @@ private fun OnboardingContent(
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "上一页",
+                            contentDescription = stringResource(R.string.onboarding_prev_page),
                         )
                     }
                 }
@@ -263,9 +265,9 @@ private fun OnboardingContent(
                 ) {
                     Text(
                         text = when {
-                            isLastPage && overview.allRequiredGranted -> "开始使用"
-                            isLastPage -> "请先授予必需权限"
-                            else -> "继续"
+                            isLastPage && overview.allRequiredGranted -> stringResource(R.string.onboarding_start)
+                            isLastPage -> stringResource(R.string.onboarding_grant_required)
+                            else -> stringResource(R.string.onboarding_continue)
                         },
                         style = MaterialTheme.typography.titleSmall,
                     )
@@ -302,7 +304,7 @@ private fun WelcomePage() {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "欢迎使用 Rail Focus",
+            text = stringResource(R.string.onboarding_welcome_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -310,7 +312,7 @@ private fun WelcomePage() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "专注如同乘坐高铁\n一路向前，直达目标",
+            text = stringResource(R.string.onboarding_welcome_slogan),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -345,7 +347,7 @@ private fun FeaturePageContent(page: FeaturePage) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = page.title,
+            text = stringResource(page.title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
@@ -353,7 +355,7 @@ private fun FeaturePageContent(page: FeaturePage) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = page.subtitle,
+            text = stringResource(page.subtitle),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Medium,
@@ -362,7 +364,7 @@ private fun FeaturePageContent(page: FeaturePage) {
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = page.description,
+            text = stringResource(page.description),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -386,7 +388,7 @@ private fun PermissionsPage(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "开始前需要以下权限",
+                text = stringResource(R.string.onboarding_perm_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth(),
@@ -405,7 +407,7 @@ private fun PermissionsPage(
         item {
             if (!overview.allImportantGranted && overview.allRequiredGranted) {
                 Text(
-                    text = "可选权限可随时在系统设置中补充",
+                    text = stringResource(R.string.onboarding_perm_optional_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 4.dp),
@@ -503,14 +505,14 @@ private fun PermissionCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = permissionState.type.title,
+                            text = stringResource(permissionState.type.titleRes),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold
                         )
 
                         if (isRequired) {
                             Text(
-                                text = "必需",
+                                text = stringResource(R.string.perm_state_required),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -520,7 +522,7 @@ private fun PermissionCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = permissionState.type.description,
+                        text = stringResource(permissionState.type.descriptionRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -530,7 +532,7 @@ private fun PermissionCard(
             if (isGranted) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "已授予",
+                    contentDescription = stringResource(R.string.perm_state_granted),
                     tint = MaterialTheme.colorScheme.primary
                 )
             } else {
@@ -538,7 +540,7 @@ private fun PermissionCard(
                     onClick = onRequestPermission,
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text("授予")
+                    Text(stringResource(R.string.perm_state_grant))
                 }
             }
         }

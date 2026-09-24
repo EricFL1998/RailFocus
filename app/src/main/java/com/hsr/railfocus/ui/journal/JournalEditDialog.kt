@@ -35,6 +35,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import com.hsr.railfocus.R
 import com.hsr.railfocus.ui.theme.RailColors
 import com.hsr.railfocus.util.JournalAudioRecorder
 import kotlinx.coroutines.delay
@@ -137,7 +139,7 @@ fun JournalEditDialog(
                 recordedAudioPath = tempFile.absolutePath
             }
         } else {
-            android.widget.Toast.makeText(context, "需要麦克风权限以录制手账语音", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.journal_mic_required), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -251,7 +253,7 @@ fun JournalEditDialog(
                                 )
                             }
                             Text(
-                                text = "$arrivalTimeStr 抵达",
+                                text = stringResource(R.string.journal_arrival_at, arrivalTimeStr),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -265,7 +267,7 @@ fun JournalEditDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "关闭",
+                                contentDescription = stringResource(R.string.action_close),
                                 modifier = Modifier.padding(6.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -286,7 +288,7 @@ fun JournalEditDialog(
                                 onValueChange = { if (it.length <= 100) contentText = it },
                                 placeholder = {
                                     Text(
-                                        text = "写下一句此刻的专注感悟…",
+                                        text = stringResource(R.string.journal_hint),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                                     )
@@ -338,7 +340,7 @@ fun JournalEditDialog(
                                     recordedDurationSec = 0
                                 }
                             ) {
-                                Text("删除重录", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(R.string.action_rerecord), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -367,7 +369,7 @@ fun JournalEditDialog(
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            val label = if (selectedImages.isEmpty()) "图片" else "图片 (" + selectedImages.size + "/3)"
+                            val label = if (selectedImages.isEmpty()) stringResource(R.string.journal_image_label) else stringResource(R.string.journal_image_count, selectedImages.size)
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.labelMedium,
@@ -391,7 +393,7 @@ fun JournalEditDialog(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (isRecording) "停止 %02d秒".format(recordingSeconds) else if (recordedAudioPath != null) "重录语音" else "录音",
+                                text = if (isRecording) stringResource(R.string.voice_stop_recording, recordingSeconds) else if (recordedAudioPath != null) stringResource(R.string.voice_rerecord) else stringResource(R.string.voice_record),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Medium,
                             )
@@ -410,7 +412,7 @@ fun JournalEditDialog(
                                 ) {
                                     AsyncImage(
                                         model = uri,
-                                        contentDescription = "已选图片",
+                                        contentDescription = stringResource(R.string.journal_selected_image_cd),
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize(),
                                     )
@@ -427,7 +429,7 @@ fun JournalEditDialog(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = "删除",
+                                            contentDescription = stringResource(R.string.action_delete),
                                             modifier = Modifier.padding(1.dp)
                                         )
                                     }
@@ -464,7 +466,7 @@ fun JournalEditDialog(
                             )
                         } else {
                             Text(
-                                text = "保存手账",
+                                text = stringResource(R.string.action_save_journal),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )

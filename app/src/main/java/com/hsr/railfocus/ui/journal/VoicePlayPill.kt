@@ -1,5 +1,6 @@
 package com.hsr.railfocus.ui.journal
 
+import com.hsr.railfocus.R
 import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -100,7 +102,7 @@ fun VoicePlayPill(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "暂停" else "播放",
+                contentDescription = stringResource(if (isPlaying) R.string.cd_pause else R.string.cd_play),
                 modifier = Modifier.size(16.dp),
             )
 

@@ -13,12 +13,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.model.JourneyJournal
 import java.io.File
 import java.text.SimpleDateFormat
@@ -76,7 +78,7 @@ fun CompletionJournalCard(
                             modifier = Modifier.size(13.dp),
                         )
                         Text(
-                            text = "旅行手账",
+                            text = stringResource(R.string.journal_card_label),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                         )
@@ -90,12 +92,12 @@ fun CompletionJournalCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "修改",
+                        contentDescription = stringResource(R.string.action_edit),
                         modifier = Modifier.size(13.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "修改",
+                        text = stringResource(R.string.action_edit),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
@@ -110,7 +112,7 @@ fun CompletionJournalCard(
                     val model = resolveImageModel(validImages.first())
                     AsyncImage(
                         model = model,
-                        contentDescription = "手账相片",
+                        contentDescription = stringResource(R.string.journal_photo_cd),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -126,7 +128,7 @@ fun CompletionJournalCard(
                             val model = resolveImageModel(pathOrUri)
                             AsyncImage(
                                 model = model,
-                                contentDescription = "手账相片",
+                                contentDescription = stringResource(R.string.journal_photo_cd),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .weight(1f)
@@ -165,7 +167,7 @@ fun CompletionJournalCard(
                 horizontalArrangement = Arrangement.End,
             ) {
                 Text(
-                    text = "写于 $dateStr · ${journal.stationName}站",
+                    text = stringResource(R.string.journal_written_at, dateStr, journal.stationName),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )

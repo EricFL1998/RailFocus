@@ -81,7 +81,7 @@ fun DestinationList(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Text(
-                    text = "该时长内暂无可达目的地",
+                    text = stringResource(R.string.dest_empty_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(20.dp),

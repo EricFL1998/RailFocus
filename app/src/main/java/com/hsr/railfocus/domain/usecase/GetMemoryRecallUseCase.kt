@@ -1,8 +1,11 @@
 package com.hsr.railfocus.domain.usecase
 
+import android.content.Context
+import com.hsr.railfocus.R
 import com.hsr.railfocus.data.repository.JournalRepository
 import com.hsr.railfocus.domain.model.MemoryRecall
 import com.hsr.railfocus.domain.model.RecallType
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -14,6 +17,7 @@ import javax.inject.Inject
  * 3. 其它历史情况（非当天）：表达对过去停留的错过与回忆。
  */
 class GetMemoryRecallUseCase @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val journalRepository: JournalRepository,
 ) {
     suspend operator fun invoke(
@@ -72,9 +76,9 @@ class GetMemoryRecallUseCase @Inject constructor(
 
                 if (diffDays in 1..3) {
                     val futureMessage = if (diffDays == 1) {
-                        "明天，是你曾在这里停留的日子。提前抵达，期待相逢。"
+                        context.getString(R.string.recall_msg_tomorrow)
                     } else {
-                        "${diffDays}天后，是你曾在这里停留的日子。提前抵达，期待相逢。"
+                        context.getString(R.string.recall_msg_future, diffDays)
                     }
                     return MemoryRecall(
                         type = RecallType.UPCOMING_DAYS,
@@ -94,7 +98,7 @@ class GetMemoryRecallUseCase @Inject constructor(
             return null
         }
 
-        val missedMessage = "${daysAgo}天前，你曾在这里停留。错过的风景，期待未来重逢。"
+        val missedMessage = context.getString(R.string.recall_msg_past, daysAgo)
         return MemoryRecall(
             type = RecallType.REVISIT,
             journal = latestHistory,

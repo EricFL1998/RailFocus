@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import android.content.Context
+import com.hsr.railfocus.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -163,9 +164,9 @@ class SettingsViewModel @Inject constructor(
             val result = exportUserDataUseCase.exportToStream(outputStream, appVersion)
             if (result.isSuccess) {
                 val count = result.getOrNull() ?: 0
-                onResult(true, "已成功导出全部数据（共 $count 条旅程）")
+                onResult(true, context.getString(R.string.export_success_detail, count))
             } else {
-                onResult(false, result.exceptionOrNull()?.message ?: "导出失败")
+                onResult(false, result.exceptionOrNull()?.message ?: context.getString(R.string.settings_export_failed_short))
             }
         }
     }
@@ -175,9 +176,9 @@ class SettingsViewModel @Inject constructor(
             val result = importUserDataUseCase.importFromStream(inputStream)
             val summary = result.getOrNull()
             if (result.isSuccess && summary != null) {
-                onResult(true, "导入成功：${summary.journeys} 条旅程、${summary.journals} 篇手账、${summary.visitedStations} 个打卡车站")
+                onResult(true, context.getString(R.string.import_success_detail, summary.journeys, summary.journals, summary.visitedStations))
             } else {
-                onResult(false, result.exceptionOrNull()?.message ?: "导入失败")
+                onResult(false, result.exceptionOrNull()?.message ?: context.getString(R.string.settings_import_failed_short))
             }
         }
     }

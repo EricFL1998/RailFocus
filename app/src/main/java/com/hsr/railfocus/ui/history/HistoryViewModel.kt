@@ -1,13 +1,16 @@
 package com.hsr.railfocus.ui.history
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hsr.railfocus.R
 import com.hsr.railfocus.data.preferences.DailyGoalState
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
 import com.hsr.railfocus.domain.model.FrequentFlyerState
 import com.hsr.railfocus.domain.model.JourneyRecord
 import com.hsr.railfocus.domain.usecase.GetJourneyHistoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +37,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val getJourneyHistoryUseCase: GetJourneyHistoryUseCase,
     private val preferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
@@ -121,6 +125,53 @@ class HistoryViewModel @Inject constructor(
         _uiState.update { it.copy(filteredTickets = filtered) }
     }
 
+    fun JourneyRecord.toTrainTicketModel(tierName: String? = null): TrainTicketModel {
+        val ticketDate = DATE_FORMAT.format(Date(createdAt))
+        val departureTime = TIME_FORMAT.format(Date(createdAt))
+        val arrivalTime = completedAt?.let { TIME_FORMAT.format(Date(it)) } ?: "---"
+
+        val (trainSeries, prefix, maxSpeed) = determineTrainSeries(plannedDurationMin, createdAt, focusType)
+        val trainNumber = synthesizeTrainNumber(prefix)
+        val seatInfo = if (carriageNumber != null && seatNumber != null) {
+            val cleaned = seatNumber.replace("号", "")
+            "${carriageNumber}车${cleaned}"
+        } else {
+            synthesizeSeatInfo(trainSeries)
+        }
+        val seatClass = focusType?.let { typeName ->
+            // Since FocusType is no longer an enum, we just use the typeName (which is the displayName)
+            // or we could look up the FocusType from a repository if we needed more info.
+            typeName
+        } ?: synthesizeSeatClass(trainSeries)
+
+        val stationCount = path.path.size
+        val isCompleted = status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED
+
+        return TrainTicketModel(
+            record = this,
+            ticketDate = ticketDate,
+            departureTime = departureTime,
+            arrivalTime = arrivalTime,
+            trainNumber = trainNumber,
+            trainSeries = trainSeries,
+            maxSpeed = maxSpeed,
+            seatInfo = seatInfo,
+            seatClass = seatClass,
+            focusMinutes = actualDurationMin,
+            plannedMinutes = plannedDurationMin,
+            stationCount = stationCount,
+            isCompleted = isCompleted,
+            completionStatus = if (isCompleted) context.getString(R.string.ticket_status_completed) else context.getString(R.string.history_status_cancelled),
+            focusState = if (isCompleted) {
+                if (actualDurationMin >= plannedDurationMin) context.getString(R.string.ticket_focus_achieved) else context.getString(R.string.ticket_focus_missed)
+            } else {
+                context.getString(R.string.ticket_focus_unachieved)
+            },
+            delayMinutes = delayMinutes,
+            memberTierName = tierName,
+        )
+    }
+
     companion object {
         private val DATE_FORMAT = SimpleDateFormat("yyyy年MM月dd日", Locale.CHINA)
         private val TIME_FORMAT = SimpleDateFormat("HH:mm", Locale.CHINA)
@@ -129,53 +180,6 @@ class HistoryViewModel @Inject constructor(
         private val SEAT_ROWS = (1..16)
         private val SEAT_LETTERS = listOf("A", "B", "C", "D", "F")
         private val SEAT_CLASSES = listOf("二等座", "一等座", "商务座")
-
-        fun JourneyRecord.toTrainTicketModel(tierName: String? = null): TrainTicketModel {
-            val ticketDate = DATE_FORMAT.format(Date(createdAt))
-            val departureTime = TIME_FORMAT.format(Date(createdAt))
-            val arrivalTime = completedAt?.let { TIME_FORMAT.format(Date(it)) } ?: "---"
-
-            val (trainSeries, prefix, maxSpeed) = determineTrainSeries(plannedDurationMin, createdAt, focusType)
-            val trainNumber = synthesizeTrainNumber(prefix)
-            val seatInfo = if (carriageNumber != null && seatNumber != null) {
-                val cleaned = seatNumber.replace("号", "")
-                "${carriageNumber}车${cleaned}"
-            } else {
-                synthesizeSeatInfo(trainSeries)
-            }
-            val seatClass = focusType?.let { typeName ->
-                // Since FocusType is no longer an enum, we just use the typeName (which is the displayName)
-                // or we could look up the FocusType from a repository if we needed more info.
-                typeName
-            } ?: synthesizeSeatClass(trainSeries)
-
-            val stationCount = path.path.size
-            val isCompleted = status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED
-
-            return TrainTicketModel(
-                record = this,
-                ticketDate = ticketDate,
-                departureTime = departureTime,
-                arrivalTime = arrivalTime,
-                trainNumber = trainNumber,
-                trainSeries = trainSeries,
-                maxSpeed = maxSpeed,
-                seatInfo = seatInfo,
-                seatClass = seatClass,
-                focusMinutes = actualDurationMin,
-                plannedMinutes = plannedDurationMin,
-                stationCount = stationCount,
-                isCompleted = isCompleted,
-                completionStatus = if (isCompleted) "已完成" else "已退票",
-                focusState = if (isCompleted) {
-                    if (actualDurationMin >= plannedDurationMin) "专注达成" else "专注未完成"
-                } else {
-                    "专注未达成"
-                },
-                delayMinutes = delayMinutes,
-                memberTierName = tierName,
-            )
-        }
 
         private fun determineTrainSeries(
             plannedMin: Int,

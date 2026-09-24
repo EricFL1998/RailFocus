@@ -1,5 +1,6 @@
 package com.hsr.railfocus.ui.focus
 
+import com.hsr.railfocus.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -17,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -215,7 +217,7 @@ private fun SeatSelectionExpressive(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "你要坐在哪？",
+            text = stringResource(R.string.seat_pick_title),
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1.5).sp
@@ -224,7 +226,7 @@ private fun SeatSelectionExpressive(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "选择一个位置开始专注",
+            text = stringResource(R.string.seat_pick_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -341,14 +343,14 @@ private fun FocusTypeSubPopupExpressive(
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "座位 $seat",
+                text = stringResource(R.string.seat_label, seat),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp
             )
             Text(
-                text = "选择专注场景",
+                text = stringResource(R.string.scene_pick_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface

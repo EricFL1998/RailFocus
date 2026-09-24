@@ -224,7 +224,7 @@ fun JourneySelectionContent(
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.Search,
-                                        contentDescription = "展开搜索",
+                                        contentDescription = stringResource(R.string.search_expand_cd),
                                         modifier = Modifier.size(24.dp),
                                         tint = MaterialTheme.colorScheme.primary // 使用主色调，确保高亮可见
                                     )
@@ -252,7 +252,7 @@ fun JourneySelectionContent(
                             modifier = Modifier.padding(32.dp).fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("未找到相关车站", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.search_no_result), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
                         LazyColumn(
@@ -364,7 +364,7 @@ fun JourneySelectionContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "开始旅程",
+                        text = stringResource(R.string.home_start_journey),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )

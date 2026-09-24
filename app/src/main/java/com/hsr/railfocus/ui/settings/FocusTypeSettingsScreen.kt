@@ -83,7 +83,7 @@ fun FocusTypeSettingsScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(20.dp),
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("添加场景", fontWeight = FontWeight.Bold) }
+                text = { Text(stringResource(R.string.settings_add_scene), fontWeight = FontWeight.Bold) }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -252,14 +252,14 @@ private fun AddFocusTypeDialog(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "取消",
+                                    contentDescription = stringResource(R.string.settings_cancel),
                                     modifier = Modifier.size(18.dp),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                         }
                         Text(
-                            text = "添加",
+                            text = stringResource(R.string.fts_dialog_add),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -280,7 +280,7 @@ private fun AddFocusTypeDialog(
                         shadowElevation = if (name.isNotBlank()) 2.dp else 0.dp,
                     ) {
                         Text(
-                            text = "完成",
+                            text = stringResource(R.string.action_done),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 22.dp, vertical = 9.dp),
@@ -305,7 +305,7 @@ private fun AddFocusTypeDialog(
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                         ) {
                             Text(
-                                text = "模板",
+                                text = stringResource(R.string.fts_template),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.SemiBold,
@@ -339,7 +339,7 @@ private fun AddFocusTypeDialog(
                     }
                     Icon(
                         imageVector = currentIcon,
-                        contentDescription = "点击更换图标",
+                        contentDescription = stringResource(R.string.fts_change_icon_cd),
                         modifier = Modifier.size(62.dp),
                         tint = Color.White,
                     )
@@ -361,7 +361,7 @@ private fun AddFocusTypeDialog(
                     ) {
                         if (name.isEmpty()) {
                             Text(
-                                text = "标题",
+                                text = stringResource(R.string.fts_name_placeholder),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                                 textAlign = TextAlign.Center,
@@ -449,7 +449,7 @@ private fun AddFocusTypeDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                        contentDescription = "调出完整调色盘",
+                                        contentDescription = stringResource(R.string.fts_palette_open_cd),
                                         modifier = Modifier.size(11.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -535,13 +535,13 @@ private fun IconPickerSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "图标",
+                        text = stringResource(R.string.fts_icon_section),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "关闭")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close))
                     }
                 }
 
@@ -659,12 +659,12 @@ private fun FullColorPickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "调色板",
+                        text = stringResource(R.string.fts_palette_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "关闭")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close))
                     }
                 }
 
@@ -691,7 +691,7 @@ private fun FullColorPickerDialog(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "当前颜色",
+                                text = stringResource(R.string.fts_current_color),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -711,7 +711,7 @@ private fun FullColorPickerDialog(
                             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = "确定",
+                                text = stringResource(R.string.action_confirm),
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -723,7 +723,7 @@ private fun FullColorPickerDialog(
 
                 // --- 色相调节滑块 (Hue 0..360) ---
                 Text(
-                    text = "色相 (Hue)",
+                    text = stringResource(R.string.fts_hue_label),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -757,7 +757,7 @@ private fun FullColorPickerDialog(
 
                 // --- 饱和度调节滑块 (Saturation 0..1) ---
                 Text(
-                    text = "饱和度 (Saturation)",
+                    text = stringResource(R.string.fts_saturation_label),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -771,7 +771,7 @@ private fun FullColorPickerDialog(
 
                 // --- 明度调节滑块 (Value 0..1) ---
                 Text(
-                    text = "明度 (Brightness)",
+                    text = stringResource(R.string.fts_brightness_label),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -787,7 +787,7 @@ private fun FullColorPickerDialog(
 
                 // --- 经典预设色彩矩阵 ---
                 Text(
-                    text = "预设色彩矩阵",
+                    text = stringResource(R.string.fts_preset_matrix),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -873,12 +873,12 @@ private fun TemplateSelectionDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "选择预设模板",
+                        text = stringResource(R.string.fts_choose_template),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "关闭")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close))
                     }
                 }
 

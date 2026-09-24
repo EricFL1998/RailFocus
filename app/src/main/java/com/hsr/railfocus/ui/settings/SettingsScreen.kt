@@ -60,6 +60,9 @@ fun SettingsScreen(
     val keepScreenOnEnabled by viewModel.keepScreenOnEnabled.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    // 供启动器回调等非 Composable 上下文使用的文案模板，需在 composable 中提前求值
+    val exportFailedTemplate = stringResource(R.string.settings_export_failed)
+    val importFailedTemplate = stringResource(R.string.settings_import_failed_with_reason)
     var showClearDataDialog by remember { mutableStateOf(false) }
     val updateCheck by viewModel.updateCheckState.collectAsState()
     val pendingUpdate by viewModel.pendingUpdate.collectAsState()
@@ -87,7 +90,7 @@ fun SettingsScreen(
                 }
             } catch (e: Exception) {
                 scope.launch {
-                    snackbarHostState.showSnackbar("导出失败: ${e.message}")
+                    snackbarHostState.showSnackbar(exportFailedTemplate.format(e.message))
                 }
             }
         }
@@ -341,12 +344,12 @@ fun SettingsScreen(
                                 }
                             } catch (e: Exception) {
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("导入失败: ${e.message}")
+                                    snackbarHostState.showSnackbar(importFailedTemplate.format(e.message))
                                 }
                             }
                         }
                     ) {
-                        Text("导入")
+                        Text(stringResource(R.string.action_import))
                     }
                 },
                 dismissButton = {
@@ -405,9 +408,10 @@ private fun PermissionWarningSection(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
+                // buildList 是 inline 函数，lambda 内仍保留 Composable 上下文
                 val missing = buildList {
-                    if (!locationGranted) add("位置")
-                    if (!notificationGranted) add("通知")
+                    if (!locationGranted) add(stringResource(R.string.settings_perm_location))
+                    if (!notificationGranted) add(stringResource(R.string.settings_perm_notification))
                 }.joinToString("、")
                 Text(
                     text = stringResource(R.string.settings_permissions) + " " + missing,
@@ -462,7 +466,7 @@ private fun FocusManagementSection(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "自定义您的专注场景和图标",
+                    text = stringResource(R.string.settings_scene_custom_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                 )
@@ -640,7 +644,7 @@ private fun ThemeSection(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "外观",
+                    text = stringResource(R.string.settings_section_appearance),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
