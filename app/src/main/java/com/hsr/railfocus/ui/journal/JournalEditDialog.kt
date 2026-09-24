@@ -73,6 +73,8 @@ fun JournalEditDialog(
     onSave: (content: String, images: List<Uri>, audioPath: String?, audioDurationSec: Int) -> Unit,
 ) {
     val context = LocalContext.current
+    // 供启动器回调等非 Composable 上下文使用的文案，需在 composable 中提前求值
+    val micRequiredMsg = stringResource(R.string.journal_mic_required)
     var contentText by remember { mutableStateOf(initialContent) }
     var selectedImages by remember { mutableStateOf<List<Uri>>(initialImages) }
     var recordedAudioPath by remember { mutableStateOf<String?>(initialAudioPath) }
@@ -139,7 +141,7 @@ fun JournalEditDialog(
                 recordedAudioPath = tempFile.absolutePath
             }
         } else {
-            android.widget.Toast.makeText(context, context.getString(R.string.journal_mic_required), android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, micRequiredMsg, android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
