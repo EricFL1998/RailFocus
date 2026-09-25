@@ -259,7 +259,9 @@ fun HomeScreen(
                                 destination = destination,
                                 focusType = pendingFocusType,
                                 seatNumber = pendingSeatNumber,
-                                onCheckInComplete = { carriageNumber ->
+                                onDepartStart = { carriageNumber ->
+                                    // 车票收入动画期间并行完成重活（前台服务 + 旅程初始化），
+                                    // 动画结束切页时专注界面即为轻量组合，消除转场卡顿。
                                     activeDestinationJson = destination.toJson()
                                     try {
                                         context.startForegroundService(
@@ -267,13 +269,15 @@ fun HomeScreen(
                                         )
                                     } catch (_: Exception) {}
 
-                                    phase = HomePhase.FocusSession
                                     focusSessionViewModel.startJourney(
                                         destination = destination,
                                         focusType = pendingFocusType,
                                         seatNumber = pendingSeatNumber,
                                         carriageNumber = carriageNumber,
                                     )
+                                },
+                                onCheckInComplete = {
+                                    phase = HomePhase.FocusSession
                                 },
                                 onCancel = {
                                     phase = HomePhase.JourneySelection

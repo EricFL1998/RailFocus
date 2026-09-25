@@ -40,6 +40,7 @@ fun TicketCheckInScreen(
     destination: DestinationOption,
     focusType: FocusType?,
     seatNumber: String?,
+    onDepartStart: (carriageNumber: String) -> Unit,
     onCheckInComplete: (carriageNumber: String) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -161,8 +162,11 @@ fun TicketCheckInScreen(
                 // 2. 停顿 150ms 呈现打孔效果，随后直接动画收入车票
                 delay(150)
 
-                // 3. 动画直接收入车票，进入专注页面
+                // 3. 动画直接收入车票，进入专注页面。
+                // 先把启动服务、初始化旅程等重活抛给宿主在动画期间完成，
+                // 动画结束后再切换页面，避免转场瞬间集中阻塞主线程。
                 isCompleted = true
+                onDepartStart(carriageNumber)
                 ticketDepartAnim.animateTo(1f, tween(360, easing = FastOutSlowInEasing))
                 onCheckInComplete(carriageNumber)
             }
