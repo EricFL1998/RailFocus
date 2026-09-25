@@ -42,12 +42,12 @@
     <!-- Completion Overlay -->
     <string name="completion_welcome">欢迎来到</string>
     <string name="completion_journey_ended">旅程已结束</string>
-    <string name="completion_not_completed">未完成</string>
+<string name="completion_not_completed">已退票</string>
    <string name="completion_duration_label">专注时长</string>
    <string name="completion_type_label">专注类型</string>
     <string name="completion_delay_label">运行状态</string>
     <string name="completion_on_time">正点到达</string>
-    <string name="completion_delayed">晚点 %1$d 分钟</string>
+<string name="completion_delayed">晚点 %1$d 分钟</string>
    <string name="completion_finish">完成旅程</string>
     <string name="completion_back_home">返回首页</string>
     <string name="completion_type_default">通用</string>
