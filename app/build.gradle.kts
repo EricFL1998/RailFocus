@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
        applicationId = "com.hsr.railfocus"
-       minSdk = 26
+        minSdk = 31
        targetSdk = 37
         versionCode = 9
         versionName = "1.8"

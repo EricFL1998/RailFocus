@@ -63,30 +63,20 @@ object TicketFeedbackHelper {
      */
     fun performPunchHaptic(context: Context) {
         try {
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            } ?: return
+            val vibrator = (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)
+                ?.defaultVibrator ?: return
 
             if (!vibrator.hasVibrator()) return
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // 模拟机械打孔钳剪穿厚卡纸的机械阻尼感：
-                // 18ms 预咬合 -> 12ms 阻尼停顿 -> 32ms 强力切断
-                val timings = longArrayOf(0, 18, 12, 32)
-                val amplitudes = intArrayOf(0, 140, 0, 255)
-                if (vibrator.hasAmplitudeControl()) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
-                } else {
-                    vibrator.vibrate(VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE))
-                }
+            // 模拟机械打孔钳剪穿厚卡纸的机械阻尼感：
+            // 18ms 预咬合 -> 12ms 阻尼停顿 -> 32ms 强力切断
+            val timings = longArrayOf(0, 18, 12, 32)
+            val amplitudes = intArrayOf(0, 140, 0, 255)
+            if (vibrator.hasAmplitudeControl()) {
+                vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
             } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(longArrayOf(0, 18, 12, 32), -1)
+                vibrator.vibrate(VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE))
             }
         } catch (_: Exception) {}
     }
 }
-
