@@ -66,6 +66,7 @@ class HomeViewModel @Inject constructor(
     private fun checkForUpdateOnLaunch() {
         viewModelScope.launch {
             try {
+                kotlinx.coroutines.delay(3000)
                 val currentVersion = getAppVersionName() ?: return@launch
                 val result = appUpdateRepository.checkForUpdate(currentVersion)
                 if (result is UpdateCheckResult.UpdateAvailable) {
@@ -94,8 +95,7 @@ class HomeViewModel @Inject constructor(
                 val stationId = saved?.stationId ?: return@collect
                 if (stationId == _uiState.value.currentStation.id) return@collect
                 try {
-                    val station = stationRepository.getAllStations()
-                        .find { it.id == stationId } ?: return@collect
+                    val station = stationRepository.getStationById(stationId) ?: return@collect
                     _uiState.value = _uiState.value.copy(
                         currentStation = station,
                         currentLocation = LatLng(station.lat, station.lng),
@@ -112,12 +112,11 @@ class HomeViewModel @Inject constructor(
     private fun loadNearbyStations() {
         viewModelScope.launch {
             try {
-                val allStations = stationRepository.getAllStations()
-
-                // 1. 尝试获取上次保存的位置
+                // 1. 优先只查单站缓存/索引，绝不在启动时执行全表数千车站的扫描
                 val savedLocation = preferencesRepository.lastLocation.first()
                 if (savedLocation != null) {
-                    val savedStation = allStations.find { it.id == savedLocation.stationId }
+                    val savedStation = stationRepository.getStationById(savedLocation.stationId)
+                        ?: stationRepository.getAllStations().find { it.id == savedLocation.stationId }
                     if (savedStation != null) {
                         _uiState.value = _uiState.value.copy(
                             currentStation = savedStation,
@@ -138,6 +137,7 @@ class HomeViewModel @Inject constructor(
 
                 // 2. 如果没有保存的位置但有权限，尝试实时定位 (这就是“第一次使用”的情况)
                 if (locationManager.hasLocationPermission()) {
+                    val allStations = stationRepository.getAllStations()
                     val locationFetched = refreshLocation(allStations)
                     if (locationFetched) {
                         _uiState.value = _uiState.value.copy(
@@ -149,8 +149,7 @@ class HomeViewModel @Inject constructor(
                 }
 
                 // 3. 默认兜底使用南京南
-                val currentStation = allStations.find { it.id == "南京南" }
-                    ?: Station.DEFAULT
+                val currentStation = stationRepository.getStationById("南京南") ?: Station.DEFAULT
 
                 _uiState.value = _uiState.value.copy(
                     currentStation = currentStation,

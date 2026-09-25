@@ -19,6 +19,10 @@ class StationRepository @Inject constructor(
         cachedStations ?: stationDataAccess.getAll().map { it.toDomain() }.also { cachedStations = it }
     }
 
+    suspend fun getStationById(id: String): Station? = withContext(Dispatchers.IO) {
+        cachedStations?.find { it.id == id } ?: stationDataAccess.getById(id)?.toDomain()
+    }
+
     suspend fun searchStations(query: String): List<Station> = withContext(Dispatchers.IO) {
         stationDataAccess.search(query).map { it.toDomain() }
     }

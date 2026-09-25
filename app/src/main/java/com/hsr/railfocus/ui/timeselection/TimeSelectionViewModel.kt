@@ -48,13 +48,7 @@ class TimeSelectionViewModel @Inject constructor(
     private var allStationsCache: List<Station>? = null
 
     init {
-        // 加载所有车站用于搜索
-        viewModelScope.launch {
-            // 默认搜索结果显示全部车站（按层级和名称排序）
-            _searchResults.value = cachedAllStations()
-        }
-
-        // 默认选中最小时长；实际目的地计算等出发站初始化后再触发
+        // 延迟全站搜索列表的重载，仅在用户唤起搜索时按需加载，去除启动时全表排序的CPU阻塞
         _uiState.update { it.copy(selectedDuration = it.minDuration) }
     }
 

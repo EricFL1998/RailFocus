@@ -315,8 +315,9 @@ fun HomeScreen(
             // 启动后预计算当前车站默认时长的目的地（后台进行，不显示加载），
             // 首次进入路线选择时结果已就绪，避免冷启动后的首次加载等待。
             // updateStartStation 对同站且有结果的情况会直接返回，重复触发无副作用。
-            LaunchedEffect(uiState.currentStation) {
-                if (phase == HomePhase.None) {
+            LaunchedEffect(uiState.currentStation, uiState.isLoading) {
+                if (phase == HomePhase.None && !uiState.isLoading) {
+                    kotlinx.coroutines.delay(350)
                     timeSelectionViewModel.updateStartStation(uiState.currentStation)
                 }
             }
