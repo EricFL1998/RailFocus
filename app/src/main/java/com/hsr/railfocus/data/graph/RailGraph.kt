@@ -38,6 +38,22 @@ class RailGraph @Inject constructor(
     // 保证邻接表只初始化一次（并发调用下不会重复加载）
     private val adjacencyMutex = Mutex()
 
+    // 全站内存缓存（懒加载）。车站数据来自预置只读数据库，加载一次后常驻内存，
+    // 避免每次可达性计算都分批走 Room IN 查询（可达站数量可达上千）。
+    @Volatile
+    private var stationById: Map<String, Station>? = null
+
+    private val stationCacheMutex = Mutex()
+
+    private suspend fun ensureStationCache(): Map<String, Station> {
+        stationById?.let { return it }
+        return stationCacheMutex.withLock {
+            stationById ?: withContext(Dispatchers.IO) {
+                stationDataAccess.getAll().map { it.toDomainModel() }.associateBy { it.id }
+            }.also { stationById = it }
+        }
+    }
+
     /** 每段线路缓存距离和由 [TrainSpeedModel] 预计算的运行时间（分钟）。 */
     data class Edge(
         val toStationId: String,
@@ -386,18 +402,9 @@ class RailGraph @Inject constructor(
             }
         }
 
-        // 批量加载所有可达站点的详情
+        // 批量加载所有可达站点的详情（内存缓存，只查一次库）
         val reachableIds = durations.keys.toList()
-        val stationMap = mutableMapOf<String, Station>()
-        
-        // 分批查询，防止 SQLite IN 子句限制 (999个参数)
-        withContext(Dispatchers.IO) {
-            reachableIds.chunked(900).forEach { chunk ->
-                stationDataAccess.getStationsByIds(chunk)
-                    .map { it.toDomainModel() }
-                    .forEach { stationMap[it.id] = it }
-            }
-        }
+        val allStations = ensureStationCache()
 
         // 为每个站点回溯路径并构建 PathResult
         val results = mutableMapOf<String, PathResult>()
@@ -413,7 +420,7 @@ class RailGraph @Inject constructor(
 
             if (pathIds.firstOrNull() != fromId) continue
 
-            val stations = pathIds.mapNotNull { stationMap[it] }
+            val stations = pathIds.mapNotNull { allStations[it] }
             if (stations.size != pathIds.size) continue // 确保路径完整
 
             var totalDistance = 0.0
@@ -542,14 +549,9 @@ class RailGraph @Inject constructor(
             }
         }
 
-        // 加载站点详情，并按 path 顺序重新排列
-        val stationMap = withContext(Dispatchers.IO) {
-            stationDataAccess.getStationsByIds(path)
-                .asSequence()
-                .map { it.toDomainModel() }
-                .associateBy { it.id }
-        }
-        val stations = path.mapNotNull { stationMap[it] }
+        // 加载站点详情（内存缓存），并按 path 顺序重新排列
+        val allStations = ensureStationCache()
+        val stations = path.mapNotNull { allStations[it] }
 
         // 构建边信息
         val edges = buildList {

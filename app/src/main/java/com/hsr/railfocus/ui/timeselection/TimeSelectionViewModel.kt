@@ -8,6 +8,7 @@ import com.hsr.railfocus.domain.service.DestinationCalculator
 import com.hsr.railfocus.domain.service.DestinationOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -120,7 +121,9 @@ class TimeSelectionViewModel @Inject constructor(
             )
         }
 
-        calculationJob = viewModelScope.launch {
+        // 在后台线程计算：Dijkstra + 路径回溯曾跑在主线程，
+        // 阻塞滑动手势的帧渲染，造成改变时长时明显卡顿。
+        calculationJob = viewModelScope.launch(Dispatchers.Default) {
             try {
                 val startId = _uiState.value.startStation.id
                 val isCached = destinationCalculator.hasCache(startId, duration)

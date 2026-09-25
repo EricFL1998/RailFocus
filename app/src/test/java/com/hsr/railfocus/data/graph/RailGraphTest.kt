@@ -42,6 +42,7 @@ class RailGraphTest {
         )
 
         coEvery { edgeDataAccess.getAllEdges() } returns edges
+        coEvery { stationDataAccess.getAll() } returns stations
         coEvery { stationDataAccess.getStationsByIds(any()) } returns stations
 
         val result = railGraph.findFastestPath("A", "C")
@@ -68,6 +69,7 @@ class RailGraphTest {
         )
 
         coEvery { edgeDataAccess.getAllEdges() } returns edges
+        coEvery { stationDataAccess.getAll() } returns stations
         coEvery { stationDataAccess.getStationsByIds(any()) } returns stations
 
         val result = railGraph.findFastestPath("A", "B")
@@ -91,6 +93,7 @@ class RailGraphTest {
         )
 
         coEvery { edgeDataAccess.getAllEdges() } returns edges
+        coEvery { stationDataAccess.getAll() } returns stations
         coEvery { stationDataAccess.getStationsByIds(any()) } returns stations
 
         val reachable = railGraph.findStationsByDuration("A", durationMin = 30, tolerance = 10)
@@ -109,6 +112,7 @@ class RailGraphTest {
         )
 
         coEvery { edgeDataAccess.getAllEdges() } returns edges
+        coEvery { stationDataAccess.getAll() } returns stations
         coEvery { stationDataAccess.getStationsByIds(any()) } returns stations
 
         val reachable = railGraph.findStationsByDuration("A", durationMin = 5, tolerance = 0)

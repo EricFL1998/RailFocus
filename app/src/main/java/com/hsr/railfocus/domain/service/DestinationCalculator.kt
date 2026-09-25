@@ -43,6 +43,18 @@ class DestinationCalculator @Inject constructor(
             }
         )
 
+    // 已访问站点 ID 内存缓存。目的地结果本身已按 (出发站, 时长) 缓存，
+    // 该缓存与结果缓存生命周期一致（随 clearCache 一起失效）。
+    @Volatile
+    private var visitedStationIdsCache: Set<String>? = null
+
+    private suspend fun visitedStationIds(): Set<String> {
+        visitedStationIdsCache?.let { return it }
+        return visitedStationDataAccess.getAllVisitedStationIds().toSet().also {
+            visitedStationIdsCache = it
+        }
+    }
+
     /**
      * 根据时长计算可达目的地。
      *
@@ -69,7 +81,7 @@ class DestinationCalculator @Inject constructor(
 
         if (reachablePaths.isEmpty()) return emptyList()
 
-        val visitedStationIds = visitedStationDataAccess.getAllVisitedStationIds().toSet()
+        val visitedStationIds = visitedStationIds()
         val results = mutableListOf<DestinationOption>()
 
         // 动态容差：时长的 10%，且至少 6 分钟、最多 30 分钟
@@ -119,6 +131,7 @@ class DestinationCalculator @Inject constructor(
      */
     fun clearCache() {
         cache.clear()
+        visitedStationIdsCache = null
     }
 
     /**
