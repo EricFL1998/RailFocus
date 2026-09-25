@@ -111,6 +111,7 @@ class FocusSessionViewModel @Inject constructor(
         destination: DestinationOption,
         focusType: FocusType? = null,
         seatNumber: String? = null,
+        carriageNumber: String? = null,
     ) {
         val path = PathResult(
             path = destination.pathStations,
@@ -120,7 +121,7 @@ class FocusSessionViewModel @Inject constructor(
         )
 
         val totalSeconds = destination.travelTimeMinutes * 60
-        val carriageNumber = (1..16).random().toString()
+        val assignedCarriage = carriageNumber ?: (1..16).random().toString()
 
         _uiState.update {
             it.copy(
@@ -136,7 +137,7 @@ class FocusSessionViewModel @Inject constructor(
                 isStopped = false,
                 focusType = focusType,
                 seatNumber = seatNumber,
-                carriageNumber = carriageNumber,
+                carriageNumber = assignedCarriage,
                 error = null,
             )
         }

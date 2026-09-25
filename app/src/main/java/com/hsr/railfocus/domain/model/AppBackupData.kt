@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class AppBackupData(
     val exportVersion: Int = 1,
     val exportedAt: Long = System.currentTimeMillis(),
-    val appVersion: String = "1.7",
+    val appVersion: String = "1.8",
     val journeys: List<BackupJourneyRecord> = emptyList(),
     val visitedStationIds: List<String> = emptyList(),
     val focusTypes: List<BackupFocusType> = emptyList(),

@@ -260,36 +260,22 @@ class TrainSpeedModel {
     fun computeTravelTimeSeconds(distanceKm: Float): Int {
         if (distanceKm <= 0f) return 0
 
-        // 短距离：加速和减速阶段重叠，永远达不到 MAX_SPEED
-        // 峰值速度由 v²/(2a) + v²/(2dec) = d 推导得出
-        val accDecOverlap = distanceKm < (ACCELERATION_DISTANCE + DECELERATION_DISTANCE)
+        // 解析闭式解 (O(1))：直接计算加减速与巡航耗时，替代数百万次耗时的数值积分循环，极大提升冷启动性能
+        val aKmH = ACCELERATION * 12960f
+        val decKmH = DECELERATION * 12960f
+        val dAcc = (MAX_SPEED * MAX_SPEED) / (2f * aKmH)
+        val dDec = (MAX_SPEED * MAX_SPEED) / (2f * decKmH)
+        val dCrit = dAcc + dDec
+        val tAcc = (MAX_SPEED / aKmH) * 3600f
+        val tDec = (MAX_SPEED / decKmH) * 3600f
 
-        val steps = 200
-        val ds = distanceKm / steps
-        var totalTime = 0f
-
-        for (i in 0 until steps) {
-            val s = (i + 0.5f) * ds  // 中点法
-            val remaining = distanceKm - s
-
-            // 根据当前位置计算瞬时速度（不含波动）
-            val speed = when {
-                // 短距离重叠情况：用加速度和减速度的合成效果
-                accDecOverlap && remaining < DECELERATION_DISTANCE -> {
-                    // 从加速侧和减速侧分别计算
-                    val accSpeed = calculateAccelerationSpeed(s)
-                    val decSpeed = calculateDecelerationSpeed(remaining)
-                    min(accSpeed, decSpeed)
-                }
-                s < ACCELERATION_DISTANCE -> calculateAccelerationSpeed(s)
-                remaining < DECELERATION_DISTANCE -> calculateDecelerationSpeed(remaining)
-                else -> MAX_SPEED
-            }
-
-            // dt = ds / v (小时) → 转换为秒
-            if (speed > 0f) {
-                totalTime += ds / speed * 3600f
-            }
+        val totalTime = if (distanceKm >= dCrit) {
+            val dCruise = distanceKm - dCrit
+            val tCruise = (dCruise / MAX_SPEED) * 3600f
+            tAcc + tDec + tCruise
+        } else {
+            val vPeak = sqrt(2f * aKmH * decKmH * distanceKm / (aKmH + decKmH))
+            vPeak * (1f / aKmH + 1f / decKmH) * 3600f
         }
 
         return totalTime.toInt().coerceAtLeast(1)

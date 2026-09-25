@@ -39,6 +39,8 @@ import com.hsr.railfocus.ui.components.UpdateAvailableDialog
 import com.hsr.railfocus.ui.focus.FocusSessionScreen
 import com.hsr.railfocus.ui.focus.FocusSessionViewModel
 import com.hsr.railfocus.ui.focus.FocusTypeSelectionPopup
+import com.hsr.railfocus.ui.focus.TicketCheckInScreen
+import com.hsr.railfocus.util.TicketFeedbackHelper
 import com.hsr.railfocus.ui.home.components.DataBottomSheet
 import com.hsr.railfocus.ui.home.components.LocationHeader
 import com.hsr.railfocus.ui.home.components.MyJourneysBottomSheet
@@ -67,6 +69,8 @@ fun HomeScreen(
     var activeDestinationJson by rememberSaveable { mutableStateOf("") }
     var pendingDestination by remember { mutableStateOf<DestinationOption?>(null) }
     var showFocusTypePopup by remember { mutableStateOf(false) }
+    var pendingFocusType by remember { mutableStateOf<com.hsr.railfocus.ui.focus.FocusType?>(null) }
+    var pendingSeatNumber by remember { mutableStateOf<String?>(null) }
 
     val timeSelectionViewModel: TimeSelectionViewModel = hiltViewModel()
     val timeSelectionUiState by timeSelectionViewModel.uiState.collectAsState()
@@ -87,7 +91,7 @@ fun HomeScreen(
     val homeTarget = uiState.currentLocation
     val initialZoom = 4.0
 
-    val isRoutePerspective = phase == HomePhase.JourneySelection || phase == HomePhase.FocusSession
+    val isRoutePerspective = phase == HomePhase.JourneySelection || phase == HomePhase.FocusSession || phase == HomePhase.CheckIn
     val transitionProgress by animateFloatAsState(
         // 只有路线相关阶段才驱动转场进度；打开"我的/数据"面板时进度保持 0，
         // 避免相机把上次遗留的路线数据当作"进入路线"来框选。
@@ -135,13 +139,20 @@ fun HomeScreen(
             progressFlow.collect { _ -> }
             if (phase == HomePhase.FocusSession) {
                 activeDestinationJson = ""
+                pendingDestination = null
+                pendingFocusType = null
+                pendingSeatNumber = null
                 if (focusUiState.isCompleted) {
                     focusSessionViewModel.resetSession()
                 } else {
                     focusSessionViewModel.stop()
                 }
+                phase = HomePhase.None
+            } else if (phase == HomePhase.CheckIn) {
+                phase = HomePhase.JourneySelection
+            } else {
+                phase = HomePhase.None
             }
-            phase = HomePhase.None
         } catch (_: Exception) {}
     }
 
@@ -157,7 +168,7 @@ fun HomeScreen(
             val cameraState = computeCameraState(
                 progress = transitionProgress,
                 homeTarget = homeTarget,
-                startStation = if (phase == HomePhase.JourneySelection) timeSelectionUiState.startStation else uiState.currentStation,
+                startStation = if (phase == HomePhase.JourneySelection || phase == HomePhase.CheckIn) timeSelectionUiState.startStation else uiState.currentStation,
                 selectedDestination = timeSelectionUiState.selectedDestination,
                 phase = phase,
                 focusPath = if (phase == HomePhase.FocusSession) focusUiState.path?.path else lastFocusPath,
@@ -242,6 +253,36 @@ fun HomeScreen(
                             },
                         )
                     }
+                                        HomePhase.CheckIn -> {
+                        pendingDestination?.let { destination ->
+                            TicketCheckInScreen(
+                                destination = destination,
+                                focusType = pendingFocusType,
+                                seatNumber = pendingSeatNumber,
+                                onCheckInComplete = { carriageNumber ->
+                                    activeDestinationJson = destination.toJson()
+                                    try {
+                                        context.startForegroundService(
+                                            FocusTimerService.createStartIntent(context, destination.toJson())
+                                        )
+                                    } catch (_: Exception) {}
+
+                                    phase = HomePhase.FocusSession
+                                    focusSessionViewModel.startJourney(
+                                        destination = destination,
+                                        focusType = pendingFocusType,
+                                        seatNumber = pendingSeatNumber,
+                                        carriageNumber = carriageNumber,
+                                    )
+                                },
+                                onCancel = {
+                                    phase = HomePhase.JourneySelection
+                                }
+                            )
+                        } ?: run {
+                            phase = HomePhase.None
+                        }
+                    }
                     HomePhase.FocusSession -> {
                         FocusSessionScreen(
                             onBackHome = {
@@ -309,27 +350,22 @@ fun HomeScreen(
 
             val focusTypes by viewModel.focusTypes.collectAsState()
 
+            LaunchedEffect(showFocusTypePopup) {
+                if (showFocusTypePopup) {
+                    TicketFeedbackHelper.preload(context)
+                }
+            }
+
             if (showFocusTypePopup && pendingDestination != null) {
                 FocusTypeSelectionPopup(
                     focusTypes = focusTypes,
                     onFocusTypeSelected = { focusType, seatNumber ->
                         pendingDestination?.let { destination ->
-                            activeDestinationJson = destination.toJson()
-                            try {
-                                context.startForegroundService(
-                                    FocusTimerService.createStartIntent(context, destination.toJson())
-                                )
-                            } catch (_: Exception) {}
-
-                            phase = HomePhase.FocusSession
-                            focusSessionViewModel.startJourney(
-                                destination = destination,
-                                focusType = focusType,
-                                seatNumber = seatNumber
-                            )
+                            pendingFocusType = focusType
+                            pendingSeatNumber = seatNumber
+                            phase = HomePhase.CheckIn
                         }
                         showFocusTypePopup = false
-                        pendingDestination = null
                     },
                     onDismiss = {
                         showFocusTypePopup = false
@@ -359,7 +395,7 @@ fun HomeScreen(
 private const val HOME_LAYER_FADE_MS = 300
 
 private enum class HomePhase {
-    None, MyJourneys, Data, JourneySelection, FocusSession
+    None, MyJourneys, Data, JourneySelection, CheckIn, FocusSession
 }
 
 private data class CameraState(
@@ -379,7 +415,7 @@ private fun computeCameraState(
     focusPath: List<Station>?,
     exitRouteStations: List<Station>?
 ): CameraState {
-    val isRoutePerspective = phase == HomePhase.JourneySelection || phase == HomePhase.FocusSession
+    val isRoutePerspective = phase == HomePhase.JourneySelection || phase == HomePhase.FocusSession || phase == HomePhase.CheckIn
     val isExiting = !isRoutePerspective && progress > 0f
 
     // 关键修正：即便 phase 已经切换回 None，但在退出动画 (isExiting) 期间，

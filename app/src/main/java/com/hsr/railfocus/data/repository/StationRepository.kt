@@ -12,8 +12,11 @@ import javax.inject.Singleton
 class StationRepository @Inject constructor(
     private val stationDataAccess: StationDataAccess,
 ) {
+    @Volatile
+    private var cachedStations: List<Station>? = null
+
     suspend fun getAllStations(): List<Station> = withContext(Dispatchers.IO) {
-        stationDataAccess.getAll().map { it.toDomain() }
+        cachedStations ?: stationDataAccess.getAll().map { it.toDomain() }.also { cachedStations = it }
     }
 
     suspend fun searchStations(query: String): List<Station> = withContext(Dispatchers.IO) {

@@ -309,4 +309,17 @@
     <string name="ticket_focus_missed">专注未完成</string>
     <string name="ticket_focus_unachieved">专注未达成</string>
     <string name="notif_start_fallback">出发站</string>
+    <!-- 进站检票闸机相关 -->
+    <string name="checkin_gate_title">中国铁路自动检票闸机</string>
+    <string name="checkin_gate_number">检票口 %1$s</string>
+    <string name="checkin_status_scanning">请出示车票 · 自动验票中…</string>
+    <string name="checkin_status_punching">正在检票打孔…</string>
+    <string name="checkin_status_success">验票通过 · 闸机放行</string>
+    <string name="checkin_wish">祝您旅途愉快 · 正点到达</string>
+    <string name="checkin_tap_to_punch">点击车票检票进站</string>
+    <string name="checkin_tap_enter">点击任意位置进入车厢</string>
+    <string name="checkin_ticket_watermark">中国铁路客票</string>
+    <string name="checkin_ticket_title">铁路客运电子车票</string>
+    <string name="checkin_ticket_notice">限乘当日当次车 · 凭票乘车</string>
+    <string name="checkin_ticket_punch_mark">已检票</string>
 </resources>

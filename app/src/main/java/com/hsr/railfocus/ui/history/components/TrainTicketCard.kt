@@ -58,6 +58,8 @@ fun TrainTicketCard(
     ticket: TrainTicketModel,
     modifier: Modifier = Modifier,
     forceDarkTheme: Boolean? = null,
+    isPunched: Boolean = true,
+    onClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -68,10 +70,19 @@ fun TrainTicketCard(
     // 自动适配深色模式（根据主题背景明度），也可通过 forceDarkTheme 显式指定
     val isDark = forceDarkTheme ?: (MaterialTheme.colorScheme.surface.luminance() < 0.5f)
 
-    val statusColor = if (isDark) {
-        if (ticket.isCompleted) Color(0xFF81C784) else Color(0xFFEF5350)
-    } else {
-        if (ticket.isCompleted) Color(0xFF4CAF50) else Color(0xFFF44336)
+    val displayStatus = ticket.completionStatus.ifBlank {
+        if (ticket.isCompleted) stringResource(R.string.history_status_completed)
+        else stringResource(R.string.history_status_cancelled)
+    }
+
+    val statusColor = when (displayStatus) {
+        "待检票" -> if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+        "已检票" -> if (isDark) Color(0xFF81C784) else Color(0xFF388E3C)
+        else -> if (isDark) {
+            if (ticket.isCompleted) Color(0xFF81C784) else Color(0xFFEF5350)
+        } else {
+            if (ticket.isCompleted) Color(0xFF4CAF50) else Color(0xFFF44336)
+        }
     }
 
     // 依据不同车型（C/D/G/动卧）定制票面质感与边框，并在深色模式下保持低饱和舒适度
@@ -115,6 +126,7 @@ fun TrainTicketCard(
         else -> baseBorder
     }
     val cardElevation = if (isDark) 3.dp else 2.dp
+    val ticketShape = remember(isPunched) { TrainTicketShape(notchSize = 10.dp, cornerRadius = 24.dp, isPunched = isPunched) }
 
     val isSleeper = ticket.trainSeries == TrainSeries.SLEEPER
     val primaryTextColor = if (isDark || isSleeper) Color(0xFFF1F5F2) else Color.Black
@@ -147,7 +159,7 @@ fun TrainTicketCard(
     val shareButtonBg = if (isDark) Color(0xFF253328) else Color(0xFFF5F5F5)
     val shareButtonTint = if (isDark) Color(0xFFD4DDD6) else Color.DarkGray
 
-    val pageBgColor = MaterialTheme.colorScheme.background
+    val pageBgColor = if (ticket.completionStatus == "待检票" || ticket.completionStatus == "已检票") Color(0xFF0B111A) else MaterialTheme.colorScheme.background
 
     Box(modifier = modifier) {
         Card(
@@ -159,7 +171,7 @@ fun TrainTicketCard(
                     drawLayer(captureLayer)
                 }
                 .combinedClickable(
-                    onClick = {},
+                    onClick = { onClick?.invoke() },
                     onLongClick = {
                         if (ticket.isCompleted) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -167,7 +179,7 @@ fun TrainTicketCard(
                         }
                     }
                 ),
-            shape = RoundedCornerShape(16.dp),
+            shape = ticketShape,
             colors = CardDefaults.cardColors(containerColor = containerColor),
             border = cardBorder,
             elevation = CardDefaults.cardElevation(defaultElevation = cardElevation),
@@ -286,7 +298,8 @@ fun TrainTicketCard(
                 }
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .wrapContentHeight()
                 .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
           // 顶部：日期与状态
@@ -301,7 +314,7 @@ fun TrainTicketCard(
                   color = secondaryTextColor
               )
                Text(
-                   text = if (ticket.isCompleted) stringResource(R.string.history_status_completed) else stringResource(R.string.history_status_cancelled),
+                   text = displayStatus,
                    style = MaterialTheme.typography.labelLarge,
                    color = statusColor,
                    fontWeight = FontWeight.Bold
@@ -465,7 +478,7 @@ fun TrainTicketCard(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
-                } else if (ticket.isCompleted) {
+                } else if (ticket.isCompleted && ticket.completionStatus != "已检票" && ticket.completionStatus != "待检票") {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = (if (isDark) Color(0xFF81C784) else Color(0xFF4CAF50)).copy(alpha = 0.15f),
@@ -482,7 +495,7 @@ fun TrainTicketCard(
                 }
            }
 
-           Spacer(modifier = Modifier.weight(1f))
+           Spacer(modifier = Modifier.height(16.dp))
 
             // 虚线与左右车票半圆打孔
             Box(
@@ -529,65 +542,7 @@ fun TrainTicketCard(
         }
         }
 
-        // 左右真实物理打孔缺口（取页面背景色覆盖并带有凹向内部的圆弧描边）
-        val strokeColor = when (ticket.trainSeries) {
-            TrainSeries.C_SERIES -> if (isDark) Color(0xFF2A453A) else Color(0xFFB2DFDB)
-            TrainSeries.D_SERIES -> if (isDark) Color(0xFF263D54) else Color(0xFFBBDEFB)
-            TrainSeries.G_SERIES -> if (isDark) Color(0xFF4A3828) else Color(0xFFFFE082)
-            TrainSeries.SLEEPER -> if (isDark) Color(0xFF29375A) else Color(0xFF3B4D80)
-        }
 
-        // 左打孔缺口
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = (-10).dp, y = (-48).dp)
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(pageBgColor)
-        )
-        if (strokeColor != null) {
-            Canvas(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .offset(x = (-10).dp, y = (-48).dp)
-                    .size(20.dp)
-            ) {
-                drawArc(
-                    color = strokeColor,
-                    startAngle = -90f,
-                    sweepAngle = 180f,
-                    useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
-                )
-            }
-        }
-
-        // 右打孔缺口
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = 10.dp, y = (-48).dp)
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(pageBgColor)
-        )
-        if (strokeColor != null) {
-            Canvas(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 10.dp, y = (-48).dp)
-                    .size(20.dp)
-            ) {
-                drawArc(
-                    color = strokeColor,
-                    startAngle = 90f,
-                    sweepAngle = 180f,
-                    useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
-                )
-            }
-        }
     }
 }
 
@@ -638,9 +593,10 @@ private fun DashedDivider(
     }
 }
 
-private class TrainTicketShape(
-    private val notchSize: Dp,
-    private val cornerRadius: Dp = 12.dp,
+class TrainTicketShape(
+    val notchSize: Dp = 10.dp,
+    val cornerRadius: Dp = 24.dp,
+    val isPunched: Boolean = true,
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -651,42 +607,44 @@ private class TrainTicketShape(
         val corner = with(density) { cornerRadius.toPx() }
         val width = size.width
         val height = size.height
-        val notchY = height * 0.7f // Notch position matched to the divider
+        val notchY = height - with(density) { 50.dp.toPx() }
 
         val path = Path().apply {
             moveTo(corner, 0f)
             lineTo(width - corner, 0f)
             quadraticTo(width, 0f, width, corner)
-            lineTo(width, notchY - notchRadius)
-            // Right notch
-            arcTo(
-                rect = Rect(
-                    left = width - notchRadius,
-                    top = notchY - notchRadius,
-                    right = width + notchRadius,
-                    bottom = notchY + notchRadius,
-                ),
-                startAngleDegrees = 90f,
-                sweepAngleDegrees = 180f,
-                forceMoveTo = false,
-            )
+            if (isPunched) {
+                lineTo(width, notchY - notchRadius)
+                arcTo(
+                    rect = Rect(
+                        left = width - notchRadius,
+                        top = notchY - notchRadius,
+                        right = width + notchRadius,
+                        bottom = notchY + notchRadius,
+                    ),
+                    startAngleDegrees = -90f,
+                    sweepAngleDegrees = -180f,
+                    forceMoveTo = false,
+                )
+            }
             lineTo(width, height - corner)
             quadraticTo(width, height, width - corner, height)
             lineTo(corner, height)
             quadraticTo(0f, height, 0f, height - corner)
-            lineTo(0f, notchY + notchRadius)
-            // Left notch
-            arcTo(
-                rect = Rect(
-                    left = -notchRadius,
-                    top = notchY - notchRadius,
-                    right = notchRadius,
-                    bottom = notchY + notchRadius,
-                ),
-                startAngleDegrees = -90f,
-                sweepAngleDegrees = 180f,
-                forceMoveTo = false,
-            )
+            if (isPunched) {
+                lineTo(0f, notchY + notchRadius)
+                arcTo(
+                    rect = Rect(
+                        left = -notchRadius,
+                        top = notchY - notchRadius,
+                        right = notchRadius,
+                        bottom = notchY + notchRadius,
+                    ),
+                    startAngleDegrees = 90f,
+                    sweepAngleDegrees = -180f,
+                    forceMoveTo = false,
+                )
+            }
             lineTo(0f, corner)
             quadraticTo(0f, 0f, corner, 0f)
             close()

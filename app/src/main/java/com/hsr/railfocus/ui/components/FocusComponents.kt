@@ -1,5 +1,7 @@
 package com.hsr.railfocus.ui.components
 
+import kotlinx.coroutines.launch
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -172,9 +174,37 @@ fun CompletionOverlay(
     onWriteJournal: (() -> Unit)? = null,
     onBackHome: () -> Unit
 ) {
-    var showCard by remember { mutableStateOf(false) }
+    val scaleAnim = remember { androidx.compose.animation.core.Animatable(0.9f) }
+    val alphaAnim = remember { androidx.compose.animation.core.Animatable(0f) }
+    val offsetYAnim = remember { androidx.compose.animation.core.Animatable(70f) }
+
     LaunchedEffect(Unit) {
-        showCard = true
+        kotlinx.coroutines.coroutineScope {
+            launch {
+                alphaAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.LinearOutSlowInEasing)
+                )
+            }
+            launch {
+                offsetYAnim.animateTo(
+                    targetValue = 0f,
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = 0.82f,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                    )
+                )
+            }
+            launch {
+                scaleAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = 0.82f,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                    )
+                )
+            }
+        }
     }
 
     BoxWithConstraints(
@@ -184,27 +214,23 @@ fun CompletionOverlay(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        AnimatedVisibility(
-            visible = showCard,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ) + fadeIn(),
+        Card(
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .heightIn(max = (maxHeight - 64.dp))
+                .graphicsLayer {
+                    alpha = alphaAnim.value
+                    scaleX = scaleAnim.value
+                    scaleY = scaleAnim.value
+                    translationY = offsetYAnim.value
+                }
         ) {
-            Card(
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .heightIn(max = (maxHeight - 64.dp))
-            ) {
                 val cardScrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
@@ -213,7 +239,10 @@ fun CompletionOverlay(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
+                    ) {
                         Surface(
                             modifier = Modifier.size(56.dp),
                             shape = CircleShape,
@@ -522,7 +551,6 @@ fun CompletionOverlay(
                 }
             }
         }
-    }
 }
 
 @Composable

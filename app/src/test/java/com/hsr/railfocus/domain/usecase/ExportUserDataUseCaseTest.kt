@@ -100,7 +100,7 @@ class ExportUserDataUseCaseTest {
         )
 
         val outputStream = ByteArrayOutputStream()
-        val result = useCase.exportToStream(outputStream, "1.7")
+        val result = useCase.exportToStream(outputStream, "1.8")
 
         assertTrue(result.isSuccess)
         assertEquals(1, result.getOrNull())
@@ -125,7 +125,7 @@ class ExportUserDataUseCaseTest {
         assertNotNull("导出的 ZIP 中必须包含 data.json", jsonString)
         val backupData: AppBackupData = appJson.decodeFromString(jsonString!!)
 
-        assertEquals("1.7", backupData.appVersion)
+        assertEquals("1.8", backupData.appVersion)
         assertEquals(1, backupData.journeys.size)
         assertEquals("j_001", backupData.journeys.first().id)
         assertEquals(2, backupData.visitedStationIds.size)

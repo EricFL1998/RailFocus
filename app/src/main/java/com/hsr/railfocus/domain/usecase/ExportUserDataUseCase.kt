@@ -27,7 +27,7 @@ class ExportUserDataUseCase @Inject constructor(
     private val journalDataAccess: JournalDataAccess,
     private val preferencesRepository: UserPreferencesRepository,
 ) {
-    suspend fun generateBackupData(appVersion: String = "1.7"): AppBackupData = withContext(Dispatchers.IO) {
+    suspend fun generateBackupData(appVersion: String = "1.8"): AppBackupData = withContext(Dispatchers.IO) {
         val journeys = journeyDataAccess.getAllRecords().map { entity ->
             BackupJourneyRecord(
                 id = entity.id,
@@ -97,7 +97,7 @@ class ExportUserDataUseCase @Inject constructor(
         )
     }
 
-    suspend fun exportToStream(outputStream: OutputStream, appVersion: String = "1.7"): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun exportToStream(outputStream: OutputStream, appVersion: String = "1.8"): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val data = generateBackupData(appVersion)
             val jsonString = appJson.encodeToString(data)

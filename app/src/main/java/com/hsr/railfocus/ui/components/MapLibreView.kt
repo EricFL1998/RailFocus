@@ -137,6 +137,8 @@ fun MapLibreView(
 
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var lastAnimatedPosition by remember { mutableStateOf<LatLng?>(null) }
+    var lastCenteredHomeTarget by remember { mutableStateOf<LatLng?>(null) }
+    var hasExitedFromRoute by remember { mutableStateOf(false) }
     var lastAnimatedZoom by remember { mutableStateOf<Double?>(null) }
     var lastAppliedPaddingPx by remember { mutableStateOf<List<Int>?>(null) }
     var lastAppliedGestures by remember { mutableStateOf<Boolean?>(null) }
@@ -296,7 +298,7 @@ fun MapLibreView(
         val w = mapView.width
         val h = mapView.height
         val density = context.resources.displayMetrics.density
-        val usable = homeClampActive() && viewportFitsInHomeRegion(zoom, w, h, density)
+        val usable = homeClampActive() && zoom >= 7.0 && lastCenteredHomeTarget != null && viewportFitsInHomeRegion(zoom, w, h, density)
         if (!usable) {
             releaseNativeCenterBounds(map)
             return
@@ -332,7 +334,9 @@ fun MapLibreView(
         )
         val lat = t.latitude.coerceIn(latRange.first, latRange.second)
         val lng = t.longitude.coerceIn(lngRange.first, lngRange.second)
+        android.util.Log.d("MapClampDebug", "clamp: t=$t, latRange=$latRange, lngRange=$lngRange, clamped=($lat, $lng)")
         if (kotlin.math.abs(lat - t.latitude) > 1e-9 || kotlin.math.abs(lng - t.longitude) > 1e-9) {
+            android.util.Log.d("MapClampDebug", "CLAMPING CAMERA to ($lat, $lng)")
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), p.zoom))
         }
     }
@@ -407,7 +411,7 @@ fun MapLibreView(
                     try {
                         syncNativeCenterBounds(map, map.zoom)
                         updateZoomPivot()
-                        clampViewportToHomeBounds(map)
+                        // clampViewportToHomeBounds(map) -- disabled: was causing double-padding drift into the sea
                     } finally {
                         cameraEventGuard.value = false
                     }
@@ -492,6 +496,7 @@ fun MapLibreView(
             initialPosition.longitude.coerceIn(lngRange.first, lngRange.second),
         )
 
+
         // 首页时把最小缩放锁在"边界填满屏幕"的级别；进入路线/专注时恢复参数值，
         // 长路线可能需要比首页框选更小的缩放才能完整显示。
         // 同时不低于底图瓦片的最小级别（矢量瓦片 z4 起），否则缩到最小会看到空白。
@@ -501,27 +506,33 @@ fun MapLibreView(
             map.setMinZoomPreference(desiredMinZoom)
         }
 
-        // 核心相机指挥部：进入/退出路线或专注时各自只触发一次平滑动画
-        if (transitionProgress <= 0f) {
-            val dist = homeTarget.distanceTo(currentMapPos.target ?: homeTarget)
-            val zoomDiff = kotlin.math.abs(homeZoom - currentMapPos.zoom)
-
-            if (dist > 1.0 || zoomDiff > 0.01) {
-                // 如果是从路线退出，或者当前不在首页位置，执行平滑动画
-                if (wasRouteActive) {
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom), 500)
-                } else {
+        // 1. 初次进入主页（包括本地存储位置异步就绪）：直接居中"我的位置"，绝不播放任何移动动画
+        if (transitionProgress <= 0f && cameraTargetBounds.isEmpty()) {
+            if (lastCenteredHomeTarget != homeTarget) {
+                lastCenteredHomeTarget = homeTarget
+                // 关键修复：落位前必须先清除 native 边界约束，否则 native C++ 引擎会用之前低 zoom 的旧边界将相机强行夹死在 (39.25, 125.12) 海面上
+                releaseNativeCenterBounds(map)
+                if (!hasExitedFromRoute) {
+                    // 初次进入主页：直接 moveCamera 瞬时落位居中，0 移动动画
                     map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom))
+                } else {
+                    map.easeCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom), 500)
                 }
+            }
+        }
+
+        // 2. 核心相机指挥部：从路线返回主页时保持原来的效果，平滑归位到"我的位置"居中
+        if (transitionProgress <= 0f) {
+            if (wasRouteActive && !isMovingToHome) {
+                isMovingToHome = true
+                hasExitedFromRoute = true
+                releaseNativeCenterBounds(map)
+                map.easeCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom), 500)
             }
             lastAnimatedPosition = homeTarget
             lastAnimatedZoom = homeZoom
             isMovingToRoute = false
-            isMovingToHome = false
             wasRouteActive = false
-            // 关键修正：只有在当前确实没有路线数据（真正回到首页）时才清空 latched 数据。
-            // 重新进入路线选择时，上一帧 latch 效应可能已经写入了新的路线 bounds，
-            // 而转场进度此时仍是 0f；若在这里无条件清空，地图会永远卡在首页默认视角。
             if (cameraTargetBounds.isEmpty()) {
                 latchedBounds = emptyList()
                 latchedStations = emptyList()
@@ -534,20 +545,21 @@ fun MapLibreView(
         // 检测方向变化：进入或退出
         val isEntering = transitionProgress > previousTransitionProgress
         val isExiting = transitionProgress < previousTransitionProgress
+        val targetBounds = if (cameraTargetBounds.isNotEmpty()) cameraTargetBounds else latchedBounds
 
-        if (isEntering && !isMovingToRoute && latchedBounds.isNotEmpty()) {
+        if (isEntering && !isMovingToRoute && targetBounds.isNotEmpty()) {
             isMovingToRoute = true
             isMovingToHome = false
             wasRouteActive = true
 
-            // 必须在动画启动前解除 native 中心约束：把这一步留给动画开始后的相机回调，
-            // 回调会立刻解除约束并把刚启动的 easeCamera 一起终止掉。
+            // 必须在动画启动前解除 native 中心约束
             releaseNativeCenterBounds(map)
 
+            // 固定时长 400ms，根据距离自然提升平移速度，绝不增加动画耗时
             frameCamera(
                 map = map,
                 context = context,
-                cameraTargetBounds = latchedBounds,
+                cameraTargetBounds = targetBounds,
                 cameraInsetLeftDp = cameraInsetLeftDp,
                 cameraInsetTopDp = cameraInsetTopDp,
                 cameraInsetRightDp = cameraInsetRightDp,
@@ -563,6 +575,7 @@ fun MapLibreView(
             isMovingToHome = true
             isMovingToRoute = false
             wasRouteActive = true
+            hasExitedFromRoute = true
 
             // 与进入方向对称：解除约束要在 ease 之前，避免被随后的相机回调打断。
             releaseNativeCenterBounds(map)

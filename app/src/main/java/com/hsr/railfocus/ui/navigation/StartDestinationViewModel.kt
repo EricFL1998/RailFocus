@@ -23,17 +23,15 @@ class StartDestinationViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
-    private val _startDestination = MutableStateFlow<Any?>(null)
+    private val _startDestination = MutableStateFlow<Any?>(Screen.Home)
     val startDestination: StateFlow<Any?> = _startDestination.asStateFlow()
 
     init {
         viewModelScope.launch {
             val overview = checkPermissionsUseCase()
             val onboardingCompleted = userPreferencesRepository.onboardingCompleted.first()
-            _startDestination.value = if (overview.allRequiredGranted && onboardingCompleted) {
-                Screen.Home
-            } else {
-                Screen.Onboarding(startAtPermissions = onboardingCompleted)
+            if (!overview.allRequiredGranted || !onboardingCompleted) {
+                _startDestination.value = Screen.Onboarding(startAtPermissions = onboardingCompleted)
             }
         }
     }
