@@ -4,7 +4,7 @@
     <style name="Theme.RailFocus" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/splash_window_background</item>
         <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/splash_window_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/ic_splash_icon</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
     </style>

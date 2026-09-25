@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 圆形开屏图标底：不同 ROM 对 splash 图标的遮罩行为不一致
+         （部分直接按 drawable 原样显示，会露出方形底色），
+         这里直接画一个满幅圆形底，保证任何设备上都是圆形。 -->
+    <path
+        android:fillColor="@color/splash_icon_background"
+        android:pathData="M108,54 C108,83.823 83.823,108 54,108 C24.177,108 0,83.823 0,54 C0,24.177 24.177,0 54,0 C83.823,0 108,24.177 108,54 Z" />
+
+    <!-- 列车图形，与 ic_launcher_foreground 相同，整体上移让构图在圆内居中 -->
+    <group
+        android:translateX="18"
+        android:translateY="27"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+
+        <!-- 1. Main Body (Google Blue) -->
+        <path
+            android:fillColor="#4285F4"
+            android:pathData="M2,12 L35,12 L35,52 L0,52 L0,14 Q0,12 2,12 Z" />
+
+        <!-- 2. Aerodynamic Nose (Google Red) -->
+        <path
+            android:fillColor="#EA4335"
+            android:pathData="M35,12 Q75,12 85,34 Q90,44 90,52 L35,52 Z" />
+
+        <!-- 3. Windows (Google Yellow) -->
+        <path
+            android:fillColor="#FBBC05"
+            android:pathData="M6,18 L16,18 L16,28 L6,28 Z M20,18 L30,18 L30,28 L20,28 Z" />
+
+        <!-- 4. Cockpit Window on Nose (Google Yellow) -->
+        <path
+            android:fillColor="#FBBC05"
+            android:pathData="M40,18 Q55,18 65,26 L65,32 L40,32 Z" />
+
+        <!-- 5. Speed/Motion Line (Google Green) -->
+        <path
+            android:fillColor="#34A853"
+            android:pathData="M0,56 L80,56 Q90,56 90,62 L0,62 Z" />
+
+    </group>
+</vector>
