@@ -134,15 +134,11 @@ class HistoryViewModel @Inject constructor(
         val trainNumber = synthesizeTrainNumber(prefix)
         val seatInfo = if (carriageNumber != null && seatNumber != null) {
             val cleaned = seatNumber.replace("号", "")
-            "${carriageNumber}车${cleaned}"
+            context.getString(R.string.ticket_seat_format, carriageNumber, cleaned)
         } else {
-            synthesizeSeatInfo(trainSeries)
+            TrainTicketHelper.synthesizeSeatInfo(context, startStation, endStation, trainSeries)
         }
-        val seatClass = focusType?.let { typeName ->
-            // Since FocusType is no longer an enum, we just use the typeName (which is the displayName)
-            // or we could look up the FocusType from a repository if we needed more info.
-            typeName
-        } ?: synthesizeSeatClass(trainSeries)
+        val seatClass = focusType ?: TrainTicketHelper.synthesizeSeatClass(context, startStation, trainSeries)
 
         val stationCount = path.path.size
         val isCompleted = status == com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED

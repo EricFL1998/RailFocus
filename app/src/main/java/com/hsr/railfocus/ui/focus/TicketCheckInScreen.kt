@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.hsr.railfocus.R
 import androidx.compose.ui.unit.dp
 import com.hsr.railfocus.domain.model.JourneyRecord
 import com.hsr.railfocus.domain.model.JourneyStatus
@@ -62,11 +64,17 @@ fun TicketCheckInScreen(
     val ticketDate = remember(now) { TrainTicketHelper.DATE_FORMAT.format(Date(now)) }
     val departureTime = remember(now) { TrainTicketHelper.TIME_FORMAT.format(Date(now)) }
     val arrivalTime = remember(arrivalMillis) { TrainTicketHelper.TIME_FORMAT.format(Date(arrivalMillis)) }
+    val defaultSeatClass = stringResource(R.string.ticket_seat_class_second)
+    val statusPending = stringResource(R.string.ticket_status_pending_checkin)
+    val statusCheckedIn = stringResource(R.string.ticket_status_checked_in)
+    val stateWaiting = stringResource(R.string.ticket_focus_state_waiting)
+    val stateShowTicket = stringResource(R.string.ticket_focus_state_show_ticket)
+
     val seatClean = remember(seatNumber) {
         seatNumber?.replace("号", "")?.replace(Regex("^[0-9]+车"), "") ?: "01A"
     }
-    val seatInfo = "${carriageNumber}车${seatClean}"
-    val seatClass = focusType?.displayName ?: "二等座"
+    val seatInfo = stringResource(R.string.ticket_seat_format, carriageNumber, seatClean)
+    val seatClass = focusType?.displayName ?: defaultSeatClass
 
     // 动画状态定义
     var isPunched by remember { mutableStateOf(false) }
@@ -108,8 +116,8 @@ fun TicketCheckInScreen(
             plannedMinutes = plannedMinutes,
             stationCount = destination.pathStations.size,
             isCompleted = false,
-            completionStatus = if (isPunched) "已检票" else "待检票",
-            focusState = if (isPunched) "准点候车" else "请出示车票",
+            completionStatus = if (isPunched) statusCheckedIn else statusPending,
+            focusState = if (isPunched) stateWaiting else stateShowTicket,
             delayMinutes = 0,
         )
     }

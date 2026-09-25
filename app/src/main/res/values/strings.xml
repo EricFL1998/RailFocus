@@ -322,4 +322,17 @@
     <string name="checkin_ticket_title">铁路客运电子车票</string>
     <string name="checkin_ticket_notice">限乘当日当次车 · 凭票乘车</string>
     <string name="checkin_ticket_punch_mark">已检票</string>
+    <!-- 车票座席与检票状态 -->
+    <string name="ticket_status_pending_checkin">待检票</string>
+    <string name="ticket_status_checked_in">已检票</string>
+    <string name="ticket_focus_state_waiting">准点候车</string>
+    <string name="ticket_focus_state_show_ticket">请出示车票</string>
+    <string name="ticket_seat_class_second">二等座</string>
+    <string name="ticket_seat_class_first">一等座</string>
+    <string name="ticket_seat_class_business">商务座</string>
+    <string name="ticket_seat_class_sleeper">高级动卧</string>
+    <string name="ticket_seat_format">%1$s车%2$s</string>
+    <string name="ticket_bunk_upper">上铺</string>
+    <string name="ticket_bunk_lower">下铺</string>
+    <string name="ticket_bunk_format">%1$s车%2$d%3$s</string>
 </resources>

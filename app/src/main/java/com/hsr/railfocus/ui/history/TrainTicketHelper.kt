@@ -1,5 +1,7 @@
 package com.hsr.railfocus.ui.history
 
+import android.content.Context
+import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.model.Station
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -39,6 +41,26 @@ object TrainTicketHelper {
         return "$prefix$digits"
     }
 
+    fun synthesizeSeatInfo(context: Context, startStation: Station, endStation: Station, series: TrainSeries): String {
+        val row = SEAT_ROWS.elementAt((startStation.id.hashCode()).mod(SEAT_ROWS.count()).coerceIn(0, SEAT_ROWS.count() - 1))
+        val letter = SEAT_LETTERS.elementAt((endStation.id.hashCode()).mod(SEAT_LETTERS.size))
+        if (series == TrainSeries.SLEEPER) {
+            val bunk = if (row % 2 == 0) context.getString(R.string.ticket_bunk_lower) else context.getString(R.string.ticket_bunk_upper)
+            return context.getString(R.string.ticket_bunk_format, row.toString(), (row % 8 + 1), bunk)
+        }
+        return context.getString(R.string.ticket_seat_format, row.toString(), "$row$letter")
+    }
+
+    fun synthesizeSeatClass(context: Context, startStation: Station, series: TrainSeries): String {
+        if (series == TrainSeries.SLEEPER) return context.getString(R.string.ticket_seat_class_sleeper)
+        val classes = listOf(
+            context.getString(R.string.ticket_seat_class_second),
+            context.getString(R.string.ticket_seat_class_first),
+            context.getString(R.string.ticket_seat_class_business)
+        )
+        return classes.elementAt((startStation.id.hashCode()).mod(classes.size))
+    }
+
     fun synthesizeSeatInfo(startStation: Station, endStation: Station, series: TrainSeries): String {
         val row = SEAT_ROWS.elementAt((startStation.id.hashCode()).mod(SEAT_ROWS.count()).coerceIn(0, SEAT_ROWS.count() - 1))
         val letter = SEAT_LETTERS.elementAt((endStation.id.hashCode()).mod(SEAT_LETTERS.size))
@@ -56,4 +78,3 @@ object TrainTicketHelper {
 
     private fun Int.mod(other: Int): Int = (this % other).let { if (it < 0) it + other else it }
 }
-

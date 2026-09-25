@@ -138,7 +138,9 @@ class HistoryViewModelTest {
     }
 
     private fun createContext(): Context {
-        val context = mockk<Context>()
+        val context = mockk<Context>(relaxed = true)
+        every { context.getString(any<Int>()) } returns "二等座"
+        every { context.getString(any<Int>(), *anyVararg()) } returns "1车1A"
         every { context.getString(R.string.ticket_status_completed) } returns "已完成"
         every { context.getString(R.string.history_status_cancelled) } returns "已退票"
         every { context.getString(R.string.ticket_focus_achieved) } returns "专注达成"

@@ -70,14 +70,17 @@ fun TrainTicketCard(
     // 自动适配深色模式（根据主题背景明度），也可通过 forceDarkTheme 显式指定
     val isDark = forceDarkTheme ?: (MaterialTheme.colorScheme.surface.luminance() < 0.5f)
 
+    val statusPending = stringResource(R.string.ticket_status_pending_checkin)
+    val statusCheckedIn = stringResource(R.string.ticket_status_checked_in)
+
     val displayStatus = ticket.completionStatus.ifBlank {
         if (ticket.isCompleted) stringResource(R.string.history_status_completed)
         else stringResource(R.string.history_status_cancelled)
     }
 
     val statusColor = when (displayStatus) {
-        "待检票" -> if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
-        "已检票" -> if (isDark) Color(0xFF81C784) else Color(0xFF388E3C)
+        statusPending -> if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+        statusCheckedIn -> if (isDark) Color(0xFF81C784) else Color(0xFF388E3C)
         else -> if (isDark) {
             if (ticket.isCompleted) Color(0xFF81C784) else Color(0xFFEF5350)
         } else {
@@ -159,7 +162,7 @@ fun TrainTicketCard(
     val shareButtonBg = if (isDark) Color(0xFF253328) else Color(0xFFF5F5F5)
     val shareButtonTint = if (isDark) Color(0xFFD4DDD6) else Color.DarkGray
 
-    val pageBgColor = if (ticket.completionStatus == "待检票" || ticket.completionStatus == "已检票") Color(0xFF0B111A) else MaterialTheme.colorScheme.background
+    val pageBgColor = if (ticket.completionStatus == statusPending || ticket.completionStatus == statusCheckedIn) Color(0xFF0B111A) else MaterialTheme.colorScheme.background
 
     Box(modifier = modifier) {
         Card(
@@ -478,7 +481,7 @@ fun TrainTicketCard(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
-                } else if (ticket.isCompleted && ticket.completionStatus != "已检票" && ticket.completionStatus != "待检票") {
+                } else if (ticket.isCompleted && ticket.completionStatus != statusCheckedIn && ticket.completionStatus != statusPending) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = (if (isDark) Color(0xFF81C784) else Color(0xFF4CAF50)).copy(alpha = 0.15f),
