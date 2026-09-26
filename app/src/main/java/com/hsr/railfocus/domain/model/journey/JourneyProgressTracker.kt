@@ -71,13 +71,17 @@ class JourneyProgressTracker @Inject constructor() {
                     distanceInSegment = distanceInSegment,
                     segmentTotalDistance = segmentDistance,
                 )
+                val routeProgress = if (segmentCount > 0) {
+                    (i.toFloat() + fraction.coerceIn(0f, 1f)) / segmentCount.toFloat()
+                } else timeRatio
+
                 return JourneyProgress(
                     currentSegmentIndex = i,
                     progressInSegment = fraction.coerceIn(0f, 1f),
                     currentSpeed = currentSpeed,
                     distanceTraveled = accumulatedDistance + distanceInSegment,
                     totalDistance = totalDistance,
-                    overallProgress = timeRatio,
+                    overallProgress = routeProgress,
                     nextStation = path.path.getOrNull(i + 1),
                     completedStations = path.path.take(i + 1),
                     isApproachingStation = isApproaching,
@@ -94,13 +98,17 @@ class JourneyProgressTracker @Inject constructor() {
             if (i + 1 < segmentCount) {
                 val dwell = dwellSeconds(path.path[i + 1].id)
                 if (remaining < dwell) {
+                    val routeProgress = if (segmentCount > 0) {
+                        (i + 1).toFloat() / segmentCount.toFloat()
+                    } else timeRatio
+
                     return JourneyProgress(
                         currentSegmentIndex = i + 1,
                         progressInSegment = 0f,
                         currentSpeed = 0f,
                         distanceTraveled = accumulatedDistance,
                         totalDistance = totalDistance,
-                        overallProgress = timeRatio,
+                        overallProgress = routeProgress,
                         nextStation = path.path.getOrNull(i + 2),
                         completedStations = path.path.take(i + 2),
                         isApproachingStation = false,

@@ -114,6 +114,8 @@ class JourneyProgressTrackerTest {
         assertEquals(stationC, progress.currentSegmentEndStation)
         assertEquals(listOf(stationA, stationB), progress.completedStations)
         assertEquals(100f, progress.distanceTraveled, 0.1f)
+        // 停靠 B 站时空间进度必须精准对应 B 站位置（第1段末尾/第2段起点，2段总路线中正好为 0.5）
+        assertEquals(0.5f, progress.overallProgress, 0.0001f)
     }
 
     @Test

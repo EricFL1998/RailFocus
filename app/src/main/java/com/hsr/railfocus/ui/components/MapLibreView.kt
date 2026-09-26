@@ -1284,9 +1284,19 @@ private fun interpolatePositionAndBearingAlongRoute(
         return LatLng(station?.lat ?: 0.0, station?.lng ?: 0.0) to 0f
     }
     val segmentCount = routeStations.size - 1
-    val rawSegmentIndex = progress * segmentCount
-    val segmentIndex = rawSegmentIndex.toInt().coerceIn(0, segmentCount - 1)
-    val segmentProgress = (rawSegmentIndex - segmentIndex).coerceIn(0f, 1f)
+    val clampedProgress = progress.coerceIn(0f, 1f)
+    val rawSegmentIndex = clampedProgress * segmentCount
+    // 增加微小容差，防止浮点计算精度损失导致到站停留时 segmentIndex 回退
+    val segmentIndex = if (clampedProgress >= 1f) {
+        segmentCount - 1
+    } else {
+        (rawSegmentIndex + 1e-4f).toInt().coerceIn(0, segmentCount - 1)
+    }
+    val segmentProgress = if (clampedProgress >= 1f) {
+        1f
+    } else {
+        (rawSegmentIndex - segmentIndex).coerceIn(0f, 1f)
+    }
     val start = routeStations[segmentIndex]
     val end = routeStations[segmentIndex + 1]
     val startLatLng = LatLng(start.lat, start.lng)
