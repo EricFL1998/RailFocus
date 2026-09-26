@@ -14,8 +14,8 @@ android {
        applicationId = "com.hsr.railfocus"
         minSdk = 31
        targetSdk = 37
-        versionCode = 9
-        versionName = "1.8"
+        versionCode = 10
+        versionName = "1.8.1"
 
        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
