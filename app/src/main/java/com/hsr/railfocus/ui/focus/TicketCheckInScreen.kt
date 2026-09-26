@@ -7,6 +7,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +31,7 @@ import com.hsr.railfocus.domain.model.Station
 import com.hsr.railfocus.domain.service.DestinationOption
 import com.hsr.railfocus.ui.history.TrainTicketHelper
 import com.hsr.railfocus.ui.history.TrainTicketModel
+import com.hsr.railfocus.ui.components.BulletTrainIcon
 import com.hsr.railfocus.ui.history.components.TrainTicketCard
 import com.hsr.railfocus.util.TicketFeedbackHelper
 import kotlinx.coroutines.delay
@@ -81,6 +90,17 @@ fun TicketCheckInScreen(
     var isPunched by remember { mutableStateOf(false) }
     var isPunchingInProgress by remember { mutableStateOf(false) }
     var isCompleted by remember { mutableStateOf(false) }
+    var showInactivityGuide by remember { mutableStateOf(false) }
+
+    // 用户超过 10 秒未点击时触发动画手势引导
+    LaunchedEffect(isPunchingInProgress) {
+        if (!isPunchingInProgress) {
+            delay(10_000L)
+            showInactivityGuide = true
+        } else {
+            showInactivityGuide = false
+        }
+    }
 
     // 构建与历史车票完全一致的数据模型
     val ticketModel = remember(destination, focusType, seatNumber, carriageNumber, isPunched) {
@@ -152,6 +172,7 @@ fun TicketCheckInScreen(
     // 核心点击车票打孔交互：点击即刻打孔，音效与触觉反馈同步触发，无多余外置工具动画
     val handleTicketClick = {
         if (!isPunchingInProgress && !isCompleted) {
+            showInactivityGuide = false
             isPunchingInProgress = true
             scope.launch {
                 // 1. 打出圆形孔、触发清脆打孔音效、线性触觉双脉冲震动
@@ -217,7 +238,147 @@ fun TicketCheckInScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // 检票打孔时的复古官方印章动效
+            if (isPunched) {
+                val stampScale by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = 0.58f,
+                        stiffness = Spring.StiffnessMedium
+                    ),
+                    label = "stamp_scale"
+                )
+                val stampAlpha by animateFloatAsState(
+                    targetValue = 0.92f,
+                    animationSpec = tween(120),
+                    label = "stamp_alpha"
+                )
 
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-16).dp, y = 28.dp)
+                        .graphicsLayer {
+                            scaleX = stampScale
+                            scaleY = stampScale
+                            alpha = stampAlpha
+                            rotationZ = -14f
+                        },
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color.Transparent,
+                    border = BorderStroke(2.5.dp, Color(0xFFD32F2F))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.checkin_ticket_punch_mark),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFD32F2F)
+                        )
+                        Text(
+                            text = departureTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFD32F2F)
+                        )
+                    }
+                }
+            }
+
+            // 用户超过10秒未点击时出现的动画手势与波纹引导
+            AnimatedVisibility(
+                visible = showInactivityGuide && !isPunchingInProgress,
+                enter = fadeIn(tween(400)) + scaleIn(spring(stiffness = Spring.StiffnessMediumLow)),
+                exit = fadeOut(tween(180)),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                InactivityTapGuide()
+            }
         }
+    }
+}
+
+
+/**
+ * 超过 10 秒未操作时的动态手势引导组件
+ * 模拟手指下压动作与同心水波纹涟漪扩散，优雅引导用户触碰车票
+ */
+@Composable
+private fun InactivityTapGuide(
+    modifier: Modifier = Modifier,
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "inactivity_tap")
+
+    // 手指按压点击动效：1f -> 0.82f -> 1f
+    val tapScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.82f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(650, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "tap_scale"
+    )
+
+    // 水波纹扩散动画
+    val rippleScale by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 2.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1300, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ripple_scale"
+    )
+    val rippleAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1300, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ripple_alpha"
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier.size(80.dp)
+    ) {
+        // 外圈扩散水波纹
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .graphicsLayer {
+                    scaleX = rippleScale
+                    scaleY = rippleScale
+                    alpha = rippleAlpha
+                }
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
+        )
+
+        // 触摸点半透明高亮底圈
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+            modifier = Modifier.size(54.dp)
+        ) {}
+
+        // 点击手势图标
+        Icon(
+            imageVector = Icons.Default.TouchApp,
+            contentDescription = null,
+            modifier = Modifier
+                .size(40.dp)
+                .graphicsLayer {
+                    scaleX = tapScale
+                    scaleY = tapScale
+                    rotationZ = -6f
+                },
+            tint = MaterialTheme.colorScheme.primary
+        )
     }
 }

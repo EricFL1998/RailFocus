@@ -1,11 +1,15 @@
 package com.hsr.railfocus.ui.timeselection.components
 
+import androidx.compose.animation.*
+import kotlin.math.absoluteValue
+
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDecay
 import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
@@ -110,16 +114,34 @@ fun TimeDurationPicker(
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.primary,
+            tonalElevation = 2.dp,
+            shadowElevation = 4.dp,
             modifier = Modifier
                 .align(Alignment.TopCenter),
         ) {
-            Text(
-                text = formatDurationFull(indexToDuration(pagerState.currentPage)),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            AnimatedContent(
+                targetState = indexToDuration(pagerState.currentPage),
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        (slideInVertically { it / 2 } + fadeIn(tween(140))).togetherWith(
+                            slideOutVertically { -it / 2 } + fadeOut(tween(140))
+                        )
+                    } else {
+                        (slideInVertically { -it / 2 } + fadeIn(tween(140))).togetherWith(
+                            slideOutVertically { it / 2 } + fadeOut(tween(140))
+                        )
+                    }
+                },
+                label = "duration_pill_anim"
+            ) { durationVal ->
+                Text(
+                    text = formatDurationFull(durationVal),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
         // 顶部固定指示线
@@ -145,15 +167,19 @@ fun TimeDurationPicker(
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .padding(top = 46.dp)
-                .height(36.dp),
+                .height(38.dp),
         ) { page ->
             val duration = indexToDuration(page)
             val isSelected = page == pagerState.currentPage
             val isMajor = isMajorTick(duration)
+            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+            val proximity = (1f - (pageOffset / 2.5f)).coerceIn(0f, 1f)
+
             ScaleTick(
                 duration = duration,
                 isSelected = isSelected,
                 isMajor = isMajor,
+                proximity = proximity,
                 tickSpacing = tickSpacingPx,
             )
         }
@@ -245,10 +271,19 @@ private fun ScaleTick(
     duration: Int,
     isSelected: Boolean,
     isMajor: Boolean,
+    proximity: Float,
     tickSpacing: Float,
 ) {
-    val tickColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    val textColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+    val tickColor = if (proximity > 0.05f) {
+        androidx.compose.ui.graphics.lerp(inactiveColor, activeColor, proximity)
+    } else inactiveColor
+
+    // 刻度高度随中心线接近平滑峰值形变：主刻度 15dp -> 22dp，次刻度 9dp -> 14dp
+    val baseHeight = if (isMajor) 15.dp else 9.dp
+    val peakHeight = if (isMajor) 22.dp else 14.dp
+    val dynamicHeight = baseHeight + (peakHeight - baseHeight) * proximity
 
     Column(
         modifier = Modifier
@@ -260,18 +295,19 @@ private fun ScaleTick(
         // 刻度线
         Box(
             modifier = Modifier
-                .width(2.dp)
-                .height(if (isMajor) 18.dp else 10.dp)
-                .background(tickColor),
+                .width(if (proximity > 0.6f) 2.5.dp else 2.dp)
+                .height(dynamicHeight)
+                .background(tickColor, RoundedCornerShape(1.dp)),
         )
 
         // 主刻度标签在刻度下方
         if (isMajor) {
+            val labelAlpha = (0.5f + proximity * 0.5f).coerceIn(0f, 1f)
             Text(
                 text = formatDurationShort(duration),
-                color = textColor,
+                color = if (proximity > 0.6f) activeColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = labelAlpha),
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (proximity > 0.6f) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Clip,
                 modifier = Modifier.padding(top = 2.dp),

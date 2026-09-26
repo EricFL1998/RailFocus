@@ -2,7 +2,7 @@ package com.hsr.railfocus.ui.focus
 
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -284,32 +284,54 @@ private fun FocusTopControls(
     onStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val infiniteTransition = rememberInfiniteTransition(label = "pause_pulse")
+    val pausedAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "paused_pulse_alpha"
+    )
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 暂停 / 继续
         Surface(
-            onClick = if (isPaused) onResume else onPause,
+            onClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                if (isPaused) onResume() else onPause()
+            },
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
+            color = if (isPaused) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = pausedAlpha)
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+            },
+            contentColor = if (isPaused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             tonalElevation = 2.dp
         ) {
             Icon(
                 imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                 contentDescription = stringResource(if (isPaused) R.string.focus_resume else R.string.focus_pause),
                 modifier = Modifier.padding(12.dp).size(22.dp),
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = if (isPaused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         }
 
         // 结束旅程
         Surface(
-            onClick = onStop,
+            onClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                onStop()
+            },
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 2.dp
         ) {
             Icon(

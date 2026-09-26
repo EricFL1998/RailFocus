@@ -177,6 +177,10 @@
     <string name="settings_scene_icon">场景图标</string>
     <string name="settings_scene_color">场景颜色</string>
     <string name="settings_delete">删除</string>
+    <string name="settings_delete_scene_confirm">确定要删除场景「%1$s」吗？</string>
+    <string name="settings_no_custom_scenes">暂无自定义场景，点击下方按钮添加</string>
+    <string name="checkin_stamp_date">★ 准予乘车 · 正点出行 ★</string>
+    <string name="completion_stamp_arrived">正点到达</string>
     <string name="settings_permissions">权限设置</string>
 
     <!-- Notifications -->

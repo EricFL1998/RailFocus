@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.service.DestinationOption
 import kotlin.math.absoluteValue
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
@@ -151,6 +152,8 @@ private fun DestinationSnapPicker(
             }
     }
 
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
     HorizontalPager(
         state = pagerState,
         pageSize = PageSize.Fixed(boxWidth + spacing),
@@ -174,6 +177,13 @@ private fun DestinationSnapPicker(
         DestinationBox(
             destination = destination,
             isSelected = isSelected,
+            onClick = {
+                if (pagerState.currentPage != page) {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(page)
+                    }
+                }
+            },
             modifier = Modifier
                 .width(boxWidth)
                 .graphicsLayer {
@@ -195,12 +205,27 @@ private fun DestinationSnapPicker(
 fun DestinationBox(
     destination: DestinationOption,
     isSelected: Boolean,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val animatedElevation by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isSelected) 4.dp else 1.dp,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "dest_elevation"
+    )
+    val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isSelected) 1.02f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.75f,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
+        label = "dest_scale"
+    )
+
     val containerColor = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
     }
     val contentColor = if (isSelected) {
         MaterialTheme.colorScheme.onPrimary
@@ -214,17 +239,26 @@ fun DestinationBox(
     }
 
     Card(
+        onClick = onClick,
         modifier = modifier
-            .aspectRatio(0.95f),
+            .aspectRatio(0.95f)
+            .graphicsLayer {
+                scaleX = animatedScale
+                scaleY = animatedScale
+            },
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
             contentColor = contentColor
         ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = animatedElevation,
+            pressedElevation = 2.dp
+        ),
         border = if (isSelected) BorderStroke(
             2.dp,
             MaterialTheme.colorScheme.primary
-        ) else null,
-        shape = RoundedCornerShape(16.dp)
+        ) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(18.dp)
     ) {
         Column(
             modifier = Modifier

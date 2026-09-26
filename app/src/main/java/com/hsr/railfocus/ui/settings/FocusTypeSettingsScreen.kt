@@ -89,19 +89,62 @@ fun FocusTypeSettingsScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         val removableFocusTypes = focusTypes.filter { it.isRemovable }
+        var typeToDelete by remember { mutableStateOf<FocusType?>(null) }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(removableFocusTypes) { type ->
-                FocusTypeItem(
-                    type = type,
-                ) { viewModel.deleteFocusType(type.id) }
+        if (removableFocusTypes.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_no_custom_scenes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(removableFocusTypes, key = { it.id }) { type ->
+                    FocusTypeItem(
+                        type = type,
+                        modifier = Modifier.animateItem(),
+                    ) { typeToDelete = type }
+                }
+            }
+        }
+
+        typeToDelete?.let { type ->
+            AlertDialog(
+                onDismissRequest = { typeToDelete = null },
+                title = { Text(stringResource(R.string.settings_delete)) },
+                text = { Text(stringResource(R.string.settings_delete_scene_confirm, type.displayName)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteFocusType(type.id)
+                            typeToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(stringResource(R.string.action_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { typeToDelete = null }) {
+                        Text(stringResource(R.string.settings_cancel))
+                    }
+                }
+            )
         }
     }
 
@@ -129,10 +172,11 @@ fun FocusTypeSettingsScreen(
 @Composable
 private fun FocusTypeItem(
     type: FocusType,
+    modifier: Modifier = Modifier,
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = type.containerColor)
     ) {

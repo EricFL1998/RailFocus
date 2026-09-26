@@ -430,18 +430,29 @@ private fun PageIndicator(
     ) {
         repeat(pageCount) { index ->
             val isSelected = index == currentPage
+            val animatedWidth by androidx.compose.animation.core.animateDpAsState(
+                targetValue = if (isSelected) 24.dp else 8.dp,
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = 0.75f,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                ),
+                label = "indicator_width"
+            )
+            val animatedColor by androidx.compose.animation.animateColorAsState(
+                targetValue = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                animationSpec = androidx.compose.animation.core.tween(300),
+                label = "indicator_color"
+            )
             Box(
                 modifier = Modifier
                     .height(8.dp)
-                    .width(if (isSelected) 24.dp else 8.dp)
+                    .width(animatedWidth)
                     .clip(CircleShape)
-                    .background(
-                        if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        }
-                    ),
+                    .background(animatedColor),
             )
         }
     }

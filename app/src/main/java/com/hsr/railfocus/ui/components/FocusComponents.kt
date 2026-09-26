@@ -3,7 +3,12 @@ package com.hsr.railfocus.ui.components
 import kotlinx.coroutines.launch
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
@@ -101,14 +106,30 @@ fun StationInfoCard(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = speed.toInt().toString(),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        softWrap = false
-                    )
+                    AnimatedContent(
+                        targetState = speed.toInt(),
+                        transitionSpec = {
+                            if (targetState > initialState) {
+                                (slideInVertically { it / 2 } + fadeIn(tween(140))).togetherWith(
+                                    slideOutVertically { -it / 2 } + fadeOut(tween(140))
+                                )
+                            } else {
+                                (slideInVertically { -it / 2 } + fadeIn(tween(140))).togetherWith(
+                                    slideOutVertically { it / 2 } + fadeOut(tween(140))
+                                )
+                            }
+                        },
+                        label = "speed_anim"
+                    ) { speedInt ->
+                        Text(
+                            text = speedInt.toString(),
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = stringResource(R.string.focus_speed_unit),
@@ -268,8 +289,18 @@ fun CompletionOverlay(
                         
                         val density = LocalDensity.current
                         val dotOffset = with(density) { 36.dp.toPx() }
+                        val infiniteTransition = rememberInfiniteTransition(label = "dots_orbit")
+                        val baseAngle by infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 360f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(12000, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart
+                            ),
+                            label = "base_angle"
+                        )
                         repeat(6) { i ->
-                            val angle = i * 60f
+                            val angle = baseAngle + i * 60f
                             Surface(
                                 modifier = Modifier
                                     .size(8.dp)
@@ -382,7 +413,37 @@ fun CompletionOverlay(
                             }
                         }
                     }
-                        if (!completed) {
+                        if (completed) {
+                            val arrivalStampScale by animateFloatAsState(
+                                targetValue = 1f,
+                                animationSpec = spring(
+                                    dampingRatio = 0.6f,
+                                    stiffness = Spring.StiffnessMedium
+                                ),
+                                label = "arrival_stamp_scale"
+                            )
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 10.dp, y = (-10).dp)
+                                    .graphicsLayer {
+                                        scaleX = arrivalStampScale
+                                        scaleY = arrivalStampScale
+                                        rotationZ = -12f
+                                    },
+                                shape = RoundedCornerShape(8.dp),
+                                color = androidx.compose.ui.graphics.Color.Transparent,
+                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.completion_stamp_arrived),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
+                        } else {
                             Surface(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)

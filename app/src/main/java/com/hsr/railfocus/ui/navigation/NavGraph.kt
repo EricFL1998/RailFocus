@@ -82,7 +82,12 @@ fun RailFocusNavGraph(
             }
 
             // 时间选择页
-            composable<Screen.TimeSelection> {
+            composable<Screen.TimeSelection>(
+                enterTransition = { pagePushEnter() },
+                exitTransition = { pagePushExit() },
+                popEnterTransition = { pagePopEnter() },
+                popExitTransition = { pagePopExit() },
+            ) {
                 TimeSelectionScreen(
                     onBack = { navController.popBackStack() },
                     onStartFocus = { destination ->
@@ -195,4 +200,5 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.pagePopExit(): Exi
 private fun NavDestination.isSlidePage(): Boolean =
     hasRoute<Screen.Settings>() ||
         hasRoute<Screen.AllJourneys>() ||
-        hasRoute<Screen.FocusTypeSettings>()
+        hasRoute<Screen.FocusTypeSettings>() ||
+        hasRoute<Screen.TimeSelection>()

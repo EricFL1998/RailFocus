@@ -14,6 +14,12 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,6 +41,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -380,12 +387,30 @@ fun JournalEditDialog(
                         }
 
                         // 录制语音按钮
+                        val recTransition = rememberInfiniteTransition(label = "rec_pulse")
+                        val recPulseScale by recTransition.animateFloat(
+                            initialValue = 1f,
+                            targetValue = 1.05f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(600, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "rec_scale"
+                        )
+
                         OutlinedButton(
                             onClick = { toggleRecord() },
                             shape = RoundedCornerShape(14.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            border = if (isRecording) BorderStroke(1.dp, MaterialTheme.colorScheme.error) else null,
-                            colors = if (isRecording) ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error) else ButtonDefaults.outlinedButtonColors(),
+                            border = if (isRecording) BorderStroke(1.5.dp, MaterialTheme.colorScheme.error) else null,
+                            colors = if (isRecording) ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                                contentColor = MaterialTheme.colorScheme.error
+                            ) else ButtonDefaults.outlinedButtonColors(),
+                            modifier = if (isRecording) Modifier.graphicsLayer {
+                                scaleX = recPulseScale
+                                scaleY = recPulseScale
+                            } else Modifier
                         ) {
                             Icon(
                                 imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,

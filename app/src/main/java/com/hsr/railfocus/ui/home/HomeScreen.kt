@@ -12,6 +12,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.Spring
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -499,6 +502,31 @@ private fun HomeMenuContent(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val startInteractionSource = remember { MutableInteractionSource() }
+    val isStartPressed by startInteractionSource.collectIsPressedAsState()
+    val startScale by animateFloatAsState(
+        targetValue = if (isStartPressed) 0.96f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "start_press"
+    )
+
+    val myJourneysInteractionSource = remember { MutableInteractionSource() }
+    val isMyJourneysPressed by myJourneysInteractionSource.collectIsPressedAsState()
+    val myJourneysScale by animateFloatAsState(
+        targetValue = if (isMyJourneysPressed) 0.96f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "my_journeys_press"
+    )
+
+    val dataInteractionSource = remember { MutableInteractionSource() }
+    val isDataPressed by dataInteractionSource.collectIsPressedAsState()
+    val dataScale by animateFloatAsState(
+        targetValue = if (isDataPressed) 0.96f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "data_press"
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -512,8 +540,12 @@ private fun HomeMenuContent(
             // 核心主操作：“开始旅程”大胶囊（全宽、居中、视觉中心）
             with(sharedTransitionScope) {
                 Button(
-                    onClick = onStartJourney,
-                    modifier = if (animatedVisibilityScope != null) {
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        onStartJourney()
+                    },
+                    interactionSource = startInteractionSource,
+                    modifier = (if (animatedVisibilityScope != null) {
                         Modifier
                             .fillMaxWidth()
                             .height(64.dp)
@@ -527,6 +559,9 @@ private fun HomeMenuContent(
                         Modifier
                             .fillMaxWidth()
                             .height(64.dp)
+                    }).graphicsLayer {
+                        scaleX = startScale
+                        scaleY = startScale
                     },
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = ButtonDefaults.buttonColors(
@@ -559,7 +594,11 @@ private fun HomeMenuContent(
             ) {
                 // 左侧：“我的”色调胶囊按钮（与主按钮完全同构的次级填充样式，去边框）
                 FilledTonalButton(
-                    onClick = onMyJourneysClick,
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        onMyJourneysClick()
+                    },
+                    interactionSource = myJourneysInteractionSource,
                     shape = RoundedCornerShape(27.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -569,6 +608,10 @@ private fun HomeMenuContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(54.dp)
+                        .graphicsLayer {
+                            scaleX = myJourneysScale
+                            scaleY = myJourneysScale
+                        }
                 ) {
                     BulletTrainIcon(
                         contentDescription = null,
@@ -585,7 +628,11 @@ private fun HomeMenuContent(
 
                 // 右侧：“数据”色调胶囊按钮（与主按钮完全同构的次级填充样式，去边框）
                 FilledTonalButton(
-                    onClick = onDataClick,
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        onDataClick()
+                    },
+                    interactionSource = dataInteractionSource,
                     shape = RoundedCornerShape(27.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -595,6 +642,10 @@ private fun HomeMenuContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(54.dp)
+                        .graphicsLayer {
+                            scaleX = dataScale
+                            scaleY = dataScale
+                        }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Public,

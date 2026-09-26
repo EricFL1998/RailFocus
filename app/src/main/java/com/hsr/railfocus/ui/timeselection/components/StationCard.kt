@@ -39,7 +39,8 @@ fun StationCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 3.dp),
+        shape = RoundedCornerShape(18.dp)
     ) {
         Row(
             modifier = Modifier

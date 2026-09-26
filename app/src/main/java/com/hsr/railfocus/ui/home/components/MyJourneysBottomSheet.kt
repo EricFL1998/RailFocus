@@ -272,6 +272,8 @@ private fun FilterChip(
 private fun CardStack(
     tickets: List<TrainTicketModel>
 ) {
+    var expandedTicketId by remember { mutableStateOf<String?>(null) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp, start = 16.dp, end = 16.dp),
@@ -281,20 +283,37 @@ private fun CardStack(
             items = tickets,
             key = { _, ticket -> ticket.record.id }
         ) { index, ticket ->
-            val rotation = when (index % 4) {
+            val isExpanded = expandedTicketId == ticket.record.id
+            val defaultRotation = when (index % 4) {
                 0 -> -1.5f
                 1 -> 1.0f
                 2 -> -0.8f
                 else -> 1.2f
             }
-            
+            val rotation by animateFloatAsState(
+                targetValue = if (isExpanded) 0f else defaultRotation,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "ticket_rotation"
+            )
+            val scale by animateFloatAsState(
+                targetValue = if (isExpanded) 1.02f else 1f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "ticket_scale"
+            )
+
             TrainTicketCard(
                 ticket = ticket,
+                onClick = {
+                    expandedTicketId = if (isExpanded) null else ticket.record.id
+                },
                 modifier = Modifier
+                    .animateItem()
                     .graphicsLayer {
                         rotationZ = rotation
+                        scaleX = scale
+                        scaleY = scale
                     }
-                    .zIndex(index.toFloat())
+                    .zIndex(if (isExpanded) 100f else index.toFloat())
             )
         }
     }
