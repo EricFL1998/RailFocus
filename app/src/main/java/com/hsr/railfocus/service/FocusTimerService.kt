@@ -534,6 +534,64 @@ class FocusTimerService : Service() {
         }
     }
 
+    /**
+     * 生成通知标题与正文。
+     * 精确控制文案层次，确保终点站名与中间站名在标题和正文间互不重复。
+     */
+    private fun buildNotificationContent(
+        isPaused: Boolean,
+        currentSegmentIndex: Int
+    ): Pair<String, String> {
+        val progress = timerService.getCurrentProgress()
+        val nextStationName = progress?.nextStation?.name ?: currentStationLabel(currentSegmentIndex)
+        val isDwelling = progress?.isDwelling == true
+        val speedInt = progress?.currentSpeed?.toInt() ?: 0
+
+        val titleText: String
+        val contentText: String
+
+        when {
+            isPaused -> {
+                titleText = getString(R.string.notif_paused)
+                contentText = "$startStationName → $endStationName"
+            }
+            isDwelling -> {
+                val arrivedStation = progress?.currentSegmentStartStation?.name ?: startStationName
+                titleText = "已到站：$arrivedStation"
+                contentText = if (nextStationName.isNotEmpty() && nextStationName != arrivedStation) {
+                    "列车停靠中 · 下一站：$nextStationName"
+                } else {
+                    "列车停靠中 · $startStationName → $endStationName"
+                }
+            }
+            nextStationName == endStationName -> {
+                // 终点站前最后一区间（或单段直达）：终点站仅在标题出现，正文不再重复终点站名
+                titleText = "前往 $endStationName"
+                val fromStation = progress?.currentSegmentStartStation?.name ?: startStationName
+                contentText = if (arrivalAnnouncement != null) {
+                    arrivalAnnouncement!!
+                } else if (speedInt > 0) {
+                    "$fromStation 出发 · 时速 $speedInt km/h"
+                } else {
+                    "$fromStation 出发 · 准点行驶中"
+                }
+            }
+            else -> {
+                // 正在前往中途站：标题展示前方到站，正文展示全程线路与时速
+                titleText = "前方到站：$nextStationName"
+                contentText = if (arrivalAnnouncement != null) {
+                    arrivalAnnouncement!!
+                } else if (speedInt > 0) {
+                    "$startStationName → $endStationName · $speedInt km/h"
+                } else {
+                    "$startStationName → $endStationName"
+                }
+            }
+        }
+
+        return titleText to contentText
+    }
+
     @RequiresApi(36)
     private fun buildProgressStyleNotification(
         isPaused: Boolean,
@@ -544,26 +602,8 @@ class FocusTimerService : Service() {
         val minutes = remaining / 60
         val seconds = remaining % 60
         val timeLabel = "%02d:%02d".format(minutes, seconds)
-        val routeText = "$startStationName → $endStationName"
 
-        val progress = timerService.getCurrentProgress()
-        val nextStationName = progress?.nextStation?.name ?: currentStationLabel(currentSegmentIndex)
-        val isDwelling = progress?.isDwelling == true
-
-        // 标题：呈现行程核心目标，清晰美观
-        val titleText = when {
-            isPaused -> getString(R.string.notif_paused) + " · $endStationName"
-            isDwelling -> "已到站：${progress?.currentSegmentStartStation?.name ?: startStationName}"
-            else -> "正在前往 $endStationName"
-        }
-
-        // 内容：展示线路与停靠/前方到站状态
-        val content = when {
-            isDwelling -> "列车停靠中 · 前方下一站: $nextStationName"
-            arrivalAnnouncement != null -> arrivalAnnouncement
-            else -> "$routeText · 下一站: $nextStationName"
-        }
-
+        val (titleText, contentText) = buildNotificationContent(isPaused, currentSegmentIndex)
         val progressInt = (overallProgress * 1000).toInt().coerceIn(0, 1000)
 
         // 启用完整 Android 16 Live Activity 进度条：高亮当前已跑路线、设置移动列车追踪图标、标记沿途车站
@@ -585,8 +625,9 @@ class FocusTimerService : Service() {
 
         val builder = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle(titleText)
-            .setContentText(content)
-            .setSubText(getString(R.string.notif_subtext) + " · $timeLabel")
+            .setContentText(contentText)
+            // 子文本纯净展示应用/旅程名，倒计时由系统 setWhen/setUsesChronometer 在顶部优雅展示，不产生双重时间
+            .setSubText(getString(R.string.notif_subtext))
             .setSmallIcon(R.drawable.ic_bullet_train)
             .setStyle(progressStyle)
             .setOngoing(true)
@@ -610,35 +651,18 @@ class FocusTimerService : Service() {
     private fun currentStationLabel(currentSegmentIndex: Int): String {
         if (pathStations.isEmpty()) return ""
         val nextIndex = (currentSegmentIndex + 1).coerceAtMost(pathStations.size - 1)
-        return getString(R.string.notif_next_station, pathStations[nextIndex].name)
+        return pathStations[nextIndex].name
     }
 
     private fun buildFallbackNotification(isPaused: Boolean, currentSegmentIndex: Int): Notification {
         val remaining = timerService.getRemainingSeconds()
-        val minutes = remaining / 60
-        val seconds = remaining % 60
-        val timeLabel = "%02d:%02d".format(minutes, seconds)
-        val routeText = "$startStationName → $endStationName"
         val progress = timerService.getCurrentProgress()
-        val nextStationName = progress?.nextStation?.name ?: currentStationLabel(currentSegmentIndex)
-        val isDwelling = progress?.isDwelling == true
-
-        val titleText = when {
-            isPaused -> getString(R.string.notif_paused) + " · $endStationName"
-            isDwelling -> "已到站：${progress?.currentSegmentStartStation?.name ?: startStationName}"
-            else -> "正在前往 $endStationName"
-        }
-
-        val content = when {
-            isDwelling -> "列车停靠中 · 前方下一站: $nextStationName"
-            arrivalAnnouncement != null -> arrivalAnnouncement
-            else -> "$routeText · 下一站: $nextStationName"
-        }
+        val (titleText, contentText) = buildNotificationContent(isPaused, currentSegmentIndex)
 
         return Notification.Builder(this, CHANNEL_ID)
             .setContentTitle(titleText)
-            .setContentText(content)
-            .setSubText(getString(R.string.notif_subtext) + " · $timeLabel")
+            .setContentText(contentText)
+            .setSubText(getString(R.string.notif_subtext))
             .setSmallIcon(R.drawable.ic_bullet_train)
             .setOngoing(true)
             .setProgress(1000, ((progress?.overallProgress ?: 0f) * 1000).toInt(), false)
