@@ -3,6 +3,7 @@ package com.hsr.railfocus.ui.history.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -108,7 +109,7 @@ fun TrainTicketCard(
             if (isDark) {
                 tuple5(Color(0xFF211A14), BorderStroke(1.dp, Color(0xFF3D2F22)), Color(0xFF5D4037).copy(alpha = 0.5f), Color(0xFFFFD54F), stringResource(R.string.train_series_fuxing))
             } else {
-                tuple5(Color(0xFFFFFDF8), BorderStroke(1.dp, Color(0xFFFFECB3)), Color(0xFFFFF8E1), Color(0xFFC67D00), stringResource(R.string.train_series_fuxing))
+                tuple5(Color(0xFFFFFDF8), BorderStroke(1.dp, Color(0xFFE6E2D9)), Color(0xFFFFF8E1), Color(0xFFC67D00), stringResource(R.string.train_series_fuxing))
             }
         }
         TrainSeries.SLEEPER -> {
@@ -174,6 +175,8 @@ fun TrainTicketCard(
                     drawLayer(captureLayer)
                 }
                 .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
                     onClick = { onClick?.invoke() },
                     onLongClick = {
                         if (ticket.isCompleted) {

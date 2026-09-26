@@ -604,19 +604,21 @@ class FocusTimerService : Service() {
         val timeLabel = "%02d:%02d".format(minutes, seconds)
 
         val (titleText, contentText) = buildNotificationContent(isPaused, currentSegmentIndex)
-        val progressInt = (overallProgress * 1000).toInt().coerceIn(0, 1000)
+        // Android 16 Notification.ProgressStyle 进度最大值为 100（标准百分比制）
+        // 传入 0..100 整数，列车追踪图标和沿途车站圆点在进度轨上严格同比例前移
+        val progressPercent = (overallProgress * 100).toInt().coerceIn(0, 100)
 
         // 启用完整 Android 16 Live Activity 进度条：高亮当前已跑路线、设置移动列车追踪图标、标记沿途车站
         val progressStyle = Notification.ProgressStyle()
             .setStyledByProgress(true)
-            .setProgress(progressInt)
+            .setProgress(progressPercent)
             .setProgressTrackerIcon(Icon.createWithResource(this, R.drawable.ic_bullet_train))
 
-        // 为中途经由车站生成沿途站点进度标记 (Points)，使进度条真正呈现铁路站点分布
+        // 为中途经由车站生成沿途站点进度标记 (Points)，刻度映射至 0..100
         if (pathStations.size > 2) {
             val totalSeg = pathStations.size - 1
             for (i in 1 until pathStations.size - 1) {
-                val pointPos = ((i.toFloat() / totalSeg.toFloat()) * 1000).toInt()
+                val pointPos = ((i.toFloat() / totalSeg.toFloat()) * 100).toInt()
                 progressStyle.addProgressPoint(
                     Notification.ProgressStyle.Point(pointPos)
                 )
@@ -665,7 +667,7 @@ class FocusTimerService : Service() {
             .setSubText(getString(R.string.notif_subtext))
             .setSmallIcon(R.drawable.ic_bullet_train)
             .setOngoing(true)
-            .setProgress(1000, ((progress?.overallProgress ?: 0f) * 1000).toInt(), false)
+            .setProgress(100, ((progress?.overallProgress ?: 0f) * 100).toInt().coerceIn(0, 100), false)
             .setContentIntent(createContentPendingIntent())
             .addAction(createNotificationAction(if (isPaused) ACTION_RESUME else ACTION_PAUSE))
             .addAction(createNotificationAction(ACTION_STOP))
