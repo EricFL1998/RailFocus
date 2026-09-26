@@ -235,31 +235,38 @@ fun JourneySelectionContent(
                 }
             }
 
-            // 联想结果列表 (在搜索激活时显示)
-            if (isSearchActive) {
+            // 联想结果列表 (仅在搜索激活且输入了内容时展开显示，无输入时完全隐藏下方空白)
+            AnimatedVisibility(
+                visible = isSearchActive && searchQuery.isNotEmpty(),
+                enter = fadeIn(tween(200)) + expandVertically(animationSpec = tween(250)),
+                exit = fadeOut(tween(150)) + shrinkVertically(animationSpec = tween(200)),
+            ) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 400.dp),
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     tonalElevation = 4.dp,
                     shadowElevation = 8.dp
                 ) {
-                    if (searchResults.isEmpty() && searchQuery.isNotEmpty()) {
+                    if (searchResults.isEmpty()) {
                         Box(
                             modifier = Modifier.padding(32.dp).fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(stringResource(R.string.search_no_result), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = stringResource(R.string.search_no_result),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     } else {
                         LazyColumn(
                             contentPadding = PaddingValues(12.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(searchResults) { station ->
+                            items(searchResults, key = { it.id }) { station ->
                                 StationCard(
                                     station = station,
                                     onClick = {
