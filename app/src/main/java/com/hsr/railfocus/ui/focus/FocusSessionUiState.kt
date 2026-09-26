@@ -18,6 +18,8 @@ data class FocusSessionUiState(
     val currentStation: Station? = null,
     val nextStation: Station? = null,
     val currentSpeed: Float = 0f,
+    /** 是否正在途径站停靠（停靠时速度为 0） */
+    val isDwelling: Boolean = false,
     val isPaused: Boolean = false,
     val isCompleted: Boolean = false,
     val isStopped: Boolean = false,

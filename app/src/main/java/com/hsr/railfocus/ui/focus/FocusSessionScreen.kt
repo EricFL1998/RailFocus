@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.EventSeat
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -134,21 +136,44 @@ fun FocusSessionScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.focus_estimated_time, uiState.totalSeconds / 60),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                            )
-                            uiState.seatNumber?.let { seat ->
-                                Text(
-                                    text = " · " + stringResource(R.string.focus_seat, seat),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                                )
+                        uiState.seatNumber?.let { seat ->
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val seatClean = seat.replace("号", "").replace(Regex("^[0-9]+车"), "")
+                            val seatDisplay = if (uiState.carriageNumber != null) {
+                                "${uiState.carriageNumber}车 $seatClean"
+                            } else {
+                                stringResource(R.string.focus_seat, seatClean)
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.EventSeat,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(13.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = seatDisplay,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    uiState.focusType?.let { ft ->
+                                        Text(
+                                            text = "· ${ft.displayName}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -171,11 +196,12 @@ fun FocusSessionScreen(
 
                 Spacer(modifier = Modifier.heightIn(min = 24.dp).weight(1f))
 
-                // 当前站 / 下一站
+                // 当前站 / 下一站（支持中途到站停靠面板与巡航面板平滑动画切换）
                 StationInfoCard(
                     currentStation = uiState.currentStation,
                     nextStation = uiState.nextStation,
-                    speed = uiState.currentSpeed
+                    speed = uiState.currentSpeed,
+                    isDwelling = uiState.isDwelling
                 )
 
                 // 底部不留大按钮，控制已移到右上角

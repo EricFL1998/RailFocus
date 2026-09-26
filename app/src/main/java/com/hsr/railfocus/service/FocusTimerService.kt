@@ -316,6 +316,15 @@ class FocusTimerService : Service() {
                     }
                 }
             }
+            launch {
+                preferencesRepository.ambientSoundEnabled.collect { enabled ->
+                    if (!enabled) {
+                        pauseAmbience()
+                    } else if (timerService.state.value is JourneyTimerService.TimerState.Running) {
+                        resumeAmbience()
+                    }
+                }
+            }
        }
    }
 
@@ -368,7 +377,16 @@ class FocusTimerService : Service() {
     }
 
     private fun resumeAmbience() {
-        runCatching { ambientPlayer?.takeIf { !it.isPlaying }?.start() }
+        if (timerService.state.value !is JourneyTimerService.TimerState.Running) return
+        serviceScope.launch {
+            if (preferencesRepository.ambientSoundEnabled.first()) {
+                if (ambientPlayer == null) {
+                    startAmbience()
+                } else {
+                    runCatching { ambientPlayer?.takeIf { !it.isPlaying }?.start() }
+                }
+            }
+        }
     }
 
     private fun observeTimer() {
@@ -378,9 +396,16 @@ class FocusTimerService : Service() {
         val stateJob = timerService.state
             .onEach { state ->
                 when (state) {
-                    is JourneyTimerService.TimerState.Running,
-                    is JourneyTimerService.TimerState.Paused -> updateNotification()
+                    is JourneyTimerService.TimerState.Running -> {
+                        resumeAmbience()
+                        updateNotification()
+                    }
+                    is JourneyTimerService.TimerState.Paused -> {
+                        pauseAmbience()
+                        updateNotification()
+                    }
                     is JourneyTimerService.TimerState.Completed -> {
+                        pauseAmbience()
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         serviceScope.launch {
                             try {

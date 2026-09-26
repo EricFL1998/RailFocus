@@ -24,6 +24,9 @@
 
     <!-- Focus Session -->
     <string name="focus_heading">正在前往</string>
+    <string name="focus_arrived_at_station">已到站：%1$s</string>
+    <string name="focus_dwelling_label">停靠中</string>
+    <string name="focus_next_station_label">前方下一站</string>
     <string name="focus_estimated_time">预计 %1$d 分钟</string>
     <string name="focus_seat">座位 %1$s</string>
     <string name="focus_current_station">当前站</string>

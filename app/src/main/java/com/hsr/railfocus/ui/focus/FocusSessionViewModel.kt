@@ -225,6 +225,7 @@ class FocusSessionViewModel @Inject constructor(
                 currentStation = progress.currentSegmentStartStation,
                 nextStation = progress.nextStation,
                 currentSpeed = progress.currentSpeed,
+                isDwelling = progress.isDwelling,
                 isRestored = true
             )
         }
@@ -313,7 +314,8 @@ class FocusSessionViewModel @Inject constructor(
                             overallProgress = progress.overallProgress,
                             currentStation = progress.currentSegmentStartStation,
                             nextStation = progress.nextStation,
-                            currentSpeed = progress.currentSpeed
+                            currentSpeed = progress.currentSpeed,
+                            isDwelling = progress.isDwelling
                         )
                     }
                 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -15,6 +16,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -72,82 +74,177 @@ fun StationInfoCard(
     currentStation: Station?,
     nextStation: Station?,
     speed: Float,
+    isDwelling: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            StationLabel(
-                title = stringResource(R.string.focus_current_station),
-                name = currentStation?.name ?: "--",
-                modifier = Modifier.weight(1f)
-            )
-            
-            // 速度块不参与权重分配，按内容取宽；左右两站再平分剩余空间。
-            // 这样数字和单位总能拿到完整宽度，km/h 在任何屏宽与字体缩放下都不会折行。
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
+        AnimatedContent(
+            targetState = isDwelling,
+            transitionSpec = {
+                (slideInVertically(animationSpec = tween(320, easing = FastOutSlowInEasing)) { it / 2 } + fadeIn(tween(220)))
+                    .togetherWith(slideOutVertically(animationSpec = tween(320, easing = FastOutSlowInEasing)) { -it / 2 } + fadeOut(tween(180)))
+            },
+            label = "station_card_dwell_anim"
+        ) { dwelling ->
+            if (dwelling) {
+                // 已到站停靠面板
                 Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.Center
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnimatedContent(
-                        targetState = speed.toInt(),
-                        transitionSpec = {
-                            if (targetState > initialState) {
-                                (slideInVertically { it / 2 } + fadeIn(tween(140))).togetherWith(
-                                    slideOutVertically { -it / 2 } + fadeOut(tween(140))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary)
                                 )
-                            } else {
-                                (slideInVertically { -it / 2 } + fadeIn(tween(140))).togetherWith(
-                                    slideOutVertically { it / 2 } + fadeOut(tween(140))
+                                Text(
+                                    text = stringResource(R.string.focus_dwelling_label),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                        },
-                        label = "speed_anim"
-                    ) { speedInt ->
+                        }
                         Text(
-                            text = speedInt.toString(),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            text = stringResource(R.string.focus_arrived_at_station, currentStation?.name ?: "--"),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
-                            softWrap = false
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = stringResource(R.string.focus_speed_unit),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        maxLines = 1,
-                        softWrap = false,
-                        modifier = Modifier.padding(bottom = 4.dp)
+
+                    // 中间：速度 0 km/h
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "0",
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = stringResource(R.string.focus_speed_unit),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                    }
+
+                    // 右侧：下一站
+                    StationLabel(
+                        title = stringResource(R.string.focus_next_station_label),
+                        name = nextStation?.name ?: "--",
+                        modifier = Modifier.weight(1f),
+                        alignRight = true
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    StationLabel(
+                        title = stringResource(R.string.focus_current_station),
+                        name = currentStation?.name ?: "--",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // 速度块不参与权重分配，按内容取宽；左右两站再平分剩余空间。
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            AnimatedContent(
+                                targetState = speed.toInt(),
+                                transitionSpec = {
+                                    if (targetState > initialState) {
+                                        (slideInVertically { it / 2 } + fadeIn(tween(140))).togetherWith(
+                                            slideOutVertically { -it / 2 } + fadeOut(tween(140))
+                                        )
+                                    } else {
+                                        (slideInVertically { -it / 2 } + fadeIn(tween(140))).togetherWith(
+                                            slideOutVertically { it / 2 } + fadeOut(tween(140))
+                                        )
+                                    }
+                                },
+                                label = "speed_anim"
+                            ) { speedInt ->
+                                Text(
+                                    text = speedInt.toString(),
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = stringResource(R.string.focus_speed_unit),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                    }
+
+                    StationLabel(
+                        title = stringResource(R.string.focus_next_station),
+                        name = nextStation?.name ?: "--",
+                        modifier = Modifier.weight(1f),
+                        alignRight = true
                     )
                 }
             }
-
-            StationLabel(
-                title = stringResource(R.string.focus_next_station),
-                name = nextStation?.name ?: "--",
-                modifier = Modifier.weight(1f),
-                alignRight = true
-            )
         }
     }
 }
