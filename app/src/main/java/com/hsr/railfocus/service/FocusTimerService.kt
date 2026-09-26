@@ -546,19 +546,47 @@ class FocusTimerService : Service() {
         val timeLabel = "%02d:%02d".format(minutes, seconds)
         val routeText = "$startStationName → $endStationName"
 
+        val progress = timerService.getCurrentProgress()
+        val nextStationName = progress?.nextStation?.name ?: currentStationLabel(currentSegmentIndex)
+        val isDwelling = progress?.isDwelling == true
+
+        // 标题：呈现行程核心目标，清晰美观
+        val titleText = when {
+            isPaused -> getString(R.string.notif_paused) + " · $endStationName"
+            isDwelling -> "已到站：${progress?.currentSegmentStartStation?.name ?: startStationName}"
+            else -> "正在前往 $endStationName"
+        }
+
+        // 内容：展示线路与停靠/前方到站状态
+        val content = when {
+            isDwelling -> "列车停靠中 · 前方下一站: $nextStationName"
+            arrivalAnnouncement != null -> arrivalAnnouncement
+            else -> "$routeText · 下一站: $nextStationName"
+        }
+
+        val progressInt = (overallProgress * 1000).toInt().coerceIn(0, 1000)
+
+        // 启用完整 Android 16 Live Activity 进度条：高亮当前已跑路线、设置移动列车追踪图标、标记沿途车站
         val progressStyle = Notification.ProgressStyle()
-            .setStyledByProgress(false)
-            .setProgress((overallProgress * 1000).toInt())
-            .setProgressSegments(emptyList())
-            .setProgressPoints(emptyList())
+            .setStyledByProgress(true)
+            .setProgress(progressInt)
+            .setProgressTrackerIcon(Icon.createWithResource(this, R.drawable.ic_bullet_train))
+
+        // 为中途经由车站生成沿途站点进度标记 (Points)，使进度条真正呈现铁路站点分布
+        if (pathStations.size > 2) {
+            val totalSeg = pathStations.size - 1
+            for (i in 1 until pathStations.size - 1) {
+                val pointPos = ((i.toFloat() / totalSeg.toFloat()) * 1000).toInt()
+                progressStyle.addProgressPoint(
+                    Notification.ProgressStyle.Point(pointPos)
+                )
+            }
+        }
 
         val builder = Notification.Builder(this, CHANNEL_ID)
-            // 标题：保持时间为主要焦点
-            .setContentTitle(getString(R.string.notif_remaining_time, timeLabel) + (if (isPaused) " · ${getString(R.string.notif_paused)}" else ""))
-            // 内容：线路信息，像交通 App 一样清晰展示行程
-            .setContentText(arrivalAnnouncement ?: routeText)
-            // 子文本：应用名，增加层次感
-            .setSubText(getString(R.string.notif_subtext))
+            .setContentTitle(titleText)
+            .setContentText(content)
+            .setSubText(getString(R.string.notif_subtext) + " · $timeLabel")
             .setSmallIcon(R.drawable.ic_bullet_train)
             .setStyle(progressStyle)
             .setOngoing(true)
@@ -585,13 +613,35 @@ class FocusTimerService : Service() {
         return getString(R.string.notif_next_station, pathStations[nextIndex].name)
     }
 
-   private fun buildFallbackNotification(isPaused: Boolean, currentSegmentIndex: Int): Notification {
-        val statusSuffix = if (isPaused) " · " + getString(R.string.notif_paused) else ""
-       return Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("$startStationName → $endStationName")
-            .setContentText((arrivalAnnouncement ?: currentStationLabel(currentSegmentIndex)) + statusSuffix)
+    private fun buildFallbackNotification(isPaused: Boolean, currentSegmentIndex: Int): Notification {
+        val remaining = timerService.getRemainingSeconds()
+        val minutes = remaining / 60
+        val seconds = remaining % 60
+        val timeLabel = "%02d:%02d".format(minutes, seconds)
+        val routeText = "$startStationName → $endStationName"
+        val progress = timerService.getCurrentProgress()
+        val nextStationName = progress?.nextStation?.name ?: currentStationLabel(currentSegmentIndex)
+        val isDwelling = progress?.isDwelling == true
+
+        val titleText = when {
+            isPaused -> getString(R.string.notif_paused) + " · $endStationName"
+            isDwelling -> "已到站：${progress?.currentSegmentStartStation?.name ?: startStationName}"
+            else -> "正在前往 $endStationName"
+        }
+
+        val content = when {
+            isDwelling -> "列车停靠中 · 前方下一站: $nextStationName"
+            arrivalAnnouncement != null -> arrivalAnnouncement
+            else -> "$routeText · 下一站: $nextStationName"
+        }
+
+        return Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle(titleText)
+            .setContentText(content)
+            .setSubText(getString(R.string.notif_subtext) + " · $timeLabel")
             .setSmallIcon(R.drawable.ic_bullet_train)
             .setOngoing(true)
+            .setProgress(1000, ((progress?.overallProgress ?: 0f) * 1000).toInt(), false)
             .setContentIntent(createContentPendingIntent())
             .addAction(createNotificationAction(if (isPaused) ACTION_RESUME else ACTION_PAUSE))
             .addAction(createNotificationAction(ACTION_STOP))
@@ -599,14 +649,18 @@ class FocusTimerService : Service() {
     }
 
     private fun createNotificationAction(action: String): Notification.Action {
-        val title = when (action) {
-            ACTION_PAUSE -> getString(R.string.notif_action_pause)
-            ACTION_RESUME -> getString(R.string.notif_action_resume)
-            ACTION_STOP -> getString(R.string.notif_action_stop)
-            else -> action
+        val (iconRes, title) = when (action) {
+            ACTION_PAUSE -> android.R.drawable.ic_media_pause to getString(R.string.notif_action_pause)
+            ACTION_RESUME -> android.R.drawable.ic_media_play to getString(R.string.notif_action_resume)
+            ACTION_STOP -> android.R.drawable.ic_menu_close_clear_cancel to getString(R.string.notif_action_stop)
+            else -> R.drawable.ic_bullet_train to action
         }
         val intent = Intent(this, FocusTimerService::class.java).apply { this.action = action }
-        return Notification.Action.Builder(Icon.createWithResource(this, R.drawable.ic_bullet_train), title, PendingIntent.getService(this, action.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)).build()
+        return Notification.Action.Builder(
+            Icon.createWithResource(this, iconRes),
+            title,
+            PendingIntent.getService(this, action.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        ).build()
     }
 
     private fun createContentPendingIntent(): PendingIntent {
