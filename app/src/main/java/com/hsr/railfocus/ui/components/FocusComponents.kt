@@ -141,34 +141,15 @@ fun StationInfoCard(
                         )
                     }
 
-                    // 中间：速度 0 km/h
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "0",
-                                style = MaterialTheme.typography.displaySmall,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = stringResource(R.string.focus_speed_unit),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                                maxLines = 1,
-                                softWrap = false,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-                        }
-                    }
+                    // 中间：前进路线指示图标（到站停靠面板不显示速度）
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
 
                     // 右侧：下一站
                     StationLabel(
