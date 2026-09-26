@@ -22,3 +22,6 @@ scripts/osm_data/
 
 # 本地音频源文件
 audio/
+
+# 预置数据库修复备份文件
+app/src/main/assets/databases/*.bak*
