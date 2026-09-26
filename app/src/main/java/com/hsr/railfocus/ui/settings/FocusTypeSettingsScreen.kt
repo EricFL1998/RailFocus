@@ -274,7 +274,7 @@ private fun AddFocusTypeDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 22.dp, vertical = 20.dp),
+                    .padding(horizontal = 18.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // --- 顶部操作行：关闭按钮、标题、完成胶囊按钮 ---
@@ -431,38 +431,52 @@ private fun AddFocusTypeDialog(
 
                 Spacer(modifier = Modifier.height(26.dp))
 
-                // --- 第三段：色彩选择排（带外环选中态与彩虹轮） ---
+                // --- 第三段：色轮选择排（自适应均分宽度，保证正圆形与无溢出截断） ---
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        primaryColors.forEach { color ->
-                            val isSelected = (selectedColor == color)
+                    primaryColors.forEach { color ->
+                        val isSelected = (selectedColor == color)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(42.dp)
+                                    .widthIn(min = 28.dp, max = 42.dp)
+                                    .fillMaxWidth(0.86f)
+                                    .aspectRatio(1f)
                                     .border(
                                         width = if (isSelected) 2.5.dp else 0.dp,
                                         color = if (isSelected) color else Color.Transparent,
                                         shape = CircleShape,
                                     )
-                                    .padding(if (isSelected) 4.dp else 0.dp)
+                                    .padding(if (isSelected) 3.5.dp else 0.dp)
                                     .clip(CircleShape)
                                     .background(color)
                                     .clickable { selectedColor = color },
                             )
                         }
+                    }
 
-                        // 彩虹渐变调色轮入口（打开完整 ColorPicker 调色盘）
+                    // 彩虹渐变调色轮入口（打开完整 ColorPicker 调色盘）
+                    Box(
+                        modifier = Modifier
+                            .weight(1f),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Surface(
                             onClick = { showFullColorPicker = true },
                             shape = CircleShape,
-                            modifier = Modifier.size(42.dp),
+                            modifier = Modifier
+                                .widthIn(min = 28.dp, max = 42.dp)
+                                .fillMaxWidth(0.86f)
+                                .aspectRatio(1f),
                         ) {
                             Box(
                                 modifier = Modifier
@@ -486,7 +500,8 @@ private fun AddFocusTypeDialog(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(24.dp)
+                                        .fillMaxSize(0.58f)
+                                        .aspectRatio(1f)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                                     contentAlignment = Alignment.Center,
