@@ -28,6 +28,11 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.LocalMall
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -556,6 +561,11 @@ fun CompletionOverlay(
                             "历史" -> Icons.Default.HistoryEdu
                             "地理" -> Icons.Default.Public
                             "文化" -> Icons.Default.Palette
+                            "铁路" -> Icons.Default.Train
+                            "地标" -> Icons.Default.Place
+                            "趣闻" -> Icons.Default.AutoAwesome
+                            "风物" -> Icons.Default.LocalMall
+                            "漫游" -> Icons.Default.TravelExplore
                             else -> Icons.Default.Lightbulb
                         }
                         
@@ -576,12 +586,20 @@ fun CompletionOverlay(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    val factTitle = stationFact.title.ifBlank { "${city}${stationFact.category}" }
                                     Text(
-                                        text = "${city}${stationFact.category}",
+                                        text = factTitle,
                                         style = MaterialTheme.typography.labelLarge,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Black
                                     )
+                                    if (stationFact.title.isNotBlank() && stationFact.category.isNotBlank()) {
+                                        Text(
+                                            text = stationFact.category,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                        )
+                                    }
                                     Text(
                                         text = stationFact.content,
                                         style = MaterialTheme.typography.bodyMedium,
