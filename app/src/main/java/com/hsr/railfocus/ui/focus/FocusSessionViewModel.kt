@@ -288,10 +288,10 @@ class FocusSessionViewModel @Inject constructor(
                         _uiState.update { it.copy(isPaused = true) }
                         checkpointRemaining(_uiState.value.remainingSeconds)
                     }
-                   is JourneyTimerService.TimerState.Completed -> {
+                    is JourneyTimerService.TimerState.Completed -> {
                         val currentDelay = timerService.delayMinutes
                         _uiState.update { it.copy(isCompleted = true, delayMinutes = currentDelay) }
-                       loadStationFact()
+                        loadStationFact()
                         checkMemoryRecall(_uiState.value.endStation.id, _uiState.value.journeyId)
                         finishJourney(com.hsr.railfocus.domain.model.JourneyStatus.COMPLETED)
                         saveLastLocation()
@@ -516,12 +516,14 @@ class FocusSessionViewModel @Inject constructor(
     }
 
     private fun loadStationFact() {
-        try {
-            StationFactsProvider.load(context)
-            val fact = StationFactsProvider.randomFactForCity(_uiState.value.endStation.city)
-            _uiState.update { it.copy(stationFact = fact) }
-        } catch (_: Exception) {
-            // ignore
+        viewModelScope.launch {
+            try {
+                StationFactsProvider.load(context)
+                val fact = StationFactsProvider.randomFactForCity(_uiState.value.endStation.city)
+                _uiState.update { it.copy(stationFact = fact) }
+            } catch (_: Exception) {
+                // ignore
+            }
         }
     }
 }

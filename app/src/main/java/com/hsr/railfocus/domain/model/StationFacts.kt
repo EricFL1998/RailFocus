@@ -1,6 +1,10 @@
 package com.hsr.railfocus.domain.model
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /**
@@ -16,10 +20,24 @@ data class StationFact(
 /**
  * 城市趣味知识提供者
  * 从 assets 中的 city_facts.json 读取，为城市提供随机的趣味知识。
+ *
+ * 性能说明：
+ * - 解析在 [Dispatchers.IO] 上执行，避免在主线程同步解析大 JSON 造成掉帧；
+ * - 加载时只建立城市索引，各城市的条目在被访问时才惰性展开并缓存，
+ *   避免一次性为上千个城市构建大量对象常驻内存。
  */
 object StationFactsProvider {
 
-    private var factsByCity: Map<String, List<StationFact>>? = null
+    /** 原始城市 JSON 树（含全部城市），作为惰性展开的后备数据源 */
+    private var citiesObj: JSONObject? = null
+
+    /** 已展开城市的条目缓存，仅存放实际访问过的城市 */
+    private val factsCache = mutableMapOf<String, List<StationFact>>()
+
+    /** 记录每个城市上一次展示的知识内容，用于避免连续重复 */
+    private val lastFactByCity = mutableMapOf<String, String>()
+
+    private val loadMutex = Mutex()
 
     private val fallbackFacts = listOf(
         StationFact("", "铁路", "中国高铁总里程已超过 4.5 万公里，居世界第一。"),
@@ -38,52 +56,59 @@ object StationFactsProvider {
         StationFact("", "漫游", "夕发朝至的卧铺列车，能省下住宿费用，还能在清晨迎接目的地日出。"),
     )
 
-    /**
-     * 加载城市趣味知识 JSON
-     */
-    fun load(context: Context) {
-        if (factsByCity != null) return
-        try {
-            val json = context.assets.open("city_facts.json").bufferedReader().use { it.readText() }
-            val root = JSONObject(json)
-            val citiesObj = root.optJSONObject("cities") ?: return
-            
-            val categoryMap = mapOf(
-                "history" to "历史",
-                "geography" to "地理",
-                "culture" to "文化",
-                "food" to "美食",
-                "railway" to "铁路",
-                "landmark" to "地标",
-                "trivia" to "趣闻",
-                "specialty" to "风物",
-                "travel" to "漫游"
-            )
+    private val categoryMap = linkedMapOf(
+        "history" to "历史",
+        "geography" to "地理",
+        "culture" to "文化",
+        "food" to "美食",
+        "railway" to "铁路",
+        "landmark" to "地标",
+        "trivia" to "趣闻",
+        "specialty" to "风物",
+        "travel" to "漫游"
+    )
 
-            factsByCity = citiesObj.keys().asSequence().associateWith { city ->
-                val cityObj = citiesObj.getJSONObject(city)
-                categoryMap.flatMap { (jsonKey, displayLabel) ->
-                    val array = cityObj.optJSONArray(jsonKey)
-                    if (array != null) {
-                        (0 until array.length()).mapNotNull { index ->
-                            val item = array.optJSONObject(index)
-                            val content = item?.optString("content", "") ?: ""
-                            if (content.isBlank()) null
-                            else StationFact(
-                                city = city,
-                                category = displayLabel,
-                                content = content,
-                                title = item?.optString("title", "") ?: ""
-                            )
-                        }
-                    } else {
-                        emptyList()
-                    }
-                }
+    /**
+     * 加载城市趣味知识 JSON（在 IO 线程解析，不阻塞主线程）。
+     * 只解析出城市索引，具体条目按需惰性展开。
+     */
+    suspend fun load(context: Context) = withContext(Dispatchers.IO) {
+        if (citiesObj != null) return@withContext
+        loadMutex.withLock {
+            if (citiesObj != null) return@withLock
+            citiesObj = try {
+                val json = context.assets.open("city_facts.json").bufferedReader().use { it.readText() }
+                JSONObject(json).optJSONObject("cities") ?: JSONObject()
+            } catch (_: Exception) {
+                JSONObject()
             }
-        } catch (_: Exception) {
-            factsByCity = emptyMap()
         }
+    }
+
+    /** 惰性展开某个城市的知识条目并缓存；未加载或不存在时返回空列表 */
+    private fun factsOf(city: String): List<StationFact> {
+        factsCache[city]?.let { return it }
+        val obj = citiesObj?.optJSONObject(city) ?: return emptyList()
+        val list = categoryMap.flatMap { (jsonKey, displayLabel) ->
+            val array = obj.optJSONArray(jsonKey)
+            if (array != null) {
+                (0 until array.length()).mapNotNull { index ->
+                    val item = array.optJSONObject(index)
+                    val content = item?.optString("content", "") ?: ""
+                    if (content.isBlank()) null
+                    else StationFact(
+                        city = city,
+                        category = displayLabel,
+                        content = content,
+                        title = item?.optString("title", "") ?: ""
+                    )
+                }
+            } else {
+                emptyList()
+            }
+        }
+        factsCache[city] = list
+        return list
     }
 
     /**
@@ -100,51 +125,52 @@ object StationFactsProvider {
         "郑州航空港" to "郑州", "酒泉" to "酒泉南", "马鞍山" to "马鞍山东"
     )
 
+    /** 命中某城市的条目（非空才返回） */
+    private fun hit(name: String): List<StationFact>? =
+        factsOf(name).takeIf { it.isNotEmpty() }
+
     /**
      * 根据城市名获取若干趣味知识（如果没有则返回通用铁路知识）
      */
     fun getFactsForCity(city: String): List<StationFact> {
-        val direct = factsByCity?.get(city)
-        if (!direct.isNullOrEmpty()) return direct
+        hit(city)?.let { return it }
 
         // 1) 别名映射（站点名 -> 知识库城市名）
-        cityAliases[city]?.let { alias ->
-            factsByCity?.get(alias)?.takeIf { it.isNotEmpty() }?.let { return it }
-        }
+        cityAliases[city]?.let { alias -> hit(alias)?.let { return it } }
 
         // 2) 去掉“市/县/区”等行政后缀再匹配
         val noSuffix = city.replace(Regex("(市|县|区)$"), "")
         if (noSuffix.isNotEmpty() && noSuffix != city) {
-            factsByCity?.get(noSuffix)?.takeIf { it.isNotEmpty() }?.let { return it }
-            cityAliases[noSuffix]?.let { alias ->
-                factsByCity?.get(alias)?.takeIf { it.isNotEmpty() }?.let { return it }
-            }
+            hit(noSuffix)?.let { return it }
+            cityAliases[noSuffix]?.let { alias -> hit(alias)?.let { return it } }
         }
 
         // 3) 尝试去掉“东/西/南/北/中/机场/新区”等方位及功能后缀匹配
         val trimmed = city.replace(Regex("[东南西北中]|机场|新区|开发区|高新区|经开区|工业园区|保税区区|港区区|港城|空港|海港|铁路|高铁|客运|货运|编组|枢纽|所|场$|城$|镇$|乡$|村$|街道$|区$|县$"), "")
             .trim()
         if (trimmed.isNotEmpty() && trimmed != city) {
-            factsByCity?.get(trimmed)?.takeIf { it.isNotEmpty() }?.let { return it }
-            cityAliases[trimmed]?.let { alias ->
-                factsByCity?.get(alias)?.takeIf { it.isNotEmpty() }?.let { return it }
-            }
+            hit(trimmed)?.let { return it }
+            cityAliases[trimmed]?.let { alias -> hit(alias)?.let { return it } }
         }
 
-        // 4) 反向：去掉一个字的方位后缀（如“驻马店西”->“驻马店”已在3处理；此处处理知识库名是站点全称的情况）
+        // 4) 反向：去掉一个字的方位后缀
         if (city.length >= 3) {
-            val dropLast = city.dropLast(1)
-            factsByCity?.get(dropLast)?.takeIf { it.isNotEmpty() }?.let { return it }
+            hit(city.dropLast(1))?.let { return it }
         }
 
         return fallbackFacts
     }
 
     /**
-     * 随机获取一条该城市的趣味知识
+     * 随机获取一条该城市的趣味知识，尽量避免与上一次展示重复
      */
     fun randomFactForCity(city: String): StationFact {
         val facts = getFactsForCity(city)
-        return facts.randomOrNull() ?: fallbackFacts.random()
+        if (facts.isEmpty()) return fallbackFacts.random()
+        val last = lastFactByCity[city]
+        val candidates = if (facts.size > 1) facts.filter { it.content != last } else facts
+        val picked = candidates.random()
+        lastFactByCity[city] = picked.content
+        return picked
     }
 }
