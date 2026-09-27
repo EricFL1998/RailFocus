@@ -102,6 +102,13 @@ class FocusTimerWidget : androidx.glance.appwidget.GlanceAppWidget() {
                     )
                 }
                 Text(
+                    text = LocalContext.current.getString(R.string.widget_heading_to, journey.endStation.city),
+                    style = TextStyle(
+                        fontWeight = FontWeight.Medium,
+                        color = ColorProvider(Color(0xB3FFFFFF)),
+                    ),
+                )
+                Text(
                     text = remainingLabel,
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,

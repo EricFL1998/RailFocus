@@ -112,6 +112,15 @@
     <string name="data_provinces_percent">%1$d%%</string>
     <string name="data_provinces_summary">已点亮 %1$d/%2$d · %3$d%%</string>
     <string name="data_provinces_hint">去过的省份会自动点亮</string>
+    <string name="data_stat_streak">连续专注</string>
+    <string name="data_unit_days">天</string>
+    <string name="data_distance_equiv">≈ 京沪高铁 %1$s 趟</string>
+    <string name="data_album_title">城市图鉴</string>
+    <string name="data_album_summary">已收集 %1$d 座城市</string>
+    <string name="data_album_empty">完成一次旅程，点亮第一座城市</string>
+    <string name="data_album_hint">点一座城市，看看它的小知识</string>
+    <string name="album_dialog_close">收好啦</string>
+    <string name="widget_heading_to">前往 %1$s</string>
     <string name="data_milestones_title">里程成就</string>
     <string name="data_milestones_summary">%1$d/%2$d 个成就已达成</string>
     <string name="data_milestone_km">累计 %1$d 公里</string>

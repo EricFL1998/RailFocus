@@ -90,6 +90,13 @@ import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.data.preferences.DailyGoalState
 import com.hsr.railfocus.domain.model.FrequentFlyerState
 import com.hsr.railfocus.domain.model.MembershipTier
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.hsr.railfocus.domain.model.StationFact
+import com.hsr.railfocus.domain.model.StationFactsProvider
 import com.hsr.railfocus.R
 import com.hsr.railfocus.ui.history.HistoryUiState
 import com.hsr.railfocus.ui.history.HistoryViewModel
@@ -169,6 +176,11 @@ fun DataContent(
 
         ProvincesSection(
             litProvinces = stats.visitedProvinces,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        CityAlbumSection(
+            visitedCities = stats.visitedCities,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -476,6 +488,13 @@ private fun TotalDistanceCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 )
+                if (totalDistanceKm > 0) {
+                    Text(
+                        text = stringResource(R.string.data_distance_equiv, String.format(Locale.CHINA, "%.1f", totalDistanceKm / 1318.0)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    )
+                }
             }
 
             // 总旅程视图入口：进入只展示已完成旅程线路的地图
@@ -835,6 +854,12 @@ private fun StatsSection(
             label = stringResource(R.string.data_fact_china),
             value = String.format(Locale.CHINA, "%.2f", stats.chinaCrossings),
             unit = stringResource(R.string.data_unit_times),
+        ),
+        StatTileData(
+            icon = Icons.Default.Whatshot,
+            label = stringResource(R.string.data_stat_streak),
+            value = stats.streakDays.toString(),
+            unit = stringResource(R.string.data_unit_days),
         ),
     )
 
@@ -1399,6 +1424,8 @@ data class DataStats(
     val equatorLoops: Double,
     val chinaCrossings: Double,
     val averageFocusMinutes: Int,
+    val streakDays: Int,
+    val visitedCities: List<String>,
     val weeklyFocus: List<Pair<String, Int>>,
     val topDestinations: List<Pair<String, Int>>,
 )
@@ -1443,6 +1470,23 @@ private fun calculateDataStats(records: List<com.hsr.railfocus.domain.model.Jour
         .take(3)
         .toList()
 
+    val dayFmt = java.text.SimpleDateFormat("yyyyMMdd", Locale.CHINA)
+    val daySet = records.map { dayFmt.format(java.util.Date(it.completedAt ?: it.createdAt)) }.toSet()
+    fun dayStr(backDays: Int): String {
+        val cal = java.util.Calendar.getInstance()
+        cal.add(java.util.Calendar.DAY_OF_YEAR, -backDays)
+        return dayFmt.format(cal.time)
+    }
+    var streakDays = 0
+    var back = if (daySet.contains(dayStr(0))) 0 else 1
+    if (daySet.contains(dayStr(back))) {
+        while (daySet.contains(dayStr(back))) {
+            streakDays++
+            back++
+        }
+    }
+    val visitedCities = records.map { it.endStation.city }.filter { it.isNotBlank() }.distinct().sorted()
+
     return DataStats(
         totalJourneys = totalJourneys,
         totalFocusMinutes = totalFocusMinutes,
@@ -1454,9 +1498,101 @@ private fun calculateDataStats(records: List<com.hsr.railfocus.domain.model.Jour
         equatorLoops = equatorLoops,
         chinaCrossings = chinaCrossings,
         averageFocusMinutes = averageFocusMinutes,
+        streakDays = streakDays,
+        visitedCities = visitedCities,
         weeklyFocus = weeklyFocus,
         topDestinations = topDestinations,
     )
+}
+
+/** 城市图鉴：完成旅程到过的城市会点亮，点开可看该城的小知识 */
+@Composable
+private fun CityAlbumSection(
+    visitedCities: List<String>,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    var openCity by remember { mutableStateOf<String?>(null) }
+    var fact by remember { mutableStateOf<StationFact?>(null) }
+
+    LaunchedEffect(openCity) {
+        val c = openCity
+        fact = null
+        if (c != null) {
+            StationFactsProvider.load(context)
+            fact = StationFactsProvider.randomFactForCity(c)
+        }
+    }
+
+    ExpandableSection(
+        title = stringResource(R.string.data_album_title),
+        summary = stringResource(R.string.data_album_summary, visitedCities.size),
+        icon = Icons.Default.EmojiEvents,
+        modifier = modifier,
+    ) {
+        if (visitedCities.isEmpty()) {
+            Text(
+                text = stringResource(R.string.data_album_empty),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.data_album_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                visitedCities.forEach { city ->
+                    Surface(
+                        onClick = { openCity = city },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ) {
+                        Text(
+                            text = city,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    val opened = openCity
+    if (opened != null) {
+        AlertDialog(
+            onDismissRequest = { openCity = null },
+            title = { Text(text = opened, fontWeight = FontWeight.Bold) },
+            text = {
+                val f = fact
+                if (f == null) {
+                    Text(text = "…")
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = f.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(text = f.content, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { openCity = null }) {
+                    Text(text = stringResource(R.string.album_dialog_close))
+                }
+            },
+        )
+    }
 }
 
 private data class MetalCardStyle(
