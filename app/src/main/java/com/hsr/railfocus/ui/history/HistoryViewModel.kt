@@ -52,6 +52,9 @@ class HistoryViewModel @Inject constructor(
     val frequentFlyerState: StateFlow<FrequentFlyerState> = preferencesRepository.frequentFlyerState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FrequentFlyerState())
 
+    val unlockedCityFacts: StateFlow<Set<String>> = preferencesRepository.unlockedCityFacts
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
     fun setDailyGoal(minutes: Int) {
         viewModelScope.launch { preferencesRepository.setDailyGoal(minutes) }
     }

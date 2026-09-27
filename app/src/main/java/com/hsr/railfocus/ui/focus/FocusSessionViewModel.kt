@@ -520,6 +520,7 @@ class FocusSessionViewModel @Inject constructor(
             try {
                 StationFactsProvider.load(context)
                 val fact = StationFactsProvider.randomFactForCity(_uiState.value.endStation.city)
+                preferencesRepository.unlockCityFact(_uiState.value.endStation.city, fact.content)
                 _uiState.update { it.copy(stationFact = fact) }
             } catch (_: Exception) {
                 // ignore

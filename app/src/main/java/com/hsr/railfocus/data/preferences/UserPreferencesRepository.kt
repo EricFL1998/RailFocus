@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -52,6 +53,7 @@ class UserPreferencesRepository @Inject constructor(
         val TOTAL_LIFETIME_FOCUS_MIN = intPreferencesKey("total_lifetime_focus_min")
         val LAST_FOCUS_TIMESTAMP = longPreferencesKey("last_focus_timestamp")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val UNLOCKED_CITY_FACTS = stringSetPreferencesKey("unlocked_city_facts")
     }
 
     /**
@@ -67,6 +69,24 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[Keys.ONBOARDING_COMPLETED] = true
+        }
+
+    }
+
+    /**
+     * 已解锁的城市知识：完成旅程时展示的知识会记录为已解锁。
+     * 元素格式为 "城市|内容"，供城市图鉴按城市过滤展示。
+     */
+    val unlockedCityFacts: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[Keys.UNLOCKED_CITY_FACTS] ?: emptySet()
+    }
+
+    /** 将某城市的一条知识标记为已解锁 */
+    suspend fun unlockCityFact(city: String, content: String) {
+        if (city.isBlank() || content.isBlank()) return
+        context.dataStore.edit { preferences ->
+            val current = preferences[Keys.UNLOCKED_CITY_FACTS] ?: emptySet()
+            preferences[Keys.UNLOCKED_CITY_FACTS] = current + (city + "|" + content)
         }
     }
 

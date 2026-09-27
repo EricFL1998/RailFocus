@@ -120,6 +120,8 @@
     <string name="data_album_empty">完成一次旅程，点亮第一座城市</string>
     <string name="data_album_hint">点一座城市，看看它的小知识</string>
     <string name="album_dialog_close">收好啦</string>
+    <string name="album_no_unlocked">该城还没有解锁的知识，再完成一次前往这里的旅程吧</string>
+    <string name="album_unlocked_count">已解锁 %1$d 条城市知识</string>
     <string name="widget_heading_to">前往 %1$s</string>
     <string name="data_milestones_title">里程成就</string>
     <string name="data_milestones_summary">%1$d/%2$d 个成就已达成</string>

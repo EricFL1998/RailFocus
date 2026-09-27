@@ -90,6 +90,14 @@ import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.data.preferences.DailyGoalState
 import com.hsr.railfocus.domain.model.FrequentFlyerState
 import com.hsr.railfocus.domain.model.MembershipTier
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.HistoryEdu
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.LocalMall
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -116,6 +124,7 @@ fun DataContent(
     uiState: HistoryUiState,
     dailyGoal: DailyGoalState = DailyGoalState(45, 0),
     frequentFlyer: FrequentFlyerState = FrequentFlyerState(),
+    unlockedFacts: Set<String> = emptySet(),
     onGoalSelected: (Int) -> Unit = {},
     onAllJourneysClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -181,6 +190,7 @@ fun DataContent(
 
         CityAlbumSection(
             visitedCities = stats.visitedCities,
+            unlockedFacts = unlockedFacts,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -218,6 +228,7 @@ fun DataBottomSheet(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dailyGoal by viewModel.dailyGoalState.collectAsStateWithLifecycle()
     val frequentFlyer by viewModel.frequentFlyerState.collectAsStateWithLifecycle()
+    val unlockedFacts by viewModel.unlockedCityFacts.collectAsStateWithLifecycle()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -233,6 +244,7 @@ fun DataBottomSheet(
             uiState = uiState,
             dailyGoal = dailyGoal,
             frequentFlyer = frequentFlyer,
+        unlockedFacts = unlockedFacts,
             onGoalSelected = viewModel::setDailyGoal,
             onAllJourneysClick = onAllJourneysClick,
             modifier = Modifier.fillMaxWidth(),
@@ -1505,22 +1517,38 @@ private fun calculateDataStats(records: List<com.hsr.railfocus.domain.model.Jour
     )
 }
 
+private fun albumFactIcon(category: String): ImageVector = when (category) {
+    "美食" -> Icons.Default.Restaurant
+    "历史" -> Icons.Default.HistoryEdu
+    "地理" -> Icons.Default.Public
+    "文化" -> Icons.Default.Palette
+    "铁路" -> Icons.Default.Train
+    "地标" -> Icons.Default.Place
+    "趣闻" -> Icons.Default.AutoAwesome
+    "风物" -> Icons.Default.LocalMall
+    "漫游" -> Icons.Default.TravelExplore
+    else -> Icons.Default.Lightbulb
+}
+
+
+
 /** 城市图鉴：完成旅程到过的城市会点亮，点开可看该城的小知识 */
 @Composable
 private fun CityAlbumSection(
     visitedCities: List<String>,
+    unlockedFacts: Set<String> = emptySet(),
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var openCity by remember { mutableStateOf<String?>(null) }
-    var fact by remember { mutableStateOf<StationFact?>(null) }
+    var facts by remember { mutableStateOf<List<StationFact>>(emptyList()) }
 
-    LaunchedEffect(openCity) {
+    LaunchedEffect(openCity, unlockedFacts) {
         val c = openCity
-        fact = null
+        facts = emptyList()
         if (c != null) {
             StationFactsProvider.load(context)
-            fact = StationFactsProvider.randomFactForCity(c)
+            facts = StationFactsProvider.getFactsForCity(c).filter { (c + "|" + it.content) in unlockedFacts }
         }
     }
 
@@ -1569,26 +1597,92 @@ private fun CityAlbumSection(
     if (opened != null) {
         AlertDialog(
             onDismissRequest = { openCity = null },
-            title = { Text(text = opened, fontWeight = FontWeight.Bold) },
-            text = {
-                val f = fact
-                if (f == null) {
-                    Text(text = "…")
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Place,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(9.dp),
+                        )
+                    }
+                    Column {
                         Text(
-                            text = f.category,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            text = opened,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
-                        Text(text = f.content, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = stringResource(R.string.album_unlocked_count, facts.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
+            text = {
+                if (facts.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.album_no_unlocked),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .heightIn(max = 380.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        facts.forEach { f ->
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = albumFactIcon(f.category),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp),
+                                    )
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            text = f.category,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        Text(
+                                            text = f.content,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            lineHeight = 20.sp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { openCity = null }) {
-                    Text(text = stringResource(R.string.album_dialog_close))
+                    Text(text = stringResource(R.string.album_dialog_close), fontWeight = FontWeight.Bold)
                 }
             },
         )
