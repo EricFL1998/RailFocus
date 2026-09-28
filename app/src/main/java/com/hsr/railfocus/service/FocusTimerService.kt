@@ -482,8 +482,15 @@ class FocusTimerService : Service() {
     }
 
     private fun updateNotification() {
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, buildNotification())
+        // 完成或停止后不再重新弹出常驻通知，避免完成卡片展示后通知残留
+        when (timerService.state.value) {
+            is JourneyTimerService.TimerState.Running,
+            is JourneyTimerService.TimerState.Paused -> {
+                val manager = getSystemService(NotificationManager::class.java)
+                manager.notify(NOTIFICATION_ID, buildNotification())
+            }
+            else -> Unit
+        }
     }
 
     /** 小组件刷新节流：每 5 秒最多一次，避免频繁跨进程刷新，同时同步 remainingSec 到数据库 */

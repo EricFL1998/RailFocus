@@ -12,7 +12,7 @@ import org.json.JSONObject
  */
 data class StationFact(
     val city: String,
-    val category: String, // 历史、地理、文化、美食、铁路、地标、趣闻、风物、漫游
+    val category: String, // 历史、地理、人文、美食、铁路、地标、趣闻、风物、漫游
     val content: String,
     val title: String = ""
 )
@@ -59,7 +59,7 @@ object StationFactsProvider {
     private val categoryMap = linkedMapOf(
         "history" to "历史",
         "geography" to "地理",
-        "culture" to "文化",
+        "culture" to "人文",
         "food" to "美食",
         "railway" to "铁路",
         "landmark" to "地标",

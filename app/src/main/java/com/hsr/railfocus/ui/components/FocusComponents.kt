@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -142,7 +143,8 @@ fun StationInfoCard(
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Clip,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, stepSize = 2.sp)
                         )
                     }
 
@@ -270,7 +272,8 @@ fun StationLabel(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Clip,
+            autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, stepSize = 2.sp)
         )
     }
 }
@@ -573,7 +576,7 @@ fun CompletionOverlay(
                             "美食" -> Icons.Default.Restaurant
                             "历史" -> Icons.Default.HistoryEdu
                             "地理" -> Icons.Default.Public
-                            "文化" -> Icons.Default.Palette
+                            "人文" -> Icons.Default.Palette
                             "铁路" -> Icons.Default.Train
                             "地标" -> Icons.Default.Place
                             "趣闻" -> Icons.Default.AutoAwesome
@@ -599,20 +602,12 @@ fun CompletionOverlay(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    val factTitle = stationFact.title.ifBlank { "${city}${stationFact.category}" }
                                     Text(
-                                        text = factTitle,
+                                        text = stationFact.category,
                                         style = MaterialTheme.typography.labelLarge,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Black
                                     )
-                                    if (stationFact.title.isNotBlank() && stationFact.category.isNotBlank()) {
-                                        Text(
-                                            text = stationFact.category,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                                        )
-                                    }
                                     Text(
                                         text = stationFact.content,
                                         style = MaterialTheme.typography.bodyMedium,

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.BottomSheetDefaults
@@ -447,6 +448,68 @@ private fun FrequentFlyerCard(
     }
 }
 
+/** 比例尺阶梯：总里程越大，可解锁的参考尺度越大 */
+private data class DistanceScale(val thresholdKm: Double, val formatRes: Int)
+
+/** 解锁提前量：达到下一级门槛的 0.75 倍即开始显示下一级，数值落在 0.75~1.3 的顺眼区间 */
+private const val UNLOCK_RATIO = 0.75
+
+private val DISTANCE_SCALES = listOf(
+    DistanceScale(1318.0, R.string.data_distance_equiv),   // 京沪高铁 N 趟
+    DistanceScale(2298.0, R.string.scale_jingguang),       // 京广高铁 N 趟
+    DistanceScale(6300.0, R.string.scale_yangtze),         // 长江 N 倍
+    DistanceScale(21196.0, R.string.scale_greatwall),      // 长城 N 倍
+    DistanceScale(40075.0, R.string.scale_equator),        // 绕地球赤道 N 圈
+    DistanceScale(139820.0, R.string.scale_jupiter),       // 木星直径 N 倍
+    DistanceScale(384400.0, R.string.scale_moon),          // 地月距离 N 倍
+    DistanceScale(1392700.0, R.string.scale_sundiameter),  // 太阳直径 N 倍
+    DistanceScale(6900000.0, R.string.scale_parker),      // 帕克探测器近日点 N 倍
+    DistanceScale(38000000.0, R.string.scale_venus),       // 金星到地球 N 倍
+    DistanceScale(54600000.0, R.string.scale_mars),        // 火星到地球 N 倍
+    DistanceScale(77000000.0, R.string.scale_mercury),     // 水星到地球 N 倍
+)
+
+/**
+ * 总里程换算：按阶梯显示当前已解锁的比例尺。
+ * 默认展示最新解锁的一级；点一下在已解锁的几级之间切换固定；每解锁新的一级都会自动刷新为最新。
+ */
+@Composable
+private fun DistanceScaleEquivalence(totalDistanceKm: Double) {
+    if (totalDistanceKm <= 0) return
+    val unlocked = DISTANCE_SCALES.filter { totalDistanceKm >= it.thresholdKm * UNLOCK_RATIO }
+        .ifEmpty { DISTANCE_SCALES.take(1) }
+
+    var selectedIndex by remember { mutableStateOf(unlocked.size - 1) }
+    LaunchedEffect(unlocked.size) {
+        selectedIndex = unlocked.size - 1
+    }
+    val index = selectedIndex.coerceIn(0, unlocked.size - 1)
+    val scale = unlocked[index]
+    val times = totalDistanceKm / scale.thresholdKm
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.clickable {
+            if (unlocked.size > 1) selectedIndex = (index + 1) % unlocked.size
+        },
+    ) {
+        Text(
+            text = stringResource(scale.formatRes, String.format(Locale.CHINA, "%.1f", times)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+        )
+        if (unlocked.size > 1) {
+            Icon(
+                imageVector = Icons.Default.SwapHoriz,
+                contentDescription = stringResource(R.string.action_switch_scale),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f),
+                modifier = Modifier.size(12.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun TotalDistanceCard(
     totalDistanceKm: Double,
@@ -495,18 +558,7 @@ private fun TotalDistanceCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
-                Text(
-                    text = stringResource(R.string.data_journey_summary, totalJourneys, averageFocusMinutes),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                )
-                if (totalDistanceKm > 0) {
-                    Text(
-                        text = stringResource(R.string.data_distance_equiv, String.format(Locale.CHINA, "%.1f", totalDistanceKm / 1318.0)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    )
-                }
+                                DistanceScaleEquivalence(totalDistanceKm = totalDistanceKm)
             }
 
             // 总旅程视图入口：进入只展示已完成旅程线路的地图
@@ -1521,7 +1573,7 @@ private fun albumFactIcon(category: String): ImageVector = when (category) {
     "美食" -> Icons.Default.Restaurant
     "历史" -> Icons.Default.HistoryEdu
     "地理" -> Icons.Default.Public
-    "文化" -> Icons.Default.Palette
+    "人文" -> Icons.Default.Palette
     "铁路" -> Icons.Default.Train
     "地标" -> Icons.Default.Place
     "趣闻" -> Icons.Default.AutoAwesome
