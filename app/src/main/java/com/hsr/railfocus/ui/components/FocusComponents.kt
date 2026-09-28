@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -166,14 +167,14 @@ fun StationInfoCard(
                     ) {
                         Text(
                             text = stringResource(R.string.focus_next_station_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                         Text(
                             text = nextStation?.name ?: "--",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -223,7 +224,9 @@ fun StationInfoCard(
                                     fontWeight = FontWeight.Black,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                     maxLines = 1,
-                                    softWrap = false
+                                    softWrap = false,
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.width(84.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(2.dp))
@@ -257,8 +260,10 @@ fun StationLabel(
     modifier: Modifier = Modifier,
     alignRight: Boolean = false
 ) {
+    val density = LocalDensity.current
+    var widthPx by remember { mutableStateOf(0) }
     Column(
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { widthPx = it.width },
         horizontalAlignment = if (alignRight) Alignment.End else Alignment.Start
     ) {
         Text(
@@ -266,14 +271,25 @@ fun StationLabel(
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
         )
+        // 以三字站名为基准字号：更少的字不放大，更多的字才缩小；宽度固定后不再跳动
+        val referenceChars = name.length.coerceAtLeast(3)
+        val defaultSize = MaterialTheme.typography.headlineSmall.fontSize
+        val nameSize = if (widthPx > 0) {
+            val widthDp = with(density) { widthPx.toDp() }
+            val perChar = widthDp / referenceChars
+            val fit = with(density) { perChar.toSp() } * 0.94f
+            if (fit.value < defaultSize.value) fit else defaultSize
+        } else {
+            defaultSize
+        }
         Text(
             text = name,
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineSmall.copy(fontSize = nameSize),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
-            overflow = TextOverflow.Clip,
-            autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, stepSize = 2.sp)
+            softWrap = false,
+            overflow = TextOverflow.Clip
         )
     }
 }
