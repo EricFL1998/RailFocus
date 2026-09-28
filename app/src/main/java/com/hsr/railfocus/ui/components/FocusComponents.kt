@@ -109,7 +109,7 @@ fun StationInfoCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1.4f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Surface(
@@ -137,7 +137,7 @@ fun StationInfoCard(
                             }
                         }
                         Text(
-                            text = stringResource(R.string.focus_arrived_at_station, currentStation?.name ?: "--"),
+                            text = currentStation?.name ?: "--",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -156,13 +156,26 @@ fun StationInfoCard(
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                     )
 
-                    // 右侧：下一站
-                    StationLabel(
-                        title = stringResource(R.string.focus_next_station_label),
-                        name = nextStation?.name ?: "--",
+                    // 右侧：下一站（弱化，非核心）
+                    Column(
                         modifier = Modifier.weight(1f),
-                        alignRight = true
-                    )
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.focus_next_station_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                        )
+                        Text(
+                            text = nextStation?.name ?: "--",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             } else {
                 Row(
