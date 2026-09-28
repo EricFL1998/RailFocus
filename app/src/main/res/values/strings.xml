@@ -140,11 +140,6 @@
     <string name="album_no_unlocked">该城还没有解锁的知识，再完成一次前往这里的旅程吧</string>
     <string name="album_unlocked_count">已解锁 %1$d 条城市知识</string>
     <string name="widget_heading_to">前往 %1$s</string>
-    <string name="data_milestones_title">里程成就</string>
-    <string name="data_milestones_summary">%1$d/%2$d 个成就已达成</string>
-    <string name="data_milestone_km">累计 %1$d 公里</string>
-    <string name="data_milestone_reached">已达成</string>
-    <string name="data_milestone_remaining">还差 %1$d 公里</string>
     <string name="ticket_share">分享车票</string>
 
     <!-- Train Series Labels -->

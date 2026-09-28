@@ -200,10 +200,6 @@ fun DataContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        MilestonesSection(
-            totalDistanceKm = stats.totalDistanceKm,
-            modifier = Modifier.fillMaxWidth(),
-        )
 
         Spacer(
             modifier = Modifier
@@ -1351,89 +1347,6 @@ private fun ProvinceChip(
     }
 }
 
-@Composable
-private fun MilestonesSection(
-    totalDistanceKm: Double,
-    modifier: Modifier = Modifier,
-) {
-    val milestones = listOf(1000.0, 5000.0, 10000.0, 40075.0)
-    val reachedCount = milestones.count { totalDistanceKm >= it }
-
-    ExpandableSection(
-        title = stringResource(R.string.data_milestones_title),
-        summary = stringResource(R.string.data_milestones_summary, reachedCount, milestones.size),
-        icon = Icons.Default.EmojiEvents,
-        modifier = modifier,
-    ) {
-        milestones.forEach { threshold ->
-            val reached = totalDistanceKm >= threshold
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = if (reached) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
-                    },
-                )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.data_milestone_km, threshold.toLong()),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                            color = if (reached) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                            },
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (reached) {
-                                stringResource(R.string.data_milestone_reached)
-                            } else {
-                                stringResource(R.string.data_milestone_remaining, (threshold - totalDistanceKm).roundToInt())
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1,
-                            color = if (reached) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                            },
-                        )
-                    }
-                    LinearProgressIndicator(
-                        progress = { (totalDistanceKm / threshold).toFloat().coerceIn(0f, 1f) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(CircleShape),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
 
 /** 卡片内的空状态占位：图标 + 说明文字 */
 @Composable
