@@ -75,7 +75,8 @@ class MainActivity : ComponentActivity() {
 
                         // 全局动态天气动画浮层（下雨、下雪、雷雨、沙尘等，完全透传触摸交互）
                         // 在设置、专注场景、总旅程视图自动退隐，回到主页与旅程页面时平滑恢复
-                        val isNight = com.hsr.railfocus.domain.model.isNightNow() || darkTheme
+                        // 仅以真实物理时钟（19:00~06:00）作为夜间气象动效触发源，不将应用深色外观偏好与自然昼夜混淆
+                        val isNight = com.hsr.railfocus.domain.model.isNightNow()
                         WeatherAnimationOverlay(
                             condition = if (!isWeatherExcluded) activeWeatherCondition else null,
                             isNight = isNight,
