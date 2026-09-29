@@ -78,13 +78,13 @@ fun WeatherAnimationOverlay(
                 }
 
                 WeatherCondition.MODERATE_RAIN -> {
-                    // 中雨：标准连绵雨势，雨丝长度适中，水花常态激起
+                    // 中雨：标准连绵密集雨势，斜织雨幕，明显地表涟漪水花
                     CinematicRainCanvas(
-                        densityMultiplier = 1.05f,
-                        speedMultiplier = 1.10f,
-                        lengthMultiplier = 1.0f,
+                        densityMultiplier = 1.45f,
+                        speedMultiplier = 1.15f,
+                        lengthMultiplier = 1.05f,
                         strokeMultiplier = 1.0f,
-                        splashRate = 0.25f,
+                        splashRate = 0.32f,
                         atmosphereAlpha = 0.18f,
                         windBaseSlope = -0.16f,
                         windVariation = 0.04f,
@@ -92,13 +92,13 @@ fun WeatherAnimationOverlay(
                 }
 
                 WeatherCondition.HEAVY_RAIN -> {
-                    // 大雨：倾盆长雨丝，急促密集，较强水花，天幕明显加深
+                    // 大雨：倾盆急促密集雨帘，厚重降雨，较强水花，天幕明显加深
                     CinematicRainCanvas(
-                        densityMultiplier = 1.45f,
-                        speedMultiplier = 1.30f,
+                        densityMultiplier = 2.10f,
+                        speedMultiplier = 1.35f,
                         lengthMultiplier = 1.35f,
-                        strokeMultiplier = 1.25f,
-                        splashRate = 0.40f,
+                        strokeMultiplier = 1.20f,
+                        splashRate = 0.50f,
                         atmosphereAlpha = 0.26f,
                         windBaseSlope = -0.20f,
                         windVariation = 0.06f,
@@ -106,13 +106,13 @@ fun WeatherAnimationOverlay(
                 }
 
                 WeatherCondition.STORM_RAIN -> {
-                    // 暴雨：密织长雨帘，极速俯冲，大风偏斜，低气压沉暗天幕
+                    // 暴雨：密织狂暴长雨帘，极速俯冲，大风偏斜，低气压沉暗天幕
                     CinematicRainCanvas(
-                        densityMultiplier = 1.85f,
-                        speedMultiplier = 1.50f,
+                        densityMultiplier = 2.75f,
+                        speedMultiplier = 1.55f,
                         lengthMultiplier = 1.65f,
-                        strokeMultiplier = 1.40f,
-                        splashRate = 0.55f,
+                        strokeMultiplier = 1.35f,
+                        splashRate = 0.65f,
                         atmosphereAlpha = 0.36f,
                         windBaseSlope = -0.25f,
                         windVariation = 0.08f,
@@ -122,11 +122,11 @@ fun WeatherAnimationOverlay(
                 WeatherCondition.THUNDER_SHOWER -> {
                     // 雷阵雨：大暴雨雨势 + 偶发天际双闪电光
                     CinematicRainCanvas(
-                        densityMultiplier = 1.65f,
-                        speedMultiplier = 1.40f,
+                        densityMultiplier = 2.35f,
+                        speedMultiplier = 1.45f,
                         lengthMultiplier = 1.50f,
-                        strokeMultiplier = 1.35f,
-                        splashRate = 0.50f,
+                        strokeMultiplier = 1.30f,
+                        splashRate = 0.55f,
                         atmosphereAlpha = 0.30f,
                         windBaseSlope = -0.22f,
                         windVariation = 0.07f,
