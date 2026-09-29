@@ -180,8 +180,7 @@ fun WeatherAnimationOverlay(
                     )
                 }
 
-                WeatherCondition.MODERATE_FOG,
-                WeatherCondition.FOG -> {
+                WeatherCondition.MODERATE_FOG -> {
                     // 大雾：平流山野雾带，沉静飘逸
                     CinematicMistCanvas(
                         ribbonAlpha = 0.40f,
@@ -208,8 +207,7 @@ fun WeatherAnimationOverlay(
                     )
                 }
 
-                WeatherCondition.MODERATE_HAZE,
-                WeatherCondition.HAZE -> {
+                WeatherCondition.MODERATE_HAZE -> {
                     // 中度霾：温润灰黄烟霭漫游
                     CinematicMistCanvas(
                         ribbonAlpha = 0.38f,

@@ -81,8 +81,12 @@ class WeatherConditionTest {
         assertTrue(WeatherCondition.STORM_SNOW.isPrecipitation)
         assertFalse(WeatherCondition.CLEAR.isPrecipitation)
         assertFalse(WeatherCondition.CLOUDY.isPrecipitation)
-        assertFalse(WeatherCondition.FOG.isPrecipitation)
-        assertFalse(WeatherCondition.HAZE.isPrecipitation)
+        assertFalse(WeatherCondition.LIGHT_FOG.isPrecipitation)
+        assertFalse(WeatherCondition.MODERATE_FOG.isPrecipitation)
+        assertFalse(WeatherCondition.HEAVY_FOG.isPrecipitation)
+        assertFalse(WeatherCondition.LIGHT_HAZE.isPrecipitation)
+        assertFalse(WeatherCondition.MODERATE_HAZE.isPrecipitation)
+        assertFalse(WeatherCondition.HEAVY_HAZE.isPrecipitation)
     }
 
     @Test
