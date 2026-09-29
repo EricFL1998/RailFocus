@@ -25,8 +25,14 @@ enum class WeatherCondition(val label: String, val isPrecipitation: Boolean) {
     MODERATE_SNOW("中雪", true),
     HEAVY_SNOW("大雪", true),
     STORM_SNOW("暴雪", true),
-    FOG("雾", false),
-    HAZE("霾", false),
+    LIGHT_FOG("轻雾", false),
+    MODERATE_FOG("大雾", false),
+    HEAVY_FOG("浓雾", false),
+    LIGHT_HAZE("轻度霾", false),
+    MODERATE_HAZE("中度霾", false),
+    HEAVY_HAZE("重度霾", false),
+    FOG("大雾", false),
+    HAZE("中度霾", false),
     DUST("浮尘", false),
     SAND("沙尘", false),
     UNKNOWN("未知", false);
@@ -50,10 +56,14 @@ enum class WeatherCondition(val label: String, val isPrecipitation: Boolean) {
             15, 28 -> MODERATE_SNOW
             16 -> HEAVY_SNOW
             17 -> STORM_SNOW
-            18, 32, 33, 34, 49, 57, 58 -> FOG
+            18 -> LIGHT_FOG
+            57 -> MODERATE_FOG
+            32, 33, 34, 49, 58 -> HEAVY_FOG
+            53 -> LIGHT_HAZE
+            54 -> MODERATE_HAZE
+            55, 56 -> HEAVY_HAZE
             20, 30, 31 -> SAND
             29 -> DUST
-            in 53..56 -> HAZE
             else -> UNKNOWN
         }
 
@@ -152,7 +162,10 @@ val WeatherCondition.emoji: String
         WeatherCondition.SLEET -> "🌨️"
         WeatherCondition.LIGHT_SNOW, WeatherCondition.MODERATE_SNOW,
         WeatherCondition.HEAVY_SNOW, WeatherCondition.STORM_SNOW -> "❄️"
-        WeatherCondition.FOG, WeatherCondition.HAZE -> "🌫️"
+        WeatherCondition.LIGHT_FOG, WeatherCondition.MODERATE_FOG,
+        WeatherCondition.HEAVY_FOG, WeatherCondition.FOG,
+        WeatherCondition.LIGHT_HAZE, WeatherCondition.MODERATE_HAZE,
+        WeatherCondition.HEAVY_HAZE, WeatherCondition.HAZE -> "🌫️"
         WeatherCondition.DUST, WeatherCondition.SAND -> "🌪️"
         WeatherCondition.UNKNOWN -> "🌤️"
     }
@@ -170,7 +183,10 @@ fun weatherConditionIcon(condition: WeatherCondition): ImageVector = when (condi
     WeatherCondition.SLEET, WeatherCondition.LIGHT_SNOW,
     WeatherCondition.MODERATE_SNOW, WeatherCondition.HEAVY_SNOW,
     WeatherCondition.STORM_SNOW -> Icons.Default.AcUnit
-    WeatherCondition.FOG -> Icons.Default.CloudQueue
-    WeatherCondition.HAZE, WeatherCondition.DUST, WeatherCondition.SAND -> Icons.Default.Air
+    WeatherCondition.LIGHT_FOG, WeatherCondition.MODERATE_FOG,
+    WeatherCondition.HEAVY_FOG, WeatherCondition.FOG -> Icons.Default.CloudQueue
+    WeatherCondition.LIGHT_HAZE, WeatherCondition.MODERATE_HAZE,
+    WeatherCondition.HEAVY_HAZE, WeatherCondition.HAZE,
+    WeatherCondition.DUST, WeatherCondition.SAND -> Icons.Default.Air
     WeatherCondition.UNKNOWN -> Icons.Default.WbSunny
 }

@@ -171,9 +171,60 @@ fun WeatherAnimationOverlay(
                     CinematicSnowCanvas(flakeMultiplier = 0.6f, speedMultiplier = 0.85f)
                 }
 
-                WeatherCondition.FOG,
+                WeatherCondition.LIGHT_FOG -> {
+                    // 轻雾：淡雅空灵山岚薄雾，通透轻盈
+                    CinematicMistCanvas(
+                        ribbonAlpha = 0.22f,
+                        ambientAlpha = 0.06f,
+                        tintColor = Color(0xFFECEFF1),
+                    )
+                }
+
+                WeatherCondition.MODERATE_FOG,
+                WeatherCondition.FOG -> {
+                    // 大雾：平流山野雾带，沉静飘逸
+                    CinematicMistCanvas(
+                        ribbonAlpha = 0.40f,
+                        ambientAlpha = 0.14f,
+                        tintColor = Color(0xFFECEFF1),
+                    )
+                }
+
+                WeatherCondition.HEAVY_FOG -> {
+                    // 浓雾：厚重山原平流雾海，苍茫沉凝
+                    CinematicMistCanvas(
+                        ribbonAlpha = 0.58f,
+                        ambientAlpha = 0.22f,
+                        tintColor = Color(0xFFCFD8DC),
+                    )
+                }
+
+                WeatherCondition.LIGHT_HAZE -> {
+                    // 轻度霾：微干燥浮空薄霭
+                    CinematicMistCanvas(
+                        ribbonAlpha = 0.22f,
+                        ambientAlpha = 0.08f,
+                        tintColor = Color(0xFFEFEBE9),
+                    )
+                }
+
+                WeatherCondition.MODERATE_HAZE,
                 WeatherCondition.HAZE -> {
-                    CinematicMistCanvas()
+                    // 中度霾：温润灰黄烟霭漫游
+                    CinematicMistCanvas(
+                        ribbonAlpha = 0.38f,
+                        ambientAlpha = 0.16f,
+                        tintColor = Color(0xFFD7CCC8),
+                    )
+                }
+
+                WeatherCondition.HEAVY_HAZE -> {
+                    // 重度霾：厚重浮尘低气压沉暮
+                    CinematicMistCanvas(
+                        ribbonAlpha = 0.55f,
+                        ambientAlpha = 0.25f,
+                        tintColor = Color(0xFFBCAAA4),
+                    )
                 }
 
                 WeatherCondition.DUST,
@@ -1176,7 +1227,11 @@ private fun DrawScope.drawOvercastCloudCluster(
  * 多道横向绵延、边缘无限衰减的柔美雾汽在平原与山野间轻盈游走，呈现空灵写意的高铁旅程意境。
  */
 @Composable
-private fun CinematicMistCanvas() {
+private fun CinematicMistCanvas(
+    ribbonAlpha: Float = 0.35f,
+    ambientAlpha: Float = 0.12f,
+    tintColor: Color = Color(0xFFECEFF1),
+) {
     var frameTicker by remember { mutableLongStateOf(0L) }
     var timeSeconds by remember { mutableFloatStateOf(0f) }
 
@@ -1206,12 +1261,13 @@ private fun CinematicMistCanvas() {
 
         // 1. 全局轻柔薄雾微光晕层（轻透呼吸感，完全无色块边缘）
         val breath = (sin(timeSeconds * 0.4f) + 1f) * 0.5f
+        val currentAmbient = (ambientAlpha * (0.85f + breath * 0.30f)).coerceIn(0f, 0.4f)
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xFFECEFF1).copy(alpha = 0.16f + breath * 0.04f),
-                    Color(0xFFCFD8DC).copy(alpha = 0.10f + breath * 0.02f),
-                    Color(0xFFECEFF1).copy(alpha = 0.04f),
+                    tintColor.copy(alpha = currentAmbient),
+                    tintColor.copy(alpha = currentAmbient * 0.65f),
+                    tintColor.copy(alpha = currentAmbient * 0.20f),
                     Color.Transparent,
                 ),
                 startY = 0f,
@@ -1227,7 +1283,8 @@ private fun CinematicMistCanvas() {
             centerY = 130f * density,
             width = w * 1.8f,
             height = 130f * density,
-            alpha = 0.35f,
+            alpha = ribbonAlpha * 0.90f,
+            tintColor = tintColor,
             time = timeSeconds,
         )
 
@@ -1237,7 +1294,8 @@ private fun CinematicMistCanvas() {
             centerY = 260f * density,
             width = w * 2.0f,
             height = 160f * density,
-            alpha = 0.40f,
+            alpha = ribbonAlpha,
+            tintColor = tintColor,
             time = timeSeconds + 8f,
         )
 
@@ -1247,7 +1305,8 @@ private fun CinematicMistCanvas() {
             centerY = 420f * density,
             width = w * 1.6f,
             height = 140f * density,
-            alpha = 0.32f,
+            alpha = ribbonAlpha * 0.85f,
+            tintColor = tintColor,
             time = timeSeconds + 16f,
         )
     }
@@ -1263,6 +1322,7 @@ private fun DrawScope.drawMistRibbon(
     width: Float,
     height: Float,
     alpha: Float,
+    tintColor: Color,
     time: Float,
 ) {
     if (alpha <= 0.005f) return
@@ -1278,8 +1338,8 @@ private fun DrawScope.drawMistRibbon(
             brush = Brush.radialGradient(
                 0.0f to Color.White.copy(alpha = alpha),
                 0.35f to Color(0xFFF5F9FA).copy(alpha = alpha * 0.75f),
-                0.65f to Color(0xFFECEFF1).copy(alpha = alpha * 0.35f),
-                0.88f to Color(0xFFCFD8DC).copy(alpha = alpha * 0.08f),
+                0.65f to tintColor.copy(alpha = alpha * 0.35f),
+                0.88f to tintColor.copy(alpha = alpha * 0.08f),
                 1.0f to Color.Transparent,
                 center = Offset(centerX, actualY),
                 radius = height * 0.65f,

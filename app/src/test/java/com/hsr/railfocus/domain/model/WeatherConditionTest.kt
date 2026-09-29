@@ -50,17 +50,18 @@ class WeatherConditionTest {
 
     @Test
     fun fogHazeDustSand_mapping() {
-        assertEquals(WeatherCondition.FOG, WeatherCondition.fromCnCode(18))
-        assertEquals(WeatherCondition.FOG, WeatherCondition.fromCnCode(32))
-        assertEquals(WeatherCondition.FOG, WeatherCondition.fromCnCode(57))
-        assertEquals(WeatherCondition.FOG, WeatherCondition.fromCnCode(58))
+        assertEquals(WeatherCondition.LIGHT_FOG, WeatherCondition.fromCnCode(18))
+        assertEquals(WeatherCondition.HEAVY_FOG, WeatherCondition.fromCnCode(32))
+        assertEquals(WeatherCondition.MODERATE_FOG, WeatherCondition.fromCnCode(57))
+        assertEquals(WeatherCondition.HEAVY_FOG, WeatherCondition.fromCnCode(58))
         assertEquals(WeatherCondition.DUST, WeatherCondition.fromCnCode(29))
         assertEquals(WeatherCondition.SAND, WeatherCondition.fromCnCode(20))
         assertEquals(WeatherCondition.SAND, WeatherCondition.fromCnCode(30))
         assertEquals(WeatherCondition.SAND, WeatherCondition.fromCnCode(31))
-        for (code in 53..56) {
-            assertEquals(WeatherCondition.HAZE, WeatherCondition.fromCnCode(code))
-        }
+        assertEquals(WeatherCondition.LIGHT_HAZE, WeatherCondition.fromCnCode(53))
+        assertEquals(WeatherCondition.MODERATE_HAZE, WeatherCondition.fromCnCode(54))
+        assertEquals(WeatherCondition.HEAVY_HAZE, WeatherCondition.fromCnCode(55))
+        assertEquals(WeatherCondition.HEAVY_HAZE, WeatherCondition.fromCnCode(56))
     }
 
     @Test
