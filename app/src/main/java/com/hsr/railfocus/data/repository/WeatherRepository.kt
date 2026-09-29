@@ -8,6 +8,7 @@ import com.hsr.railfocus.util.GeoGrid
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
@@ -31,6 +32,7 @@ import kotlinx.coroutines.sync.withPermit
 class WeatherRepository @Inject constructor(
     private val api: XiaomiWeatherApi,
     private val weatherDataAccess: WeatherDataAccess,
+    private val preferencesRepository: com.hsr.railfocus.data.preferences.UserPreferencesRepository? = null,
 ) {
     companion object {
         /** 天气缓存有效期：30 分钟 */
@@ -62,6 +64,9 @@ class WeatherRepository @Inject constructor(
         longitude: Double,
         forceRefresh: Boolean = false,
     ): WeatherInfo? {
+        if (preferencesRepository?.weatherDisplayEnabled?.first() == false) {
+            return null
+        }
         val gridKey = GeoGrid.keyOf(latitude, longitude)
         val now = nowProvider()
 
@@ -91,6 +96,9 @@ class WeatherRepository @Inject constructor(
      * 单个地点失败不影响其他地点，也不抛出异常。
      */
     suspend fun prefetch(points: List<Pair<Double, Double>>) {
+        if (preferencesRepository?.weatherDisplayEnabled?.first() == false) {
+            return
+        }
         val now = nowProvider()
         val targets = points
             .distinctBy { GeoGrid.keyOf(it.first, it.second) }

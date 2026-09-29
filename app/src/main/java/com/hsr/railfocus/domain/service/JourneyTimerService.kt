@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,6 +37,7 @@ class JourneyTimerService @Inject constructor(
     private val cityTransitionTracker: CityTransitionTracker? = null,
     private val weatherRepository: WeatherRepository? = null,
     private val weatherManager: WeatherManager? = null,
+    private val preferencesRepository: com.hsr.railfocus.data.preferences.UserPreferencesRepository? = null,
 ) {
 
     sealed class TimerState {
@@ -264,7 +266,8 @@ class JourneyTimerService @Inject constructor(
             // 动态前瞻探测：当快要跨越城市/县边界时（前方 10km），预先拉取并缓存前方新城市/县的天气
             val startStation = currentProgress.currentSegmentStartStation
             val endStation = currentProgress.currentSegmentEndStation
-            if (startStation != null && endStation != null && cityTransitionTracker != null) {
+            val weatherEnabled = preferencesRepository?.weatherDisplayEnabled?.first() ?: true
+            if (weatherEnabled && startStation != null && endStation != null && cityTransitionTracker != null) {
                 val segTotalDist = currentProgress.currentSegmentTotalDistance.toDouble()
                 if (segTotalDist > 0) {
                     val curDist = currentProgress.distanceInCurrentSegment.toDouble()
@@ -320,6 +323,7 @@ class JourneyTimerService @Inject constructor(
                 // 当列车快到下一个地点时，后台静默拉取并缓存该地点的天气数据
                 weatherRepository?.let { repo ->
                     scope.launch {
+                        if (preferencesRepository?.weatherDisplayEnabled?.first() == false) return@launch
                         val weather = repo.getWeather(upcomingStation.lat, upcomingStation.lng)
                         if (weather != null) {
                             weatherManager?.setJourneyWeather(weather)

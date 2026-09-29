@@ -294,9 +294,16 @@ class HomeViewModel @Inject constructor(
     private fun observeWeatherPreference() {
         viewModelScope.launch {
             preferencesRepository.weatherDisplayEnabled.collect { enabled ->
-                _uiState.update { it.copy(weatherDisplayEnabled = enabled) }
-                if (enabled && _uiState.value.weatherInfo == null) {
+                _uiState.update {
+                    it.copy(
+                        weatherDisplayEnabled = enabled,
+                        weatherInfo = if (enabled) it.weatherInfo else null
+                    )
+                }
+                if (enabled) {
                     refreshCurrentStationWeather(_uiState.value.currentStation)
+                } else {
+                    weatherManager.setHomeWeather(null)
                 }
             }
         }
@@ -305,9 +312,16 @@ class HomeViewModel @Inject constructor(
     private fun refreshCurrentStationWeather(station: Station) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
+                if (!preferencesRepository.weatherDisplayEnabled.first()) {
+                    _uiState.update { it.copy(weatherInfo = null) }
+                    weatherManager.setHomeWeather(null)
+                    return@launch
+                }
                 val weather = weatherRepository.getWeather(station.lat, station.lng)
-                _uiState.update { it.copy(weatherInfo = weather) }
-                weatherManager.setHomeWeather(weather)
+                if (preferencesRepository.weatherDisplayEnabled.first()) {
+                    _uiState.update { it.copy(weatherInfo = weather) }
+                    weatherManager.setHomeWeather(weather)
+                }
             }
         }
     }
