@@ -50,7 +50,7 @@ enum class WeatherCondition(val label: String, val isPrecipitation: Boolean) {
             15, 28 -> MODERATE_SNOW
             16 -> HEAVY_SNOW
             17 -> STORM_SNOW
-            18, 32, 57, 58 -> FOG
+            18, 32, 33, 34, 49, 57, 58 -> FOG
             20, 30, 31 -> SAND
             29 -> DUST
             in 53..56 -> HAZE
@@ -94,7 +94,13 @@ enum class WeatherCondition(val label: String, val isPrecipitation: Boolean) {
             30 -> "扬沙"
             31 -> "强沙尘暴"
             32 -> "浓雾"
-            in 53..56 -> "霾"
+            33 -> "强浓雾"
+            34 -> "强浓雾"
+            49 -> "强浓雾"
+            53 -> "轻度霾"
+            54 -> "中度霾"
+            55 -> "重度霾"
+            56 -> "严重霾"
             57 -> "大雾"
             58 -> "特强浓雾"
             else -> "多云"
