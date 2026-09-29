@@ -1023,6 +1023,11 @@ private fun CinematicCloudyCanvas() {
 /*                     5. 阴天：沉稳厚重低气压天幕系统 (☁️ OVERCAST)          */
 /* ========================================================================= */
 
+/**
+ * 阴天渲染：摒弃生硬贴顶的灰色闭合多边形，
+ * 采用全屏均匀平滑的冷调漫射天光 + 舒缓流动的高空厚层层积云，
+ * 营造沉静、真实、通透的阴天气压感，绝不产生污浊灰色块或突兀分界线。
+ */
 @Composable
 private fun CinematicOvercastAtmosphereCanvas() {
     var frameTicker by remember { mutableLongStateOf(0L) }
@@ -1050,99 +1055,126 @@ private fun CinematicOvercastAtmosphereCanvas() {
         val h = size.height
         if (w <= 0 || h <= 0) return@Canvas
 
-        // 阴天三层连续起伏冷调云幕（无任何离散几何椭圆或圆圈）
-        drawOrganicCloudCanopy(
-            width = w,
-            baseHeight = 180.dp.toPx(),
+        val density = density
+
+        // 1. 全局阴天冷光氛围漫射层（平滑垂直渐变，无任何横切线条或突兀分界）
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF37474F).copy(alpha = 0.12f),
+                    Color(0xFF455A64).copy(alpha = 0.06f),
+                    Color.Transparent,
+                ),
+                startY = 0f,
+                endY = h * 0.70f,
+            ),
+            size = size,
+        )
+
+        // 2. 悬浮式冷调层积云群（银灰与珍珠白柔和羽化交叠，零硬边）
+        // 上空主厚云层
+        val c1Width = w * 1.15f
+        val c1Period = w + c1Width + 180f * density
+        val c1X = ((timeSeconds * 8.5f * density + c1Period * 0.25f) % c1Period) - c1Width * 0.5f
+        drawOvercastCloudCluster(
+            centerX = c1X,
+            centerY = 110f * density,
+            baseWidth = c1Width,
+            baseHeight = 150f * density,
+            alpha = 0.52f,
             time = timeSeconds,
-            speed = 0.14f,
-            freq1 = 2.0f, amp1 = 35.dp.toPx(),
-            freq2 = 4.5f, amp2 = 20.dp.toPx(),
-            freq3 = 8.0f, amp3 = 10.dp.toPx(),
-            gradientColors = listOf(
-                Color(0x35455A64),
-                Color(0x1E546E7A),
-                Color.Transparent,
-            ),
         )
 
-        drawOrganicCloudCanopy(
-            width = w,
-            baseHeight = 310.dp.toPx(),
+        // 中空厚积云层
+        val c2Width = w * 1.05f
+        val c2Period = w + c2Width + 200f * density
+        val c2X = (((timeSeconds * 11.5f * density) + c2Period * 0.68f) % c2Period) - c2Width * 0.5f
+        drawOvercastCloudCluster(
+            centerX = c2X,
+            centerY = 220f * density,
+            baseWidth = c2Width,
+            baseHeight = 140f * density,
+            alpha = 0.46f,
             time = timeSeconds + 15f,
-            speed = 0.22f,
-            freq1 = 1.6f, amp1 = 50.dp.toPx(),
-            freq2 = 3.8f, amp2 = 26.dp.toPx(),
-            freq3 = 6.8f, amp3 = 14.dp.toPx(),
-            gradientColors = listOf(
-                Color(0x2E546E7A),
-                Color(0x1678909C),
-                Color.Transparent,
-            ),
         )
 
-        drawOrganicCloudCanopy(
-            width = w,
-            baseHeight = 440.dp.toPx(),
-            time = timeSeconds + 35f,
-            speed = 0.30f,
-            freq1 = 1.3f, amp1 = 60.dp.toPx(),
-            freq2 = 3.0f, amp2 = 32.dp.toPx(),
-            freq3 = 5.5f, amp3 = 16.dp.toPx(),
-            gradientColors = listOf(
-                Color(0x24607D8B),
-                Color(0x0E90A4AE),
-                Color.Transparent,
-            ),
+        // 低空平缓游云
+        val c3Width = w * 0.90f
+        val c3Period = w + c3Width + 150f * density
+        val c3X = (((timeSeconds * 14.0f * density) + c3Period * 0.05f) % c3Period) - c3Width * 0.5f
+        drawOvercastCloudCluster(
+            centerX = c3X,
+            centerY = 350f * density,
+            baseWidth = c3Width,
+            baseHeight = 110f * density,
+            alpha = 0.38f,
+            time = timeSeconds + 28f,
         )
     }
 }
 
 /**
- * 绘制连绵起伏、有机流动的连续云幕（闭合波形曲线填充 + 自然垂直渐变衰减）。
- * 绝不使用任何生硬椭圆、硬边圆圈或拼凑气泡，呈现自然天幕流云。
+ * 绘制阴天专用的冷感银白羽化积云团。
  */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawOrganicCloudCanopy(
-    width: Float,
+private fun DrawScope.drawOvercastCloudCluster(
+    centerX: Float,
+    centerY: Float,
+    baseWidth: Float,
     baseHeight: Float,
+    alpha: Float,
     time: Float,
-    speed: Float,
-    freq1: Float, amp1: Float,
-    freq2: Float, amp2: Float,
-    freq3: Float, amp3: Float,
-    gradientColors: List<Color>,
 ) {
-    val stepPx = 20f
-    val path = Path().apply {
-        moveTo(-stepPx, 0f)
-        var x = -stepPx
-        while (x <= width + stepPx * 2) {
-            val nx = x / width
-            val wave = sin(nx * freq1 + time * speed) * amp1 +
-                cos(nx * freq2 - time * speed * 1.25f) * amp2 +
-                sin(nx * freq3 + time * speed * 0.75f) * amp3
-            val y = baseHeight + wave
-            lineTo(x, y)
-            x += stepPx
-        }
-        lineTo(width + stepPx * 2, 0f)
-        close()
-    }
+    if (alpha <= 0.005f) return
 
-    drawPath(
-        path = path,
-        brush = Brush.verticalGradient(
-            colors = gradientColors,
-            startY = 0f,
-            endY = baseHeight + amp1 + amp2,
-        ),
+    val breathe = sin(time * 0.30f) * 0.05f
+    val puffWidth = baseWidth * (1f + breathe)
+    val puffHeight = baseHeight * (1f - breathe * 0.3f)
+
+    val puffs = listOf(
+        CloudPuffDef(0.0f, 0.0f, 0.42f, 2.7f, 0.95f, 1.0f),
+        CloudPuffDef(-0.16f, -0.20f, 0.34f, 2.3f, 1.05f, 0.90f),
+        CloudPuffDef(0.18f, -0.18f, 0.36f, 2.4f, 1.00f, 0.92f),
+        CloudPuffDef(-0.35f, 0.02f, 0.30f, 2.8f, 0.85f, 0.78f),
+        CloudPuffDef(0.38f, 0.04f, 0.32f, 2.9f, 0.80f, 0.75f),
+        CloudPuffDef(-0.10f, 0.16f, 0.34f, 3.1f, 0.75f, 0.82f),
+        CloudPuffDef(0.14f, 0.14f, 0.32f, 3.0f, 0.75f, 0.80f),
     )
+
+    for (p in puffs) {
+        val px = centerX + p.dx * puffWidth
+        val py = centerY + p.dy * puffHeight
+        val radius = puffHeight * p.radiusFraction
+        val currentAlpha = (alpha * p.alphaFactor).coerceIn(0f, 1f)
+
+        withTransform({
+            scale(scaleX = p.scaleX, scaleY = p.scaleY, pivot = Offset(px, py))
+        }) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0.0f to Color(0xFFECEFF1).copy(alpha = currentAlpha),
+                    0.38f to Color(0xFFCFD8DC).copy(alpha = currentAlpha * 0.80f),
+                    0.68f to Color(0xFFB0BEC5).copy(alpha = currentAlpha * 0.38f),
+                    0.88f to Color(0xFFECEFF1).copy(alpha = currentAlpha * 0.10f),
+                    1.0f to Color.Transparent,
+                    center = Offset(px, py),
+                    radius = radius,
+                ),
+                radius = radius,
+                center = Offset(px, py),
+            )
+        }
+    }
 }
 
 /* ========================================================================= */
-/*                     6. 雾霾与薄雾层次系统 (🌫️ FOG / HAZE)                 */
+/*                     6. 雾霾与大雾层次系统 (🌫️ FOG / HAZE)                 */
 /* ========================================================================= */
 
+/**
+ * 大雾/平流雾渲染系统：
+ * 彻底移除生硬移动的大灰圆，改用全屏高阶羽化平流雾缕（Advection Fog Ribbon）。
+ * 多道横向绵延、边缘无限衰减的柔美雾汽在平原与山野间轻盈游走，呈现空灵写意的高铁旅程意境。
+ */
 @Composable
 private fun CinematicMistCanvas() {
     var frameTicker by remember { mutableLongStateOf(0L) }
@@ -1170,27 +1202,90 @@ private fun CinematicMistCanvas() {
         val h = size.height
         if (w <= 0 || h <= 0) return@Canvas
 
-        val drift1 = (timeSeconds * 16f) % (w * 2f)
-        val drift2 = (timeSeconds * 10f) % (w * 2f)
+        val density = density
 
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color(0xFFCFD8DC).copy(alpha = 0.16f), Color.Transparent),
-                center = Offset(drift1 - w * 0.4f, h * 0.38f),
-                radius = w * 0.75f,
+        // 1. 全局轻柔薄雾微光晕层（轻透呼吸感，完全无色块边缘）
+        val breath = (sin(timeSeconds * 0.4f) + 1f) * 0.5f
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFECEFF1).copy(alpha = 0.16f + breath * 0.04f),
+                    Color(0xFFCFD8DC).copy(alpha = 0.10f + breath * 0.02f),
+                    Color(0xFFECEFF1).copy(alpha = 0.04f),
+                    Color.Transparent,
+                ),
+                startY = 0f,
+                endY = h * 0.85f,
             ),
-            radius = w * 0.75f,
-            center = Offset(drift1 - w * 0.4f, h * 0.38f),
+            size = size,
         )
 
+        // 2. 飘逸平流山岚雾带（横向拉伸极宽，四向渐隐，绝无几何圆形或硬边）
+        // 雾缕 1：上空游走轻岚
+        drawMistRibbon(
+            centerX = (((timeSeconds * 12f * density) + w * 0.3f) % (w * 2.2f)) - w * 0.6f,
+            centerY = 130f * density,
+            width = w * 1.8f,
+            height = 130f * density,
+            alpha = 0.35f,
+            time = timeSeconds,
+        )
+
+        // 雾缕 2：中景掠过原野的深远晨雾
+        drawMistRibbon(
+            centerX = (((timeSeconds * 8.5f * density) + w * 1.2f) % (w * 2.2f)) - w * 0.6f,
+            centerY = 260f * density,
+            width = w * 2.0f,
+            height = 160f * density,
+            alpha = 0.40f,
+            time = timeSeconds + 8f,
+        )
+
+        // 雾缕 3：低空贴地平流雾（在主按钮上方虚虚弥漫）
+        drawMistRibbon(
+            centerX = (((timeSeconds * 15f * density) + w * 0.8f) % (w * 2.2f)) - w * 0.6f,
+            centerY = 420f * density,
+            width = w * 1.6f,
+            height = 140f * density,
+            alpha = 0.32f,
+            time = timeSeconds + 16f,
+        )
+    }
+}
+
+/**
+ * 绘制单道超柔横向羽化平流雾缕（Advection Fog Ribbon）。
+ * 四方完全平滑衰减，无任何硬边缘或球体圆圈感。
+ */
+private fun DrawScope.drawMistRibbon(
+    centerX: Float,
+    centerY: Float,
+    width: Float,
+    height: Float,
+    alpha: Float,
+    time: Float,
+) {
+    if (alpha <= 0.005f) return
+
+    val wave = sin(time * 0.45f) * height * 0.10f
+    val actualY = centerY + wave
+
+    // 采用横向极大倍率拉伸的径向柔光带，边缘完全淡入透明
+    withTransform({
+        scale(scaleX = 3.6f, scaleY = 0.85f, pivot = Offset(centerX, actualY))
+    }) {
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0xFFB0BEC5).copy(alpha = 0.13f), Color.Transparent),
-                center = Offset(w * 1.4f - drift2, h * 0.46f),
-                radius = w * 0.85f,
+                0.0f to Color.White.copy(alpha = alpha),
+                0.35f to Color(0xFFF5F9FA).copy(alpha = alpha * 0.75f),
+                0.65f to Color(0xFFECEFF1).copy(alpha = alpha * 0.35f),
+                0.88f to Color(0xFFCFD8DC).copy(alpha = alpha * 0.08f),
+                1.0f to Color.Transparent,
+                center = Offset(centerX, actualY),
+                radius = height * 0.65f,
             ),
-            radius = w * 0.85f,
-            center = Offset(w * 1.4f - drift2, h * 0.46f),
+            radius = height * 0.65f,
+            center = Offset(centerX, actualY),
         )
     }
 }
