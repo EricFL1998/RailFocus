@@ -199,6 +199,9 @@ private class RainDrop(
     var strokeWidth: Float,
     var alpha: Float,
     var layer: Int,
+    var wobbleSpeed: Float = 0f,
+    var wobbleRadius: Float = 0f,
+    var wobblePhase: Float = 0f,
 )
 
 private class RainSplash(
@@ -230,47 +233,40 @@ private fun CinematicRainCanvas(
     val totalDrops = bgCount + midCount + fgCount
 
     val drops = remember(densityMultiplier) {
-        val rnd = Random(101)
+        val rnd = Random(System.currentTimeMillis())
         val list = ArrayList<RainDrop>(totalDrops)
-        repeat(bgCount) {
-            list.add(
-                RainDrop(
-                    x = rnd.nextFloat() * 1600f,
-                    y = rnd.nextFloat() * 2800f,
-                    length = (rnd.nextFloat() * 12f + 12f) * lengthMultiplier * density.density,
-                    speed = (rnd.nextFloat() * 700f + 1200f) * speedMultiplier * density.density,
-                    strokeWidth = 0.75f * strokeMultiplier * density.density,
-                    alpha = rnd.nextFloat() * 0.18f + 0.25f,
-                    layer = 0,
-                )
+        var dropIndex = 0
+
+        fun createDrop(layer: Int, lengthRange: ClosedFloatingPointRange<Float>, speedRange: ClosedFloatingPointRange<Float>, strokeWidth: Float, alphaBase: Float, alphaSpread: Float): RainDrop {
+            // 分层离散化打散 X 坐标，加入充足抖动，杜绝雨滴集中在同一直线上
+            val stratX = (dropIndex.toFloat() / totalDrops.coerceAtLeast(1)) * 2000f - 200f
+            val jitterX = (rnd.nextFloat() - 0.5f) * 160f
+            dropIndex++
+
+            return RainDrop(
+                x = stratX + jitterX,
+                y = rnd.nextFloat() * 3200f - 400f,
+                length = (rnd.nextFloat() * (lengthRange.endInclusive - lengthRange.start) + lengthRange.start) * lengthMultiplier * density.density,
+                speed = (rnd.nextFloat() * (speedRange.endInclusive - speedRange.start) + speedRange.start) * speedMultiplier * density.density,
+                strokeWidth = strokeWidth * strokeMultiplier * density.density,
+                alpha = rnd.nextFloat() * alphaSpread + alphaBase,
+                layer = layer,
+                wobbleSpeed = rnd.nextFloat() * 2.2f + 1.2f,
+                wobbleRadius = (rnd.nextFloat() * 3.5f + 1.5f) * density.density,
+                wobblePhase = rnd.nextFloat() * 6.28f,
             )
+        }
+
+        repeat(bgCount) {
+            list.add(createDrop(0, 12f..24f, 700f..1400f, 0.75f, 0.25f, 0.18f))
         }
         repeat(midCount) {
-            list.add(
-                RainDrop(
-                    x = rnd.nextFloat() * 1600f,
-                    y = rnd.nextFloat() * 2800f,
-                    length = (rnd.nextFloat() * 18f + 22f) * lengthMultiplier * density.density,
-                    speed = (rnd.nextFloat() * 800f + 1800f) * speedMultiplier * density.density,
-                    strokeWidth = 1.15f * strokeMultiplier * density.density,
-                    alpha = rnd.nextFloat() * 0.25f + 0.45f,
-                    layer = 1,
-                )
-            )
+            list.add(createDrop(1, 18f..38f, 800f..1900f, 1.15f, 0.42f, 0.25f))
         }
         repeat(fgCount) {
-            list.add(
-                RainDrop(
-                    x = rnd.nextFloat() * 1600f,
-                    y = rnd.nextFloat() * 2800f,
-                    length = (rnd.nextFloat() * 24f + 36f) * lengthMultiplier * density.density,
-                    speed = (rnd.nextFloat() * 900f + 2400f) * speedMultiplier * density.density,
-                    strokeWidth = 1.65f * strokeMultiplier * density.density,
-                    alpha = rnd.nextFloat() * 0.2f + 0.65f,
-                    layer = 2,
-                )
-            )
+            list.add(createDrop(2, 26f..54f, 900f..2500f, 1.65f, 0.60f, 0.25f))
         }
+        list.shuffle(rnd)
         list
     }
 
@@ -399,8 +395,10 @@ private fun CinematicRainCanvas(
         val rainHeadColor = Color(0xFFE1F5FE)
         val rainTailColor = Color(0xFF81D4FA)
 
+        val windDriftSpan = (h * kotlin.math.abs(windSlope)).coerceAtLeast(200f)
+
         for (d in drops) {
-            if (d.y > h) {
+            if (d.y > h + d.length) {
                 if (d.layer >= 1 && Random.nextFloat() < splashRate) {
                     val freeSplash = splashes.firstOrNull { !it.active }
                     if (freeSplash != null) {
@@ -412,16 +410,28 @@ private fun CinematicRainCanvas(
                         freeSplash.active = true
                     }
                 }
-                d.y = -d.length - Random.nextFloat() * 80f
-                d.x = Random.nextFloat() * (w + 240f)
-            }
-            if (d.x < -120f) {
-                d.x = w + 80f
+                // 纵向深度错落重置（覆盖 -d.length 到上方 400dp），完全杜绝雨滴结队成排下落
+                d.y = -d.length - Random.nextFloat() * (h * 0.35f + 120f)
+                // 横向随机覆盖全风道缓冲区，打散初始位置
+                d.x = Random.nextFloat() * (w + windDriftSpan * 1.5f) - windDriftSpan * 0.35f
             }
 
+            // 飘出左右边界时，彻底随机重置坐标，避免固定在某个单一 X 点集中出现
+            if (d.x < -windDriftSpan * 0.5f - 80f) {
+                d.x = w + Random.nextFloat() * (windDriftSpan + 100f)
+                d.y = Random.nextFloat() * (h * 0.7f) - d.length
+            } else if (d.x > w + windDriftSpan + 120f) {
+                d.x = -Random.nextFloat() * 100f
+                d.y = Random.nextFloat() * (h * 0.7f) - d.length
+            }
+
+            // 引入微气流湍流横向微漂移，彻底打破生硬的直线排列视错觉
+            val wobbleX = sin(globalTimeSeconds * d.wobbleSpeed + d.wobblePhase) * d.wobbleRadius
+            val currentDropX = d.x + wobbleX
+
             val slantX = d.length * windSlope
-            val startOffset = Offset(d.x - slantX, d.y - d.length)
-            val endOffset = Offset(d.x, d.y)
+            val startOffset = Offset(currentDropX - slantX, d.y - d.length)
+            val endOffset = Offset(currentDropX, d.y)
 
             // 1. 底层深水蓝/暗影雨线（确保在白色与米黄浅色底图上极其清晰鲜明）
             drawLine(
