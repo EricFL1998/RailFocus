@@ -2,6 +2,9 @@ package com.hsr.railfocus.domain.model
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.vectorResource
+import com.hsr.railfocus.R
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -167,10 +170,23 @@ val WeatherCondition.emoji: String
     }
 
 /**
- * 天气现象到 Material 图标的映射（用于首页位置卡片等界面展示）
+ * 判断当前是否处于晚间（19:00 ~ 06:00），用于自动切换夜间气象图标与月光天幕
  */
-fun weatherConditionIcon(condition: WeatherCondition): ImageVector = when (condition) {
-    WeatherCondition.CLEAR -> Icons.Default.WbSunny
+fun isNightNow(): Boolean {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return hour >= 19 || hour < 6
+}
+
+/**
+ * 天气现象到 Material 图标的映射（用于首页位置卡片等界面展示）
+ * 夜晚晴天自动转换为月亮图标，更符合时间与夜色氛围。
+ */
+@Composable
+fun weatherConditionIcon(
+    condition: WeatherCondition,
+    isNight: Boolean = isNightNow(),
+): ImageVector = when (condition) {
+    WeatherCondition.CLEAR -> if (isNight) ImageVector.vectorResource(R.drawable.ic_weather_moon) else Icons.Default.WbSunny
     WeatherCondition.CLOUDY -> Icons.Default.WbCloudy
     WeatherCondition.OVERCAST -> Icons.Default.Cloud
     WeatherCondition.LIGHT_RAIN, WeatherCondition.MODERATE_RAIN,

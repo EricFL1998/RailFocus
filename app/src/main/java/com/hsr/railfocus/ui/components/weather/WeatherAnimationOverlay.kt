@@ -40,6 +40,7 @@ import kotlin.random.Random
 fun WeatherAnimationOverlay(
     condition: WeatherCondition?,
     modifier: Modifier = Modifier,
+    isNight: Boolean = com.hsr.railfocus.domain.model.isNightNow(),
 ) {
     val isVisible = condition != null && condition != WeatherCondition.UNKNOWN
 
@@ -52,11 +53,15 @@ fun WeatherAnimationOverlay(
         Box(modifier = Modifier.fillMaxSize()) {
             when (condition) {
                 WeatherCondition.CLEAR -> {
-                    CinematicSunbeamCanvas()
+                    if (isNight) {
+                        CinematicMoonlightCanvas()
+                    } else {
+                        CinematicSunbeamCanvas()
+                    }
                 }
 
                 WeatherCondition.CLOUDY -> {
-                    CinematicCloudyCanvas()
+                    CinematicCloudyCanvas(isNight = isNight)
                 }
 
                 WeatherCondition.OVERCAST -> {
@@ -832,6 +837,124 @@ private fun CinematicSunbeamCanvas() {
 }
 
 /* ========================================================================= */
+/*                     3.1 晴夜明月与静谧月晕系统 (🌙 CLEAR NIGHT)            */
+/* ========================================================================= */
+
+/**
+ * 晴朗夜空：清冷明月、静谧月晕光华与微弱繁星系统。
+ * 在夜晚或深色模式下自动生效，呈现柔美皎洁的夜空月光，绝无突兀强烈的日间太阳强光。
+ */
+@Composable
+private fun CinematicMoonlightCanvas() {
+    var frameTicker by remember { mutableLongStateOf(0L) }
+    var timeSeconds by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        var lastFrameNanos = 0L
+        while (isActive) {
+            withFrameNanos { nowNanos ->
+                if (lastFrameNanos == 0L) {
+                    lastFrameNanos = nowNanos
+                    return@withFrameNanos
+                }
+                val delta = ((nowNanos - lastFrameNanos) / 1_000_000_000f).coerceIn(0.001f, 0.05f)
+                lastFrameNanos = nowNanos
+                timeSeconds += delta
+                frameTicker = nowNanos
+            }
+        }
+    }
+
+    val density = LocalDensity.current
+    val stars = remember {
+        val rnd = Random(707)
+        List(24) {
+            Offset(rnd.nextFloat(), rnd.nextFloat()) to (rnd.nextFloat() * 2.2f + 1.2f)
+        }
+    }
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        if (frameTicker < 0) return@Canvas
+        val w = size.width
+        val h = size.height
+        if (w <= 0 || h <= 0) return@Canvas
+
+        val moonOrigin = Offset(w * 0.86f, h * 0.08f)
+        val breath = (sin(timeSeconds * 0.45f) + 1f) * 0.5f
+
+        // 1. 夜空静谧微弱繁星（疏落有致，轻柔微闪）
+        for (i in stars.indices) {
+            val (ratio, blinkSpeed) = stars[i]
+            val sx = ratio.x * w
+            val sy = ratio.y * (h * 0.65f)
+            val distToMoon = (Offset(sx, sy) - moonOrigin).getDistance()
+            if (distToMoon > w * 0.28f) {
+                val starAlpha = (0.18f + sin(timeSeconds * blinkSpeed + i * 1.3f) * 0.35f).coerceIn(0f, 0.60f)
+                drawCircle(
+                    color = Color(0xFFE0F7FA).copy(alpha = starAlpha),
+                    radius = (0.75f + (i % 3) * 0.35f) * density.density,
+                    center = Offset(sx, sy),
+                )
+            }
+        }
+
+        // 2. 月轮核心清辉与静谧月光水色（银蓝与皓白冷调）
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.50f + breath * 0.08f),
+                    Color(0xFFE0F7FA).copy(alpha = 0.30f + breath * 0.06f),
+                    Color(0xFF80DEEA).copy(alpha = 0.12f + breath * 0.03f),
+                    Color(0xFF283593).copy(alpha = 0.03f),
+                    Color.Transparent,
+                ),
+                center = moonOrigin,
+                radius = w * 0.52f,
+            ),
+            radius = w * 0.52f,
+            center = moonOrigin,
+        )
+
+        // 3. 静谧银辉月晕环（22° 柔和月晕光圈）
+        val moonHaloRadius = w * 0.34f + breath * 10f
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    Color(0xFFE0F7FA).copy(alpha = 0.07f + breath * 0.03f),
+                    Color(0xFF80DEEA).copy(alpha = 0.04f + breath * 0.02f),
+                    Color(0xFFB2EBF2).copy(alpha = 0.06f + breath * 0.02f),
+                    Color.Transparent,
+                ),
+                center = moonOrigin,
+                radius = moonHaloRadius + 14.dp.toPx(),
+            ),
+            radius = moonHaloRadius + 14.dp.toPx(),
+            center = moonOrigin,
+            style = Stroke(width = 12.dp.toPx()),
+        )
+
+        // 4. 清冷月光光学散焦光斑（轴线银青色冷调反光）
+        val screenCenter = Offset(w * 0.5f, h * 0.5f)
+        val flareVector = screenCenter - moonOrigin
+        val moonFlare1 = moonOrigin + flareVector * (0.38f + breath * 0.02f)
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color(0xFF80DEEA).copy(alpha = 0.09f),
+                    Color(0xFFE0F7FA).copy(alpha = 0.04f),
+                    Color.Transparent,
+                ),
+                center = moonFlare1,
+                radius = 28.dp.toPx(),
+            ),
+            radius = 28.dp.toPx(),
+            center = moonFlare1,
+        )
+    }
+}
+
+/* ========================================================================= */
 /*                     4. 多云：全景漫游纯白积云与破云天光系统 (⛅ CLOUDY)    */
 /* ========================================================================= */
 
@@ -857,6 +980,7 @@ private fun DrawScope.drawSoftCloudCluster(
     alpha: Float,
     time: Float,
     morphOffset: Float = 0f,
+    isNight: Boolean = false,
 ) {
     if (alpha <= 0.005f) return
 
@@ -906,7 +1030,7 @@ private fun DrawScope.drawSoftCloudCluster(
 }
 
 @Composable
-private fun CinematicCloudyCanvas() {
+private fun CinematicCloudyCanvas(isNight: Boolean = false) {
     var frameTicker by remember { mutableLongStateOf(0L) }
     var timeSeconds by remember { mutableFloatStateOf(0f) }
 
@@ -1007,6 +1131,7 @@ private fun CinematicCloudyCanvas() {
             alpha = 0.62f,
             time = timeSeconds,
             morphOffset = 0f,
+            isNight = isNight,
         )
 
         // 云群 2：中空横贯云带（穿行于城市指示标与地图腹地，非常显眼）
@@ -1022,6 +1147,7 @@ private fun CinematicCloudyCanvas() {
             alpha = 0.58f,
             time = timeSeconds + 12f,
             morphOffset = 2.4f,
+            isNight = isNight,
         )
 
         // 云群 3：低空飘拂积云（掠过中下部地表，形成完整的大气景深）
@@ -1037,6 +1163,7 @@ private fun CinematicCloudyCanvas() {
             alpha = 0.52f,
             time = timeSeconds + 20f,
             morphOffset = 4.1f,
+            isNight = isNight,
         )
 
         // 云群 4：下方近景羽状流云（轻快飘逸，靠近底部主按钮上方）
@@ -1052,6 +1179,7 @@ private fun CinematicCloudyCanvas() {
             alpha = 0.44f,
             time = timeSeconds + 32f,
             morphOffset = 1.6f,
+            isNight = isNight,
         )
 
         // 云群 5：高空轻灵游云（飘拂于顶部状态栏下方）
@@ -1067,6 +1195,7 @@ private fun CinematicCloudyCanvas() {
             alpha = 0.48f,
             time = timeSeconds + 8f,
             morphOffset = 3.3f,
+            isNight = isNight,
         )
     }
 }

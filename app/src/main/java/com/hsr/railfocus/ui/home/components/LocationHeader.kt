@@ -36,6 +36,7 @@ fun LocationHeader(
     stationName: String,
     weatherInfo: WeatherInfo? = null,
     weatherEnabled: Boolean = true,
+    isNight: Boolean = com.hsr.railfocus.domain.model.isNightNow(),
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -108,7 +109,7 @@ fun LocationHeader(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Icon(
-                        imageVector = weatherConditionIcon(weatherInfo.condition),
+                        imageVector = weatherConditionIcon(weatherInfo.condition, isNight = isNight),
                         contentDescription = weatherInfo.condition.label,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
