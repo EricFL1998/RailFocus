@@ -239,7 +239,7 @@ private fun CinematicRainCanvas(
                     y = rnd.nextFloat() * 2800f,
                     length = (rnd.nextFloat() * 12f + 12f) * lengthMultiplier * density.density,
                     speed = (rnd.nextFloat() * 700f + 1200f) * speedMultiplier * density.density,
-                    strokeWidth = 1.2f * strokeMultiplier * density.density,
+                    strokeWidth = 0.75f * strokeMultiplier * density.density,
                     alpha = rnd.nextFloat() * 0.18f + 0.25f,
                     layer = 0,
                 )
@@ -252,7 +252,7 @@ private fun CinematicRainCanvas(
                     y = rnd.nextFloat() * 2800f,
                     length = (rnd.nextFloat() * 18f + 22f) * lengthMultiplier * density.density,
                     speed = (rnd.nextFloat() * 800f + 1800f) * speedMultiplier * density.density,
-                    strokeWidth = 1.8f * strokeMultiplier * density.density,
+                    strokeWidth = 1.15f * strokeMultiplier * density.density,
                     alpha = rnd.nextFloat() * 0.25f + 0.45f,
                     layer = 1,
                 )
@@ -265,7 +265,7 @@ private fun CinematicRainCanvas(
                     y = rnd.nextFloat() * 2800f,
                     length = (rnd.nextFloat() * 24f + 36f) * lengthMultiplier * density.density,
                     speed = (rnd.nextFloat() * 900f + 2400f) * speedMultiplier * density.density,
-                    strokeWidth = 2.5f * strokeMultiplier * density.density,
+                    strokeWidth = 1.65f * strokeMultiplier * density.density,
                     alpha = rnd.nextFloat() * 0.2f + 0.65f,
                     layer = 2,
                 )
@@ -436,7 +436,7 @@ private fun CinematicRainCanvas(
                 ),
                 start = startOffset,
                 end = endOffset,
-                strokeWidth = d.strokeWidth * 1.35f,
+                strokeWidth = d.strokeWidth * 1.15f,
                 cap = StrokeCap.Round,
             )
 
