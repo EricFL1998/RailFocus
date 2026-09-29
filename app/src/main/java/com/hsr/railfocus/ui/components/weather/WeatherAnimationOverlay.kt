@@ -770,7 +770,7 @@ private fun CinematicSunbeamCanvas() {
 }
 
 /* ========================================================================= */
-/*                     4. 多云：纯白羽化浮云与破云晨光天幕 (⛅ CLOUDY)        */
+/*                     4. 多云：全景漫游纯白积云与破云天光系统 (⛅ CLOUDY)    */
 /* ========================================================================= */
 
 private data class CloudPuffDef(
@@ -783,8 +783,9 @@ private data class CloudPuffDef(
 )
 
 /**
- * 绘制单个纯白微暖、边缘完全超柔羽化的自然积云团。
- * 彻底剔除任何灰色色值与生硬边界，由多组横向拉伸、三阶平滑衰减的柔和微晶气团交叠而成。
+ * 绘制自然透光、轮廓清晰白皙的飘浮积云团。
+ * 彻底杜绝任何阴影灰与底层脏灰色值，采用纯白与日光金辉多重高斯羽化交叠，
+ * 呈现清晰分明的云朵造型，同时保持底图道路与卡片清晰可读。
  */
 private fun DrawScope.drawSoftCloudCluster(
     centerX: Float,
@@ -797,22 +798,23 @@ private fun DrawScope.drawSoftCloudCluster(
 ) {
     if (alpha <= 0.005f) return
 
-    val breathe = sin(time * 0.35f + morphOffset) * 0.06f
+    val breathe = sin(time * 0.45f + morphOffset) * 0.08f
     val puffWidth = baseWidth * (1f + breathe)
     val puffHeight = baseHeight * (1f - breathe * 0.4f)
 
     val puffs = listOf(
-        // 主核中心丰满云团
-        CloudPuffDef(0.0f, 0.0f, 0.42f, 2.6f, 0.95f, 1.0f),
-        // 顶部受光微凸起（纯白透光）
-        CloudPuffDef(-0.16f, -0.22f, 0.32f, 2.3f, 1.05f, 0.88f),
-        CloudPuffDef(0.18f, -0.20f, 0.34f, 2.4f, 1.00f, 0.92f),
+        // 主核中心饱满云团
+        CloudPuffDef(0.0f, 0.0f, 0.44f, 2.7f, 0.95f, 1.0f),
+        // 顶部翻滚云冠（承接暖阳微光，明朗白皙）
+        CloudPuffDef(-0.18f, -0.22f, 0.36f, 2.3f, 1.10f, 0.95f),
+        CloudPuffDef(0.16f, -0.20f, 0.38f, 2.4f, 1.05f, 0.98f),
+        CloudPuffDef(0.02f, -0.30f, 0.30f, 2.2f, 1.00f, 0.92f),
         // 侧翼自然延展云羽
-        CloudPuffDef(-0.36f, 0.04f, 0.28f, 2.7f, 0.85f, 0.72f),
-        CloudPuffDef(0.38f, 0.06f, 0.30f, 2.8f, 0.80f, 0.68f),
-        // 底部柔和凝结过渡基底
-        CloudPuffDef(-0.10f, 0.16f, 0.32f, 3.0f, 0.75f, 0.80f),
-        CloudPuffDef(0.14f, 0.14f, 0.30f, 2.9f, 0.75f, 0.75f),
+        CloudPuffDef(-0.36f, 0.02f, 0.32f, 2.8f, 0.85f, 0.82f),
+        CloudPuffDef(0.38f, 0.04f, 0.34f, 2.9f, 0.80f, 0.80f),
+        // 底部平缓凝结基底
+        CloudPuffDef(-0.10f, 0.16f, 0.36f, 3.1f, 0.75f, 0.88f),
+        CloudPuffDef(0.14f, 0.14f, 0.34f, 3.0f, 0.75f, 0.85f),
     )
 
     for (p in puffs) {
@@ -827,9 +829,9 @@ private fun DrawScope.drawSoftCloudCluster(
             drawCircle(
                 brush = Brush.radialGradient(
                     0.0f to Color.White.copy(alpha = currentAlpha),
-                    0.35f to Color(0xFFFFFDF9).copy(alpha = currentAlpha * 0.75f),
-                    0.65f to Color(0xFFF9FBFB).copy(alpha = currentAlpha * 0.35f),
-                    0.88f to Color(0xFFFFFFFF).copy(alpha = currentAlpha * 0.08f),
+                    0.38f to Color(0xFFFFFDF8).copy(alpha = currentAlpha * 0.90f),
+                    0.68f to Color(0xFFF9FBFB).copy(alpha = currentAlpha * 0.55f),
+                    0.86f to Color.White.copy(alpha = currentAlpha * 0.20f),
                     1.0f to Color.Transparent,
                     center = Offset(px, py),
                     radius = radius,
@@ -870,32 +872,32 @@ private fun CinematicCloudyCanvas() {
 
         val density = density
 
-        // 1. 右上天际破云温润金光与天幕光晕
+        // 1. 右上天际破云暖阳与天幕日晕
         val sunCenter = Offset(w * 0.88f, h * 0.07f)
         val breath = (sin(timeSeconds * 0.5f) + 1f) * 0.5f
 
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFFFFF9C4).copy(alpha = 0.28f + breath * 0.06f),
-                    Color(0xFFFFECB3).copy(alpha = 0.14f + breath * 0.04f),
-                    Color(0xFFFFE082).copy(alpha = 0.05f + breath * 0.02f),
+                    Color(0xFFFFF9C4).copy(alpha = 0.38f + breath * 0.10f),
+                    Color(0xFFFFECB3).copy(alpha = 0.20f + breath * 0.06f),
+                    Color(0xFFFFE082).copy(alpha = 0.08f + breath * 0.03f),
                     Color.Transparent,
                 ),
                 center = sunCenter,
-                radius = w * 0.65f,
+                radius = w * 0.72f,
             ),
-            radius = w * 0.65f,
+            radius = w * 0.72f,
             center = sunCenter,
         )
 
-        // 2. 破云斜射日光柱（柔和微光，透光自然）
-        val godRayAlpha = (0.07f + breath * 0.04f).coerceIn(0f, 0.15f)
+        // 2. 破云斜射透光光柱（明显而柔和的丁达尔天光）
+        val godRayAlpha = (0.16f + breath * 0.06f).coerceIn(0f, 0.25f)
         val rayPath1 = Path().apply {
-            moveTo(sunCenter.x - 30f * density, sunCenter.y)
-            lineTo(sunCenter.x + 15f * density, sunCenter.y)
-            lineTo(w * 0.10f, h * 0.52f)
-            lineTo(w * -0.05f, h * 0.48f)
+            moveTo(sunCenter.x - 45f * density, sunCenter.y)
+            lineTo(sunCenter.x + 25f * density, sunCenter.y)
+            lineTo(w * 0.15f, h * 0.58f)
+            lineTo(w * -0.05f, h * 0.54f)
             close()
         }
         drawPath(
@@ -906,73 +908,103 @@ private fun CinematicCloudyCanvas() {
                     Color.Transparent,
                 ),
                 start = sunCenter,
-                end = Offset(w * 0.05f, h * 0.50f),
+                end = Offset(w * 0.06f, h * 0.56f),
             ),
         )
 
         val rayPath2 = Path().apply {
-            moveTo(sunCenter.x - 10f * density, sunCenter.y + 10f * density)
-            lineTo(sunCenter.x + 35f * density, sunCenter.y + 10f * density)
-            lineTo(w * 0.48f, h * 0.60f)
-            lineTo(w * 0.35f, h * 0.58f)
+            moveTo(sunCenter.x - 15f * density, sunCenter.y + 10f * density)
+            lineTo(sunCenter.x + 50f * density, sunCenter.y + 10f * density)
+            lineTo(w * 0.58f, h * 0.68f)
+            lineTo(w * 0.42f, h * 0.65f)
             close()
         }
         drawPath(
             path = rayPath2,
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color(0xFFFFF9C4).copy(alpha = godRayAlpha * 0.85f),
+                    Color(0xFFFFF9C4).copy(alpha = godRayAlpha * 0.90f),
                     Color.Transparent,
                 ),
                 start = sunCenter,
-                end = Offset(w * 0.40f, h * 0.58f),
+                end = Offset(w * 0.50f, h * 0.66f),
             ),
         )
 
-        // 3. 独立悬浮、随风自左向右轻柔漫游的纯白积云群（无顶部死板贴顶遮盖，无任何灰度色块）
-        // 云群 1：高空轻灵羽云（漂移稍快，微暖轻盈）
-        val c1Width = w * 0.85f
-        val c1Period = w + c1Width + 160f * density
-        val c1X = ((timeSeconds * 14f * density + c1Period * 0.15f) % c1Period) - c1Width * 0.5f
-        val c1Y = 80f * density
+        // 3. 全局多层次自然漫游白云群（覆盖上空、中空与地面上方，全屏皆有生动可见的浮云漫步）
+        // 云群 1：上空主积云（清晰饱满，舒缓自左向右漂移）
+        val c1Width = w * 1.10f
+        val c1Period = w + c1Width + 180f * density
+        val c1X = ((timeSeconds * 18f * density + c1Period * 0.30f) % c1Period) - c1Width * 0.5f
+        val c1Y = 120f * density
         drawSoftCloudCluster(
             centerX = c1X,
             centerY = c1Y,
             baseWidth = c1Width,
-            baseHeight = 120f * density,
-            alpha = 0.32f,
+            baseHeight = 160f * density,
+            alpha = 0.62f,
             time = timeSeconds,
             morphOffset = 0f,
         )
 
-        // 云群 2：中空主积云团（舒缓漫步，丰满通透）
+        // 云群 2：中空横贯云带（穿行于城市指示标与地图腹地，非常显眼）
         val c2Width = w * 1.05f
         val c2Period = w + c2Width + 200f * density
-        val c2X = (((timeSeconds * 8.5f * density) + c2Period * 0.50f) % c2Period) - c2Width * 0.5f
-        val c2Y = 160f * density
+        val c2X = (((timeSeconds * 22f * density) + c2Period * 0.72f) % c2Period) - c2Width * 0.5f
+        val c2Y = 240f * density
         drawSoftCloudCluster(
             centerX = c2X,
             centerY = c2Y,
             baseWidth = c2Width,
-            baseHeight = 160f * density,
-            alpha = 0.40f,
-            time = timeSeconds + 10f,
-            morphOffset = 2.1f,
+            baseHeight = 150f * density,
+            alpha = 0.58f,
+            time = timeSeconds + 12f,
+            morphOffset = 2.4f,
         )
 
-        // 云群 3：低空飘拂薄缕（轻灵低飞，空灵微散）
-        val c3Width = w * 0.75f
-        val c3Period = w + c3Width + 140f * density
-        val c3X = (((timeSeconds * 18f * density) + c3Period * 0.85f) % c3Period) - c3Width * 0.5f
-        val c3Y = 240f * density
+        // 云群 3：低空飘拂积云（掠过中下部地表，形成完整的大气景深）
+        val c3Width = w * 0.95f
+        val c3Period = w + c3Width + 160f * density
+        val c3X = (((timeSeconds * 20f * density) + c3Period * 0.12f) % c3Period) - c3Width * 0.5f
+        val c3Y = 380f * density
         drawSoftCloudCluster(
             centerX = c3X,
             centerY = c3Y,
             baseWidth = c3Width,
-            baseHeight = 100f * density,
-            alpha = 0.25f,
-            time = timeSeconds + 24f,
-            morphOffset = 4.2f,
+            baseHeight = 135f * density,
+            alpha = 0.52f,
+            time = timeSeconds + 20f,
+            morphOffset = 4.1f,
+        )
+
+        // 云群 4：下方近景羽状流云（轻快飘逸，靠近底部主按钮上方）
+        val c4Width = w * 0.85f
+        val c4Period = w + c4Width + 140f * density
+        val c4X = (((timeSeconds * 26f * density) + c4Period * 0.50f) % c4Period) - c4Width * 0.5f
+        val c4Y = 520f * density
+        drawSoftCloudCluster(
+            centerX = c4X,
+            centerY = c4Y,
+            baseWidth = c4Width,
+            baseHeight = 115f * density,
+            alpha = 0.44f,
+            time = timeSeconds + 32f,
+            morphOffset = 1.6f,
+        )
+
+        // 云群 5：高空轻灵游云（飘拂于顶部状态栏下方）
+        val c5Width = w * 0.80f
+        val c5Period = w + c5Width + 130f * density
+        val c5X = (((timeSeconds * 24f * density) + c5Period * 0.88f) % c5Period) - c5Width * 0.5f
+        val c5Y = 55f * density
+        drawSoftCloudCluster(
+            centerX = c5X,
+            centerY = c5Y,
+            baseWidth = c5Width,
+            baseHeight = 95f * density,
+            alpha = 0.48f,
+            time = timeSeconds + 8f,
+            morphOffset = 3.3f,
         )
     }
 }
