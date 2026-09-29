@@ -45,8 +45,8 @@ fun WeatherAnimationOverlay(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(tween(800)),
-        exit = fadeOut(tween(800)),
+        enter = fadeIn(tween(450)),
+        exit = fadeOut(tween(240)),
         modifier = modifier,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {

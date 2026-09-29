@@ -14,7 +14,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.hsr.railfocus.ui.navigation.Screen
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
 import com.hsr.railfocus.domain.service.WeatherManager
 import com.hsr.railfocus.ui.components.weather.WeatherAnimationOverlay
@@ -50,9 +53,20 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val activeWeatherCondition by weatherManager.activeCondition.collectAsState()
+                    val navController = rememberNavController()
+                    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentDestination = currentBackStackEntry?.destination
+
+                    // 设置、专注场景管理、总旅程视图为独立管理或历史报表页面，不覆盖动态天气粒子
+                    val isWeatherExcluded = currentDestination?.let { dest ->
+                        dest.hasRoute<Screen.Settings>() ||
+                            dest.hasRoute<Screen.FocusTypeSettings>() ||
+                            dest.hasRoute<Screen.AllJourneys>() ||
+                            dest.hasRoute<Screen.Onboarding>()
+                    } ?: false
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         SharedTransitionLayout {
-                            val navController = rememberNavController()
                             RailFocusNavGraph(
                                 navController = navController,
                                 sharedTransitionScope = this
@@ -60,8 +74,9 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // 全局动态天气动画浮层（下雨、下雪、雷雨、沙尘等，完全透传触摸交互）
+                        // 在设置、专注场景、总旅程视图自动退隐，回到主页与旅程页面时平滑恢复
                         WeatherAnimationOverlay(
-                            condition = activeWeatherCondition,
+                            condition = if (!isWeatherExcluded) activeWeatherCondition else null,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
