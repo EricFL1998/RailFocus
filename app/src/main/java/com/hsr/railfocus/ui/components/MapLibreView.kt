@@ -291,6 +291,7 @@ fun MapLibreView(
             nativeCenterBoundsZoom.value = null
             map.setLatLngBoundsForCameraTarget(null)
         }
+        map.uiSettings.setFocalPoint(null)
     }
 
     // 主防线：按当前缩放刷新 native 中心约束；离开首页或瞬态退化时清除。
@@ -411,6 +412,7 @@ fun MapLibreView(
                     try {
                         syncNativeCenterBounds(map, map.zoom)
                         updateZoomPivot()
+                        isMovingToHome = false
                         // clampViewportToHomeBounds(map) -- disabled: was causing double-padding drift into the sea
                     } finally {
                         cameraEventGuard.value = false
@@ -523,16 +525,25 @@ fun MapLibreView(
 
         // 2. 核心相机指挥部：从路线返回主页时保持原来的效果，平滑归位到"我的位置"居中
         if (transitionProgress <= 0f) {
-            if (wasRouteActive && !isMovingToHome) {
+            val curPos = map.cameraPosition
+            val curTarget = curPos.target
+            val curZoom = curPos.zoom
+            val isOffCenter = curTarget == null ||
+                curTarget.distanceTo(homeTarget) > 100.0 ||
+                kotlin.math.abs(curZoom - homeZoom) > 0.1
+
+            if (wasRouteActive || isOffCenter) {
                 isMovingToHome = true
                 hasExitedFromRoute = true
                 releaseNativeCenterBounds(map)
+                map.uiSettings.setFocalPoint(null)
                 map.easeCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom), 500)
             }
             lastAnimatedPosition = homeTarget
             lastAnimatedZoom = homeZoom
             isMovingToRoute = false
             wasRouteActive = false
+            isMovingToHome = false
             if (cameraTargetBounds.isEmpty()) {
                 latchedBounds = emptyList()
                 latchedStations = emptyList()
@@ -579,6 +590,7 @@ fun MapLibreView(
 
             // 与进入方向对称：解除约束要在 ease 之前，避免被随后的相机回调打断。
             releaseNativeCenterBounds(map)
+            map.uiSettings.setFocalPoint(null)
 
             map.easeCamera(CameraUpdateFactory.newLatLngZoom(homeTarget, homeZoom), 500)
             previousTransitionProgress = transitionProgress

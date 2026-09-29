@@ -3,7 +3,6 @@ package com.hsr.railfocus.ui.settings
 import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -36,9 +35,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hsr.railfocus.R
+import com.hsr.railfocus.domain.model.PermissionType
 import kotlinx.coroutines.launch
 import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.ui.components.UpdateAvailableDialog
@@ -50,7 +50,7 @@ import com.hsr.railfocus.ui.components.UpdateAvailableDialog
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onNavigateToFocusTypeSettings: () -> Unit,
+    onNavigateToFocusTypeSettings: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -58,6 +58,7 @@ fun SettingsScreen(
     val ambientVolume by viewModel.ambientSoundVolume.collectAsState()
     val stationAnnouncementEnabled by viewModel.stationAnnouncementEnabled.collectAsState()
     val keepScreenOnEnabled by viewModel.keepScreenOnEnabled.collectAsState()
+    val weatherDisplayEnabled by viewModel.weatherDisplayEnabled.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     // 供启动器回调等非 Composable 上下文使用的文案模板，需在 composable 中提前求值
@@ -129,28 +130,55 @@ fun SettingsScreen(
         }
     }
 
-    var permissionCheckKey by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    val locationGranted = remember(permissionCheckKey) {
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-    val notificationGranted = if (Build.VERSION.SDK_INT >= 33) {
-        remember(permissionCheckKey) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) == PackageManager.PERMISSION_GRANTED
-        }
-    } else {
-        true
+    // 进入设置页时检查一次全部权限；可选权限未开启时逐项提醒
+    val permissionStates by viewModel.permissionStates.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.refreshPermissions()
     }
 
+    // 普通运行时权限（定位/通知/录音）请求结果
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
-        permissionCheckKey++
+        viewModel.refreshPermissions()
+    }
+
+    // 特殊权限（悬浮窗/勿扰/使用统计）从系统设置页返回后刷新
+    val specialPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) {
+        viewModel.refreshPermissions()
+    }
+
+    val onRequestPermission: (PermissionType) -> Unit = { type ->
+        when (type) {
+            PermissionType.LOCATION -> permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                )
+            )
+            PermissionType.NOTIFICATIONS -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
+                }
+            }
+            PermissionType.RECORD_AUDIO -> {
+                permissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
+            }
+            PermissionType.SYSTEM_ALERT_WINDOW -> specialPermissionLauncher.launch(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    "package:${context.packageName}".toUri(),
+                )
+            )
+            PermissionType.DO_NOT_DISTURB -> specialPermissionLauncher.launch(
+                Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            )
+            PermissionType.USAGE_STATS -> specialPermissionLauncher.launch(
+                Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+            )
+        }
     }
 
     Scaffold(
@@ -181,35 +209,17 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (!locationGranted || !notificationGranted) {
-                PermissionWarningSection(
-                    locationGranted = locationGranted,
-                    notificationGranted = notificationGranted,
-                    onRequestPermissions = {
-                        val permissions = mutableListOf<String>()
-                        if (!locationGranted) {
-                            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-                            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-                        }
-                        if (!notificationGranted && Build.VERSION.SDK_INT >= 33) {
-                            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                        
-                        if (permissions.isNotEmpty()) {
-                            permissionLauncher.launch(permissions.toTypedArray())
-                        } else if (!notificationGranted) {
-                            openAppSettings(context)
-                        }
-                    },
+            // 未授予的权限（含可选权限）逐项提醒
+            val missingPermissions = permissionStates.filter {
+                it.status != com.hsr.railfocus.domain.model.PermissionStatus.GRANTED
+            }
+            if (missingPermissions.isNotEmpty()) {
+                PermissionsReminderSection(
+                    missingPermissions = missingPermissions,
+                    onRequestPermission = onRequestPermission,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-
-            // 场景管理：独立、突出
-            FocusManagementSection(
-                onNavigate = onNavigateToFocusTypeSettings,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
 
             ThemeSection(
                 currentMode = uiState.themeMode,
@@ -217,23 +227,14 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
-            SoundToggleSection(
-                icon = Icons.Default.VolumeUp,
-                titleRes = R.string.settings_ambient_sound,
-                summaryRes = R.string.settings_ambient_sound_summary,
-                enabled = ambientEnabled,
-                onToggle = viewModel::setAmbientSoundEnabled,
-                volume = ambientVolume,
+            // 声音设置：车厢环境音与到站发车提示音合为一个面板
+            CombinedSoundSection(
+                ambientEnabled = ambientEnabled,
+                onAmbientToggle = viewModel::setAmbientSoundEnabled,
+                ambientVolume = ambientVolume,
                 onVolumeChange = viewModel::setAmbientSoundVolume,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-
-            SoundToggleSection(
-                icon = Icons.Default.Notifications,
-                titleRes = R.string.settings_station_announcement,
-                summaryRes = R.string.settings_station_announcement_summary,
-                enabled = stationAnnouncementEnabled,
-                onToggle = viewModel::setStationAnnouncementEnabled,
+                announcementEnabled = stationAnnouncementEnabled,
+                onAnnouncementToggle = viewModel::setStationAnnouncementEnabled,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
@@ -243,6 +244,15 @@ fun SettingsScreen(
                 summaryRes = R.string.settings_keep_screen_on_summary,
                 enabled = keepScreenOnEnabled,
                 onToggle = viewModel::setKeepScreenOnEnabled,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+
+            SoundToggleSection(
+                icon = Icons.Default.WbSunny,
+                titleRes = R.string.settings_weather_display,
+                summaryRes = R.string.settings_weather_display_summary,
+                enabled = weatherDisplayEnabled,
+                onToggle = viewModel::setWeatherDisplayEnabled,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
@@ -384,10 +394,9 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun PermissionWarningSection(
-    locationGranted: Boolean,
-    notificationGranted: Boolean,
-    onRequestPermissions: () -> Unit,
+private fun PermissionsReminderSection(
+    missingPermissions: List<com.hsr.railfocus.domain.model.PermissionState>,
+    onRequestPermission: (PermissionType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -396,35 +405,30 @@ private fun PermissionWarningSection(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
         ),
         shape = RoundedCornerShape(20.dp),
-        onClick = onRequestPermissions
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.GppMaybe,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(32.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.GppMaybe,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
                 Text(
-                    text = stringResource(R.string.settings_permissions),
+                    text = stringResource(R.string.settings_permissions_missing_hint),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
-                // buildList 是 inline 函数，lambda 内仍保留 Composable 上下文
-                val missing = buildList {
-                    if (!locationGranted) add(stringResource(R.string.settings_perm_location))
-                    if (!notificationGranted) add(stringResource(R.string.settings_perm_notification))
-                }.joinToString("、")
-                Text(
-                    text = stringResource(R.string.settings_permissions) + " " + missing,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+            }
+            // 每个未开启的权限单独一行，点按即发起对应的开启流程
+            missingPermissions.forEach { state ->
+                PermissionReminderRow(
+                    state = state,
+                    onClick = { onRequestPermission(state.type) },
                 )
             }
         }
@@ -432,61 +436,56 @@ private fun PermissionWarningSection(
 }
 
 @Composable
-private fun FocusManagementSection(
-    onNavigate: () -> Unit,
-    modifier: Modifier = Modifier
+private fun PermissionReminderRow(
+    state: com.hsr.railfocus.domain.model.PermissionState,
+    onClick: () -> Unit,
 ) {
-    Card(
-        modifier = modifier
+    Row(
+        modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onNavigate),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Brush,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_focus_management),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    text = stringResource(R.string.settings_scene_custom_desc),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                )
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+        Icon(
+            imageVector = permissionIcon(state.type.icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(22.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(state.type.titleRes),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Text(
+                text = stringResource(state.type.descriptionRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
             )
         }
+        Text(
+            text = stringResource(R.string.perm_state_grant),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.error
+        )
     }
+}
+
+/** PermissionType.icon 字符串名到 Material 图标的映射 */
+private fun permissionIcon(name: String): ImageVector = when (name) {
+    "notifications" -> Icons.Default.Notifications
+    "picture_in_picture" -> Icons.Default.PictureInPicture
+    "do_not_disturb" -> Icons.Default.DoNotDisturb
+    "bar_chart" -> Icons.Default.BarChart
+    "record_voice_over" -> Icons.Default.RecordVoiceOver
+    "location_on" -> Icons.Default.LocationOn
+    else -> Icons.Default.GppMaybe
 }
 
 @Composable
@@ -523,6 +522,141 @@ private fun ClearDataSection(
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+private fun CombinedSoundSection(
+    ambientEnabled: Boolean,
+    onAmbientToggle: (Boolean) -> Unit,
+    ambientVolume: Int,
+    onVolumeChange: (Int) -> Unit,
+    announcementEnabled: Boolean,
+    onAnnouncementToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 1. 车厢环境音
+            Row(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.VolumeUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_ambient_sound),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_ambient_sound_summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+                Switch(
+                    checked = ambientEnabled,
+                    onCheckedChange = onAmbientToggle,
+                )
+            }
+
+            // 环境音量滑块
+            AnimatedVisibility(
+                visible = ambientEnabled,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, bottom = 16.dp)
+                ) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                        thickness = 0.5.dp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_ambient_volume),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${ambientVolume}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = ambientVolume.toFloat(),
+                        onValueChange = { onVolumeChange(it.toInt()) },
+                        valueRange = 0f..100f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // 两个声音设置项之间的分割线
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                thickness = 0.5.dp,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            // 2. 到站发车提示音
+            Row(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_station_announcement),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_station_announcement_summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+                Switch(
+                    checked = announcementEnabled,
+                    onCheckedChange = onAnnouncementToggle,
+                )
+            }
         }
     }
 }
@@ -741,11 +875,4 @@ private fun SettingsClickableItem(
             modifier = Modifier.size(16.dp)
         )
     }
-}
-
-private fun openAppSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-        data = Uri.fromParts("package", context.packageName, null)
-    }
-    context.startActivity(intent)
 }

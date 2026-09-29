@@ -9,6 +9,7 @@ import com.hsr.railfocus.data.local.dataaccess.JournalDataAccess
 import com.hsr.railfocus.data.local.dataaccess.JourneyDataAccess
 import com.hsr.railfocus.data.local.dataaccess.StationDataAccess
 import com.hsr.railfocus.data.local.dataaccess.VisitedStationDataAccess
+import com.hsr.railfocus.data.local.dataaccess.WeatherDataAccess
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -66,5 +67,10 @@ object AppModule {
     @Provides
     fun provideJournalDataAccess(database: UserDatabase): JournalDataAccess {
         return database.journalDataAccess()
+    }
+
+    @Provides
+    fun provideWeatherDataAccess(database: UserDatabase): WeatherDataAccess {
+        return database.weatherDataAccess()
     }
 }

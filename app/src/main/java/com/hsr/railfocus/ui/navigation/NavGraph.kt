@@ -77,6 +77,7 @@ fun RailFocusNavGraph(
                 HomeScreen(
                     onSettingsClick = { navController.navigate(Screen.Settings) },
                     onAllJourneysClick = { navController.navigate(Screen.AllJourneys) },
+                    onFocusTypeSettingsClick = { navController.navigate(Screen.FocusTypeSettings) },
                     sharedTransitionScope = sharedTransitionScope
                 )
             }
@@ -123,7 +124,6 @@ fun RailFocusNavGraph(
             ) {
                 com.hsr.railfocus.ui.settings.SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onNavigateToFocusTypeSettings = { navController.navigate(Screen.FocusTypeSettings) }
                 )
             }
 

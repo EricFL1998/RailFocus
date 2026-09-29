@@ -65,6 +65,8 @@
     <string name="history_filter_sort">排序</string>
     <string name="history_filter_all_status">全部状态</string>
     <string name="history_filter_all_scenes">全部场景</string>
+    <string name="history_filter_empty_title">未找到匹配旅程</string>
+    <string name="history_filter_empty_desc">尝试切换其他筛选状态或场景</string>
     <string name="history_sort_latest">最新</string>
     <string name="history_sort_earliest">最早</string>
     <string name="history_sort_latest_first">最新优先</string>
@@ -207,6 +209,7 @@
     <string name="settings_no_custom_scenes">暂无自定义场景，点击下方按钮添加</string>
     <string name="checkin_stamp_date">★ 准予乘车 · 正点出行 ★</string>
     <string name="completion_stamp_arrived">正点到达</string>
+    <string name="completion_stamp_delayed">晚点到达</string>
     <string name="settings_permissions">权限设置</string>
 
     <!-- Notifications -->
@@ -311,6 +314,9 @@
     <string name="recall_msg_past">%1$d天前，你曾在这里停留。错过的风景，期待未来重逢。</string>
     <string name="settings_perm_location">位置</string>
     <string name="settings_perm_notification">通知</string>
+    <string name="settings_permissions_missing_hint">以下权限未开启，点按逐项开启</string>
+    <string name="settings_weather_display">天气显示</string>
+    <string name="settings_weather_display_summary">开关天气相关功能</string>
     <string name="settings_scene_custom_desc">自定义您的专注场景和图标</string>
     <string name="settings_section_appearance">外观</string>
     <string name="settings_export_failed_short">导出失败</string>

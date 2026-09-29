@@ -60,6 +60,7 @@ import org.maplibre.android.geometry.LatLng
 fun HomeScreen(
     onSettingsClick: () -> Unit,
     onAllJourneysClick: () -> Unit,
+    onFocusTypeSettingsClick: () -> Unit = {},
     sharedTransitionScope: SharedTransitionScope,
     viewModel: HomeViewModel = hiltViewModel(),
     focusSessionViewModel: FocusSessionViewModel = hiltViewModel(),
@@ -342,6 +343,10 @@ fun HomeScreen(
                     onSettingsClick = {
                         phase = HomePhase.None
                         onSettingsClick()
+                    },
+                    onFocusTypeSettingsClick = {
+                        phase = HomePhase.None
+                        onFocusTypeSettingsClick()
                     }
                 )
             }
@@ -468,6 +473,8 @@ private fun HomeState(
                 },
                 cityName = if (uiState.currentStationName == "南京") stringResource(R.string.home_city_placeholder) else uiState.currentStationName,
                 stationName = if (uiState.currentStationDisplayName == "南京南站") stringResource(R.string.home_location_placeholder) else uiState.currentStationDisplayName,
+                weatherInfo = uiState.weatherInfo,
+                weatherEnabled = uiState.weatherDisplayEnabled,
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(16.dp)

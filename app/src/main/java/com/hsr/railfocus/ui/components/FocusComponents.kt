@@ -537,6 +537,17 @@ fun CompletionOverlay(
                                 ),
                                 label = "arrival_stamp_scale"
                             )
+                            val isDelayed = delayMinutes > 0
+                            val stampColor = if (isDelayed) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
+                            val stampText = if (isDelayed) {
+                                stringResource(R.string.completion_stamp_delayed)
+                            } else {
+                                stringResource(R.string.completion_stamp_arrived)
+                            }
                             Surface(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
@@ -548,13 +559,13 @@ fun CompletionOverlay(
                                     },
                                 shape = RoundedCornerShape(8.dp),
                                 color = androidx.compose.ui.graphics.Color.Transparent,
-                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+                                border = BorderStroke(2.dp, stampColor),
                             ) {
                                 Text(
-                                    text = stringResource(R.string.completion_stamp_arrived),
+                                    text = stampText,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Black,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = stampColor,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                                 )
                             }

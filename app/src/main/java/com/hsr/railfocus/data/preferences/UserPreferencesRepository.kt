@@ -54,6 +54,7 @@ class UserPreferencesRepository @Inject constructor(
         val LAST_FOCUS_TIMESTAMP = longPreferencesKey("last_focus_timestamp")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val UNLOCKED_CITY_FACTS = stringSetPreferencesKey("unlocked_city_facts")
+        val WEATHER_DISPLAY_ENABLED = booleanPreferencesKey("weather_display_enabled")
     }
 
     /**
@@ -386,6 +387,19 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setPreferredLocationProvider(provider: String) {
         context.dataStore.edit { preferences ->
             preferences[Keys.PREFERRED_LOCATION_PROVIDER] = provider
+        }
+    }
+
+    /**
+     * 首页位置面板是否显示实时天气与气温
+     */
+    val weatherDisplayEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[Keys.WEATHER_DISPLAY_ENABLED] ?: true
+    }
+
+    suspend fun setWeatherDisplayEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.WEATHER_DISPLAY_ENABLED] = enabled
         }
     }
 }

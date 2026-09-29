@@ -6,9 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -42,9 +46,11 @@ import com.hsr.railfocus.ui.history.components.TrainTicketCard
 fun MyJourneysContent(
     uiState: HistoryUiState,
     onSettingsClick: () -> Unit,
+    onFocusTypeSettingsClick: () -> Unit,
     onStatusFilter: (JourneyStatus?) -> Unit,
     onFocusTypeFilter: (String?) -> Unit,
     onSortOrder: (Boolean) -> Unit,
+    isFullyExpanded: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -82,6 +88,16 @@ fun MyJourneysContent(
             color = MaterialTheme.colorScheme.outlineVariant,
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 专注场景管理卡片：置顶在我的旅程面板最上面
+        FocusManagementCard(
+            onClick = onFocusTypeSettingsClick,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // 筛选栏 - 仅在有数据时显示
         if (!uiState.isEmpty) {
             FilterBar(
@@ -95,21 +111,40 @@ fun MyJourneysContent(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        ) {
-            when {
-                uiState.isLoading -> {
+        if (uiState.isEmpty) {
+            // 空数据态：半高时保持 48dp 舒适间距稍微下移，全展开时自适应平滑扩展至 140dp 居中显示
+            val emptyTopPadding by animateDpAsState(
+                targetValue = if (isFullyExpanded) 140.dp else 48.dp,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "empty_top_padding",
+            )
+            EmptyJourneysState(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = emptyTopPadding, bottom = 28.dp)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                uiState.isEmpty -> {
-                    EmptyJourneysState(modifier = Modifier.fillMaxSize())
-                }
-
-                else -> {
+                } else if (uiState.filteredTickets.isEmpty()) {
+                    val filteredTopPadding by animateDpAsState(
+                        targetValue = if (isFullyExpanded) 120.dp else 42.dp,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "filtered_top_padding",
+                    )
+                    EmptyJourneysState(
+                        title = stringResource(R.string.history_filter_empty_title),
+                        desc = stringResource(R.string.history_filter_empty_desc),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = filteredTopPadding, bottom = 28.dp),
+                    )
+                } else {
                     CardStack(tickets = uiState.filteredTickets)
                 }
             }
@@ -327,12 +362,14 @@ private fun CardStack(
 fun MyJourneysBottomSheet(
     onDismiss: () -> Unit,
     onSettingsClick: () -> Unit,
+    onFocusTypeSettingsClick: () -> Unit,
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false,
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isSheetFullyExpanded = sheetState.targetValue == SheetValue.Expanded
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -347,6 +384,8 @@ fun MyJourneysBottomSheet(
         MyJourneysContent(
             uiState = uiState,
             onSettingsClick = onSettingsClick,
+            onFocusTypeSettingsClick = onFocusTypeSettingsClick,
+            isFullyExpanded = isSheetFullyExpanded,
             onStatusFilter = viewModel::setStatusFilter,
             onFocusTypeFilter = viewModel::setFocusTypeFilter,
             onSortOrder = viewModel::setSortOrder,
@@ -356,35 +395,93 @@ fun MyJourneysBottomSheet(
 }
 
 @Composable
+fun FocusManagementCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Brush,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_focus_management),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = stringResource(R.string.settings_scene_custom_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
+
+@Composable
 private fun EmptyJourneysState(
+    title: String = stringResource(R.string.history_empty_title),
+    desc: String = stringResource(R.string.history_empty_desc),
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(bottom = 450.dp), // 继续向上偏移，适配半高
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         com.hsr.railfocus.ui.components.BulletTrainIcon(
             contentDescription = null,
-            modifier = Modifier.padding(bottom = 12.dp),
-            size = 56.dp,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+            modifier = Modifier.padding(bottom = 8.dp),
+            size = 46.dp,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f),
         )
         Text(
-            text = stringResource(R.string.history_empty_title),
-            style = MaterialTheme.typography.titleLarge,
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = stringResource(R.string.history_empty_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = desc,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 4.dp),
         )
     }
 }

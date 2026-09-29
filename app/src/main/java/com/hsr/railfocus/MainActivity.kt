@@ -7,15 +7,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.rememberNavController
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
+import com.hsr.railfocus.domain.service.WeatherManager
+import com.hsr.railfocus.ui.components.weather.WeatherAnimationOverlay
 import com.hsr.railfocus.ui.navigation.RailFocusNavGraph
 import com.hsr.railfocus.service.FocusTimerService
 import com.hsr.railfocus.ui.theme.RailFocusTheme
@@ -27,6 +29,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var weatherManager: WeatherManager
 
     @OptIn(ExperimentalSharedTransitionApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,11 +49,20 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    SharedTransitionLayout {
-                        val navController = rememberNavController()
-                        RailFocusNavGraph(
-                            navController = navController,
-                            sharedTransitionScope = this
+                    val activeWeatherCondition by weatherManager.activeCondition.collectAsState()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        SharedTransitionLayout {
+                            val navController = rememberNavController()
+                            RailFocusNavGraph(
+                                navController = navController,
+                                sharedTransitionScope = this
+                            )
+                        }
+
+                        // 全局动态天气动画浮层（下雨、下雪、雷雨、沙尘等，完全透传触摸交互）
+                        WeatherAnimationOverlay(
+                            condition = activeWeatherCondition,
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }

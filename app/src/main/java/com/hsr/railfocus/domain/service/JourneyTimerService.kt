@@ -3,6 +3,8 @@ package com.hsr.railfocus.domain.service
 import android.os.SystemClock
 import com.hsr.railfocus.domain.model.PathResult
 import com.hsr.railfocus.domain.model.Station
+import com.hsr.railfocus.domain.model.WeatherInfo
+import com.hsr.railfocus.data.repository.WeatherRepository
 import com.hsr.railfocus.domain.model.journey.JourneyProgress
 import com.hsr.railfocus.domain.model.journey.JourneyProgressTracker
 import com.hsr.railfocus.domain.model.journey.StationArrivalDetector
@@ -30,7 +32,10 @@ import javax.inject.Singleton
 @Singleton
 class JourneyTimerService @Inject constructor(
     private val progressTracker: JourneyProgressTracker,
-    private val arrivalDetector: StationArrivalDetector
+    private val arrivalDetector: StationArrivalDetector,
+    private val cityTransitionTracker: CityTransitionTracker? = null,
+    private val weatherRepository: WeatherRepository? = null,
+    private val weatherManager: WeatherManager? = null,
 ) {
 
     sealed class TimerState {
@@ -61,6 +66,14 @@ class JourneyTimerService @Inject constructor(
     // 即将到达事件（提前触发动画）
     private val _upcomingArrival = MutableSharedFlow<Station>()
     val upcomingArrival: SharedFlow<Station> = _upcomingArrival.asSharedFlow()
+
+    // 跨城事件（当列车跨越网格并进入另一个地级市时触发）
+    private val _cityTransition = MutableSharedFlow<CityTransitionTracker.CityTransition>()
+    val cityTransition: SharedFlow<CityTransitionTracker.CityTransition> = _cityTransition.asSharedFlow()
+
+    // 当前列车位置的天气（后台随旅程行进持续刷新）
+    val currentWeather: StateFlow<WeatherInfo?> =
+        cityTransitionTracker?.currentWeatherFlow ?: MutableStateFlow(null)
 
     private var savedRemainingSeconds: Int = 0
     private var totalSessionSeconds: Int = 0
@@ -148,6 +161,8 @@ class JourneyTimerService @Inject constructor(
         
         // 重置到站检测器
         arrivalDetector.reset()
+        cityTransitionTracker?.reset()
+        weatherManager?.setJourneyActive(true)
         
         // 标记起始站点为已到达
         path.path.firstOrNull()?.let { startStation ->
@@ -246,6 +261,43 @@ class JourneyTimerService @Inject constructor(
             )
             _progress.value = currentProgress
 
+            // 动态前瞻探测：当快要跨越城市/县边界时（前方 10km），预先拉取并缓存前方新城市/县的天气
+            val startStation = currentProgress.currentSegmentStartStation
+            val endStation = currentProgress.currentSegmentEndStation
+            if (startStation != null && endStation != null && cityTransitionTracker != null) {
+                val segTotalDist = currentProgress.currentSegmentTotalDistance.toDouble()
+                if (segTotalDist > 0) {
+                    val curDist = currentProgress.distanceInCurrentSegment.toDouble()
+                    val curFrac = (curDist / segTotalDist).coerceIn(0.0, 1.0)
+                    val curLat = startStation.lat + (endStation.lat - startStation.lat) * curFrac
+                    val curLng = startStation.lng + (endStation.lng - startStation.lng) * curFrac
+
+                    // 前方 10km 的前瞻点
+                    val aheadDist = (curDist + CityTransitionTracker.LOOKAHEAD_DISTANCE_KM).coerceAtMost(segTotalDist)
+                    val aheadFrac = aheadDist / segTotalDist
+                    val aheadLat = startStation.lat + (endStation.lat - startStation.lat) * aheadFrac
+                    val aheadLng = startStation.lng + (endStation.lng - startStation.lng) * aheadFrac
+
+                    // 快要跨越城市/县边界时，预先拉取并缓存前方新城市/县的天气
+                    val aheadWeather = cityTransitionTracker.checkApproachingBoundary(
+                        currentLat = curLat,
+                        currentLon = curLng,
+                        aheadLat = aheadLat,
+                        aheadLon = aheadLng,
+                    )
+                    if (aheadWeather != null) {
+                        weatherManager?.setJourneyWeather(aheadWeather)
+                    }
+
+                    // 当列车实际跨入新网格时，触发正式的跨城切换事件
+                    val transition = cityTransitionTracker.onLocationUpdate(curLat, curLng)
+                    if (transition != null) {
+                        _cityTransition.emit(transition)
+                        weatherManager?.setJourneyWeather(transition.weather)
+                    }
+                }
+            }
+
             // 检测停靠结束（发车）：上一秒还在停靠，本秒开始行驶
             if (previousProgress != null &&
                 previousProgress.isDwelling &&
@@ -264,6 +316,23 @@ class JourneyTimerService @Inject constructor(
             val upcomingStation = arrivalDetector.checkUpcomingArrival(currentProgress)
             if (upcomingStation != null) {
                 _upcomingArrival.emit(upcomingStation)
+
+                // 当列车快到下一个地点时，后台静默拉取并缓存该地点的天气数据
+                weatherRepository?.let { repo ->
+                    scope.launch {
+                        val weather = repo.getWeather(upcomingStation.lat, upcomingStation.lng)
+                        if (weather != null) {
+                            weatherManager?.setJourneyWeather(weather)
+                        }
+                        if (weather != null && cityTransitionTracker != null) {
+                            val transition = cityTransitionTracker.onLocationUpdate(upcomingStation.lat, upcomingStation.lng)
+                            if (transition != null) {
+                                _cityTransition.emit(transition)
+                                weatherManager?.setJourneyWeather(transition.weather)
+                            }
+                        }
+                    }
+                }
             }
 
             if (remaining <= 0) {
@@ -275,6 +344,7 @@ class JourneyTimerService @Inject constructor(
 
         if (isActive) {
             _state.value = TimerState.Completed
+            weatherManager?.setJourneyActive(false)
 
             // 完成时的最终进度
             val finalProgress = progressTracker.calculateProgress(
@@ -295,6 +365,8 @@ class JourneyTimerService @Inject constructor(
         _progress.value = null
         currentPath = null
         arrivalDetector.reset()
+        cityTransitionTracker?.reset()
+        weatherManager?.setJourneyActive(false)
     }
 
     /**
@@ -327,6 +399,8 @@ class JourneyTimerService @Inject constructor(
 
         arrivalDetector.reset()
         path.path.firstOrNull()?.let { arrivalDetector.markAsArrived(it.id) }
+        cityTransitionTracker?.reset()
+        weatherManager?.setJourneyActive(true)
 
         val initialProgress = progressTracker.calculateProgress(
             path = path,

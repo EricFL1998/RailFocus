@@ -7,6 +7,8 @@ import com.hsr.railfocus.data.repository.AppUpdateInfo
 import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.data.preferences.UserPreferencesRepository
 import com.hsr.railfocus.domain.service.DestinationCalculator
+import com.hsr.railfocus.domain.model.PermissionState
+import com.hsr.railfocus.domain.repository.PermissionRepository
 import com.hsr.railfocus.domain.usecase.ExportUserDataUseCase
 import com.hsr.railfocus.domain.usecase.ImportUserDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +38,20 @@ class SettingsViewModel @Inject constructor(
     private val appUpdateRepository: AppUpdateRepository,
     private val exportUserDataUseCase: ExportUserDataUseCase,
     private val importUserDataUseCase: ImportUserDataUseCase,
+    private val permissionRepository: PermissionRepository,
 ) : ViewModel() {
+
+    private val _permissionStates = MutableStateFlow<List<PermissionState>>(emptyList())
+
+    /** 全部权限的最新状态（含可选权限）；进入设置页及请求返回后刷新 */
+    val permissionStates: StateFlow<List<PermissionState>> = _permissionStates.asStateFlow()
+
+    /** 重新检查所有权限（普通 + 特殊权限） */
+    fun refreshPermissions() {
+        viewModelScope.launch {
+            _permissionStates.value = permissionRepository.checkAllPermissions()
+        }
+    }
 
     private val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
     val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState.asStateFlow()
@@ -114,6 +129,19 @@ class SettingsViewModel @Inject constructor(
     fun setKeepScreenOnEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setKeepScreenOnEnabled(enabled)
+        }
+    }
+
+    val weatherDisplayEnabled = userPreferencesRepository.weatherDisplayEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = true,
+        )
+
+    fun setWeatherDisplayEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setWeatherDisplayEnabled(enabled)
         }
     }
 

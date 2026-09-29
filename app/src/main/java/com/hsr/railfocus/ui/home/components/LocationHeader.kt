@@ -15,14 +15,18 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hsr.railfocus.R
+import com.hsr.railfocus.domain.model.WeatherInfo
+import com.hsr.railfocus.domain.model.weatherConditionIcon
 
 /**
  * 首页左上角位置信息头部组件
  *
- * 显示问候语、城市名称、车站名称
+ * 显示问候语、城市名称、车站名称，以及可选的右侧实时天气与气温
  * Material 3 Expressive 风格：圆角 Surface、半透明背景、投影
  */
 @Composable
@@ -30,6 +34,8 @@ fun LocationHeader(
     greeting: String,
     cityName: String,
     stationName: String,
+    weatherInfo: WeatherInfo? = null,
+    weatherEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -41,8 +47,7 @@ fun LocationHeader(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // 位置图标
@@ -52,6 +57,8 @@ fun LocationHeader(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp),
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -84,6 +91,34 @@ fun LocationHeader(
                         text = stationName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // 右侧天气模块：紧凑对齐，向左贴近减少留白
+            if (weatherEnabled && weatherInfo != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                VerticalDivider(
+                    modifier = Modifier.height(32.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = weatherConditionIcon(weatherInfo.condition),
+                        contentDescription = weatherInfo.condition.label,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(modifier = Modifier.height(1.dp))
+                    Text(
+                        text = "${weatherInfo.temperatureC.toInt()}°",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }

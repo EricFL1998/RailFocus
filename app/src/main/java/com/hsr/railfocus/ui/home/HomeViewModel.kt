@@ -10,6 +10,9 @@ import com.hsr.railfocus.data.repository.AppUpdateRepository
 import com.hsr.railfocus.data.repository.UpdateCheckResult
 import com.hsr.railfocus.domain.model.Station
 import com.hsr.railfocus.data.repository.StationRepository
+import com.hsr.railfocus.data.repository.WeatherRepository
+import com.hsr.railfocus.domain.model.WeatherInfo
+import com.hsr.railfocus.domain.service.WeatherManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.maplibre.android.geometry.LatLng
 import java.util.Calendar
@@ -31,6 +35,8 @@ class HomeViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val focusTypeRepository: com.hsr.railfocus.data.repository.FocusTypeRepository,
     private val appUpdateRepository: AppUpdateRepository,
+    private val weatherRepository: WeatherRepository,
+    private val weatherManager: WeatherManager,
 ) : ViewModel() {
 
     private val _pendingUpdate = MutableStateFlow<AppUpdateInfo?>(null)
@@ -58,6 +64,7 @@ class HomeViewModel @Inject constructor(
         loadNearbyStations()
         observeSavedLocationChanges()
         checkForUpdateOnLaunch()
+        observeWeatherPreference()
     }
 
     /**
@@ -104,6 +111,7 @@ class HomeViewModel @Inject constructor(
                         greeting = getGreeting(),
                         isLoading = false,
                     )
+                    refreshCurrentStationWeather(station)
                 } catch (_: Exception) {}
             }
         }
@@ -126,6 +134,7 @@ class HomeViewModel @Inject constructor(
                             greeting = getGreeting(),
                             isLoading = false
                         )
+                        refreshCurrentStationWeather(savedStation)
                         
                         // 移除这里的 refreshLocation 调用，尊重用户“只有第一次使用是gps定位”的需求
                         // if (locationManager.hasLocationPermission()) {
@@ -144,6 +153,7 @@ class HomeViewModel @Inject constructor(
                             greeting = getGreeting(),
                             isLoading = false
                         )
+                    refreshCurrentStationWeather(allStations.firstOrNull { it.id == _uiState.value.currentStation.id } ?: _uiState.value.currentStation)
                         return@launch
                     }
                 }
@@ -159,6 +169,7 @@ class HomeViewModel @Inject constructor(
                     greeting = getGreeting(),
                     isLoading = false
                 )
+                refreshCurrentStationWeather(currentStation)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -229,6 +240,7 @@ class HomeViewModel @Inject constructor(
                         currentStationName = station.city,
                         currentStationDisplayName = station.name,
                     )
+                    refreshCurrentStationWeather(station)
                     return true
                 }
             }
@@ -278,6 +290,27 @@ class HomeViewModel @Inject constructor(
             else -> "home_greeting_evening"
         }
     }
+
+    private fun observeWeatherPreference() {
+        viewModelScope.launch {
+            preferencesRepository.weatherDisplayEnabled.collect { enabled ->
+                _uiState.update { it.copy(weatherDisplayEnabled = enabled) }
+                if (enabled && _uiState.value.weatherInfo == null) {
+                    refreshCurrentStationWeather(_uiState.value.currentStation)
+                }
+            }
+        }
+    }
+
+    private fun refreshCurrentStationWeather(station: Station) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val weather = weatherRepository.getWeather(station.lat, station.lng)
+                _uiState.update { it.copy(weatherInfo = weather) }
+                weatherManager.setHomeWeather(weather)
+            }
+        }
+    }
 }
 
 data class HomeUiState(
@@ -288,5 +321,7 @@ data class HomeUiState(
     val greeting: String = "你好",
     val isLoading: Boolean = true,
     val needsLocationPermission: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val weatherInfo: WeatherInfo? = null,
+    val weatherDisplayEnabled: Boolean = true,
 )

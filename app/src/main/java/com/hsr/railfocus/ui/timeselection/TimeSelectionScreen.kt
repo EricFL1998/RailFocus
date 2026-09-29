@@ -33,12 +33,6 @@ fun TimeSelectionScreen(
         } catch (_: Exception) {}
     }
 
-    // 离开本页（如进入专注页后返回）时重置到最小时长，
-    // 保证每次重新进入选择页都默认是最少时间
-    DisposableEffect(Unit) {
-        onDispose { viewModel.resetToMinimum() }
-    }
-
     JourneySelectionContent(
         uiState = uiState,
         searchQuery = searchQuery,
