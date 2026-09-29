@@ -475,7 +475,7 @@ private fun HomeState(
                 stationName = if (uiState.currentStationDisplayName == "南京南站") stringResource(R.string.home_location_placeholder) else uiState.currentStationDisplayName,
                 weatherInfo = uiState.weatherInfo,
                 weatherEnabled = uiState.weatherDisplayEnabled,
-                isNight = com.hsr.railfocus.domain.model.isNightNow(),
+                isNight = uiState.greeting == "home_greeting_evening" || com.hsr.railfocus.domain.model.isNightNow(),
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(16.dp)

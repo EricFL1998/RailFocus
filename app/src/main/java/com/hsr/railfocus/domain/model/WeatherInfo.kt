@@ -170,11 +170,12 @@ val WeatherCondition.emoji: String
     }
 
 /**
- * 判断当前是否处于晚间（19:00 ~ 06:00），用于自动切换夜间气象图标与月光天幕
+ * 判断当前是否处于晚间（18:00 ~ 06:00），与首页“晚上好”问候语时刻保持 100% 严格同步，
+ * 确保卡片出现“晚上好”时必定同步展示月亮图标与夜间月华动效。
  */
 fun isNightNow(): Boolean {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return hour >= 19 || hour < 6
+    return hour >= 18 || hour < 6
 }
 
 /**
