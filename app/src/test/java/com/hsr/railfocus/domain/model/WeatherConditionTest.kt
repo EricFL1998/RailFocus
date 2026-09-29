@@ -41,9 +41,9 @@ class WeatherConditionTest {
         assertEquals(WeatherCondition.LIGHT_SNOW, WeatherCondition.fromCnCode(13))
         assertEquals(WeatherCondition.LIGHT_SNOW, WeatherCondition.fromCnCode(14))
         assertEquals(WeatherCondition.LIGHT_SNOW, WeatherCondition.fromCnCode(26))
-        assertEquals(WeatherCondition.LIGHT_SNOW, WeatherCondition.fromCnCode(27))
+        assertEquals(WeatherCondition.MODERATE_SNOW, WeatherCondition.fromCnCode(27))
         assertEquals(WeatherCondition.MODERATE_SNOW, WeatherCondition.fromCnCode(15))
-        assertEquals(WeatherCondition.MODERATE_SNOW, WeatherCondition.fromCnCode(28))
+        assertEquals(WeatherCondition.HEAVY_SNOW, WeatherCondition.fromCnCode(28))
         assertEquals(WeatherCondition.HEAVY_SNOW, WeatherCondition.fromCnCode(16))
         assertEquals(WeatherCondition.STORM_SNOW, WeatherCondition.fromCnCode(17))
     }

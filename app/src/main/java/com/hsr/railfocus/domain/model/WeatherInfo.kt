@@ -50,9 +50,9 @@ enum class WeatherCondition(val label: String, val isPrecipitation: Boolean) {
             8, 22 -> MODERATE_RAIN
             9, 23 -> HEAVY_RAIN
             10, 11, 12, 24, 25 -> STORM_RAIN
-            13, 14, 26, 27 -> LIGHT_SNOW
-            15, 28 -> MODERATE_SNOW
-            16 -> HEAVY_SNOW
+            13, 14, 26 -> LIGHT_SNOW
+            15, 27 -> MODERATE_SNOW
+            16, 28 -> HEAVY_SNOW
             17 -> STORM_SNOW
             18 -> LIGHT_FOG
             57 -> MODERATE_FOG
