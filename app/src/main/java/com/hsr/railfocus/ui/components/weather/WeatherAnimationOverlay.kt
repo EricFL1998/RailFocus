@@ -225,9 +225,12 @@ fun WeatherAnimationOverlay(
                     )
                 }
 
-                WeatherCondition.DUST,
+                WeatherCondition.DUST -> {
+                    CinematicSandstormCanvas(isDust = true)
+                }
+
                 WeatherCondition.SAND -> {
-                    CinematicSandstormCanvas()
+                    CinematicSandstormCanvas(isDust = false)
                 }
 
                 else -> Unit
@@ -1361,17 +1364,24 @@ private class SandGlowParticle(
 )
 
 @Composable
-private fun CinematicSandstormCanvas() {
+private fun CinematicSandstormCanvas(
+    isDust: Boolean = false,
+) {
     val density = LocalDensity.current
-    val sands = remember {
-        val rnd = Random(88)
-        List(60) {
+    val particleCount = if (isDust) 36 else 70
+    val speedScale = if (isDust) 0.65f else 1.25f
+    val bgTintAlpha = if (isDust) 0.05f else 0.09f
+    val sandColor = if (isDust) Color(0xFFD7CCC8) else Color(0xFFFFCC80)
+
+    val sands = remember(isDust) {
+        val rnd = Random(System.currentTimeMillis())
+        List(particleCount) {
             SandGlowParticle(
-                x = rnd.nextFloat() * 1600f,
-                y = rnd.nextFloat() * 2800f,
-                length = (rnd.nextFloat() * 10f + 6f) * density.density,
-                speed = (rnd.nextFloat() * 800f + 600f) * density.density,
-                alpha = rnd.nextFloat() * 0.32f + 0.22f,
+                x = rnd.nextFloat() * 1800f,
+                y = rnd.nextFloat() * 3000f,
+                length = (rnd.nextFloat() * (if (isDust) 8f else 14f) + 6f) * density.density,
+                speed = (rnd.nextFloat() * 600f + 500f) * speedScale * density.density,
+                alpha = rnd.nextFloat() * (if (isDust) 0.22f else 0.35f) + 0.18f,
             )
         }
     }
@@ -1405,11 +1415,9 @@ private fun CinematicSandstormCanvas() {
         if (w <= 0 || h <= 0) return@Canvas
 
         drawRect(
-            color = Color(0xFFFFB74D).copy(alpha = 0.08f),
+            color = if (isDust) Color(0xFFBCAAA4).copy(alpha = bgTintAlpha) else Color(0xFFFFB74D).copy(alpha = bgTintAlpha),
             size = size,
         )
-
-        val sandColor = Color(0xFFFFCC80)
         for (s in sands) {
             if (s.x > w + s.length) {
                 s.x = -s.length - Random.nextFloat() * 60f
