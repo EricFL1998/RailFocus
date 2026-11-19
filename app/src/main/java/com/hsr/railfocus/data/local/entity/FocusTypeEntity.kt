@@ -16,4 +16,13 @@ data class FocusTypeEntity(
     val containerColorHex: Int,
     val isRemovable: Boolean = true,
     val order: Int = 0,
+    val allowNotifications: Boolean = true,
+    val allowedNotificationCategories: String = "IM,WORK,SYSTEM",
+    val muteNotificationPreview: Boolean = false,
+    val dndMode: String = "PRIORITY",
+    val callFilter: String = "STARRED",
+    val allowRepeatedCalls: Boolean = true,
+    val autoReplySms: Boolean = false,
+    val keepScreenOn: Boolean = true,
+    val allowedAppPackages: String = "",
 )

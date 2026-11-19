@@ -13,6 +13,19 @@ data class FocusType(
     val colorHex: Int,
     val containerColorHex: Int,
     val isRemovable: Boolean = true,
+    // 通知筛选设置
+    val allowNotifications: Boolean = true,
+    val allowedNotificationCategories: String = "IM,WORK,SYSTEM",
+    val muteNotificationPreview: Boolean = false,
+    // 勿扰模式设置：OFF(关闭), PRIORITY(仅优先), ALARMS_ONLY(仅闹钟), TOTAL_SILENCE(全面静音)
+    val dndMode: String = "PRIORITY",
+    // 通话过滤设置：EVERYONE(所有人), CONTACTS(通讯录), STARRED(特别关注), NONE(无)
+    val callFilter: String = "STARRED",
+    val allowRepeatedCalls: Boolean = true,
+    val autoReplySms: Boolean = false,
+    val keepScreenOn: Boolean = true,
+    // 应用选择器：逗号分隔的允许通知的包名列表，如 "com.tencent.mm,com.alibaba.android.rimet"
+    val allowedAppPackages: String = "",
 ) {
     fun toEntity(order: Int = 0): FocusTypeEntity = FocusTypeEntity(
         id = id,
@@ -22,6 +35,15 @@ data class FocusType(
         containerColorHex = containerColorHex,
         isRemovable = isRemovable,
         order = order,
+        allowNotifications = allowNotifications,
+        allowedNotificationCategories = allowedNotificationCategories,
+        muteNotificationPreview = muteNotificationPreview,
+        dndMode = dndMode,
+        callFilter = callFilter,
+        allowRepeatedCalls = allowRepeatedCalls,
+        autoReplySms = autoReplySms,
+        keepScreenOn = keepScreenOn,
+        allowedAppPackages = allowedAppPackages,
     )
 
     companion object {
@@ -32,6 +54,15 @@ data class FocusType(
             colorHex = entity.colorHex,
             containerColorHex = entity.containerColorHex,
             isRemovable = entity.isRemovable,
+            allowNotifications = entity.allowNotifications,
+            allowedNotificationCategories = entity.allowedNotificationCategories,
+            muteNotificationPreview = entity.muteNotificationPreview,
+            dndMode = entity.dndMode,
+            callFilter = entity.callFilter,
+            allowRepeatedCalls = entity.allowRepeatedCalls,
+            autoReplySms = entity.autoReplySms,
+            keepScreenOn = entity.keepScreenOn,
+            allowedAppPackages = entity.allowedAppPackages,
         )
 
         // 默认预设（颜色为 ARGB Int）

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hsr.railfocus.data.graph.RailGraph
 import com.hsr.railfocus.domain.model.JourneyStatus
 import com.hsr.railfocus.domain.usecase.GetJourneyHistoryUseCase
+import com.hsr.railfocus.util.ProvinceFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,8 +36,8 @@ class AllJourneysViewModel @Inject constructor(
         getJourneyHistoryUseCase()
             .onEach { records ->
                 val completed = records.filter { it.status == JourneyStatus.COMPLETED }
-                val routes = withContext(Dispatchers.Default) {
-                    completed.mapNotNull { record ->
+                val (routes, visitedStations, visitedProvinces) = withContext(Dispatchers.Default) {
+                    val computedRoutes = completed.mapNotNull { record ->
                         val stations = record.path.path
                         if (stations.size > 2) {
                             // 路径已包含实际完整经过的车站序列（铁路沿线真实站点经纬度）
@@ -50,12 +51,26 @@ class AllJourneysViewModel @Inject constructor(
                             null
                         }
                     }
+
+                    val allStations = completed.flatMap { it.path.path }.filter { it.name.isNotBlank() }
+                    val uniqueStations = allStations.distinctBy { it.id.ifBlank { it.name } }
+                    val provinces = uniqueStations
+                        .map { ProvinceFormatter.format(it.province, it.city) }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+
+                    Triple(computedRoutes, uniqueStations, provinces)
                 }
+
                 val points = routes.flatten()
                 _uiState.value = AllJourneysUiState(
                     isLoading = false,
                     journeyCount = completed.size,
                     totalDistanceKm = completed.sumOf { it.path.totalDistanceKm },
+                    totalFocusMinutes = completed.sumOf { it.actualDurationMin },
+                    visitedStationCount = visitedStations.size,
+                    visitedProvinceCount = visitedProvinces.size,
+                    visitedProvinces = visitedProvinces,
                     routes = routes,
                     // 居中到全部线路的包围盒中心：顶点的算术平均会被密集的短途线路带偏，
                     // 画面上线路会明显偏离屏幕中心。

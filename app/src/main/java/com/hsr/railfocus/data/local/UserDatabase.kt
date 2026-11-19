@@ -33,7 +33,7 @@ import com.hsr.railfocus.data.local.entity.WeatherCacheEntity
         JourneyJournalEntity::class,
         WeatherCacheEntity::class,
     ],
-    version = 7,
+    version = 9,
     exportSchema = false,
 )
 abstract class UserDatabase : RoomDatabase() {
@@ -131,6 +131,31 @@ abstract class UserDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 7 -> 8：专注类型表新增通知筛选、勿扰模式、来电策略与屏幕常亮设置
+         */
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN allowNotifications INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN allowedNotificationCategories TEXT NOT NULL DEFAULT 'IM,WORK,SYSTEM'")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN muteNotificationPreview INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN dndMode TEXT NOT NULL DEFAULT 'PRIORITY'")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN callFilter TEXT NOT NULL DEFAULT 'STARRED'")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN allowRepeatedCalls INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN autoReplySms INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN keepScreenOn INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        /**
+         * 8 -> 9：专注类型表新增放行应用包名列表 allowedAppPackages
+         */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE focus_types ADD COLUMN allowedAppPackages TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Volatile
         private var INSTANCE: UserDatabase? = null
 
@@ -146,7 +171,7 @@ abstract class UserDatabase : RoomDatabase() {
                 UserDatabase::class.java,
                 DATABASE_NAME
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
             .build()
         }
     }

@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.hsr.railfocus.R
 import com.hsr.railfocus.domain.service.DestinationOption
@@ -169,11 +170,6 @@ private fun DestinationSnapPicker(
     ) { page ->
         val destination = destinations[page]
         val isSelected = (page == selectedIndex)
-        val pageOffset = remember {
-            derivedStateOf { (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction }
-        }.value
-        val scale = 1f - (pageOffset.absoluteValue * 0.08f).coerceIn(0f, 0.08f)
-        val alpha = 1f - (pageOffset.absoluteValue * 0.35f).coerceIn(0f, 0.35f)
         DestinationBox(
             destination = destination,
             isSelected = isSelected,
@@ -187,9 +183,13 @@ private fun DestinationSnapPicker(
             modifier = Modifier
                 .width(boxWidth)
                 .graphicsLayer {
+                    // 将分页偏移量计算下沉至绘制阶段，完全避免滑动时的整页高频重组
+                    val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                    val scale = 1f - (pageOffset.absoluteValue * 0.08f).coerceIn(0f, 0.08f)
+                    val a = 1f - (pageOffset.absoluteValue * 0.35f).coerceIn(0f, 0.35f)
                     scaleX = scale
                     scaleY = scale
-                    this.alpha = alpha
+                    alpha = a
                 },
         )
     }
@@ -275,7 +275,6 @@ fun DestinationBox(
                 color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 2.dp)
             )
 
             // 时长 + 距离

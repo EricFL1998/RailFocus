@@ -1,5 +1,11 @@
 package com.hsr.railfocus.ui.home.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.FirstBaseline
@@ -51,15 +58,43 @@ fun LocationHeader(
                 .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 位置图标
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
+            // 车站定位信标动画（使用 drawBehind 在绘制层重绘，消除 recomposition 开销）
+            val infiniteTransition = rememberInfiniteTransition(label = "beacon")
+            val pulseProgress = infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2600, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "beacon_pulse"
             )
+            val primaryColor = MaterialTheme.colorScheme.primary
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .drawBehind {
+                        val p = pulseProgress.value
+                        val maxRadius = size.minDimension / 2f
+                        val currentRadius = maxRadius * (0.35f + 0.65f * p)
+                        val alpha = (1f - p).coerceIn(0f, 0.45f)
+                        drawCircle(
+                            color = primaryColor.copy(alpha = alpha),
+                            radius = currentRadius,
+                        )
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = primaryColor,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
 
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp),

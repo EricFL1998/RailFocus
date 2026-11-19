@@ -69,6 +69,20 @@ class FocusSessionViewModel @Inject constructor(
             initialValue = true,
         )
 
+    val ambientSoundEnabled: StateFlow<Boolean> = preferencesRepository.ambientSoundEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = false,
+        )
+
+    fun toggleAmbientSound() {
+        viewModelScope.launch {
+            val current = preferencesRepository.ambientSoundEnabled.first()
+            preferencesRepository.setAmbientSoundEnabled(!current)
+        }
+    }
+
     /** 防止完成/取消被重复处理（StateFlow 重放、多次点击等） */
     private var hasFinished: Boolean = false
 

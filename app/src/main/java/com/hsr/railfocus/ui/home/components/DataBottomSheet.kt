@@ -1,6 +1,7 @@
 package com.hsr.railfocus.ui.home.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -76,6 +77,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -318,9 +320,33 @@ private fun FrequentFlyerCard(
                 .fillMaxSize()
                 .background(style.bg)
         ) {
-            // 1. 金属拉丝斜切全息反光层
+            val infiniteTransition = rememberInfiniteTransition(label = "metal_sheen")
+            val sheenAnim = infiniteTransition.animateFloat(
+                initialValue = -0.5f,
+                targetValue = 1.5f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(4000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "sheen_offset"
+            )
+
+            // 1. 金属拉丝斜切全息反光层与动态扫光（在绘制层读取动画状态，消除卡片持续重组）
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawRect(style.sheen)
+                val sheenX = size.width * sheenAnim.value
+                val sheenW = size.width * 0.35f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            style.accent.copy(alpha = 0.16f),
+                            Color.Transparent
+                        ),
+                        start = Offset(sheenX, 0f),
+                        end = Offset(sheenX + sheenW, size.height)
+                    )
+                )
                 // 实体物理卡顶部的微光高光边缘线
                 drawLine(
                     color = Color.White.copy(alpha = 0.25f),
@@ -514,6 +540,11 @@ private fun TotalDistanceCard(
     onAllJourneysClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val animDistanceKm by animateFloatAsState(
+        targetValue = totalDistanceKm.toFloat(),
+        animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
+        label = "roll_distance"
+    )
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -549,7 +580,7 @@ private fun TotalDistanceCard(
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = NumberFormat.getNumberInstance(Locale.CHINA).format(totalDistanceKm.toLong()) + " " + stringResource(R.string.history_unit_km),
+                    text = NumberFormat.getNumberInstance(Locale.CHINA).format(animDistanceKm.toLong()) + " " + stringResource(R.string.history_unit_km),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -588,8 +619,16 @@ private fun DailyGoalCard(
     onGoalSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val progress = (dailyGoal.todayFocusMin.toFloat() / dailyGoal.goalMin).coerceIn(0f, 1f)
+    val targetProgress = (dailyGoal.todayFocusMin.toFloat() / dailyGoal.goalMin).coerceIn(0f, 1f)
     val goalAchieved = dailyGoal.todayFocusMin >= dailyGoal.goalMin
+    val animProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(targetProgress) {
+        animProgress.animateTo(
+            targetValue = targetProgress,
+            animationSpec = tween(900, easing = FastOutSlowInEasing)
+        )
+    }
 
     Card(
         modifier = modifier,
@@ -635,11 +674,11 @@ private fun DailyGoalCard(
                         drawArc(
                             color = ringColor,
                             startAngle = -90f,
-                            sweepAngle = 360f * progress,
+                            sweepAngle = 360f * animProgress.value,
                             useCenter = false,
                             topLeft = Offset(stroke / 2, stroke / 2),
                             size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
-                            style = Stroke(width = stroke),
+                            style = Stroke(width = stroke, cap = StrokeCap.Round),
                         )
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -766,6 +805,10 @@ private fun WeeklyFocusChart(
             } else {
                 val maxMinutes = data.maxOfOrNull { it.second } ?: 1
                 val barColor = MaterialTheme.colorScheme.primary
+                val animRatio = remember(data) { Animatable(0f) }
+                LaunchedEffect(data) {
+                    animRatio.animateTo(1f, animationSpec = tween(650, easing = FastOutSlowInEasing))
+                }
 
                 Column(
                     modifier = Modifier
@@ -783,11 +826,12 @@ private fun WeeklyFocusChart(
                         val spacing = width / data.size
                         // 底部留出余量，最低点不会贴住画布边缘
                         val baseline = height - 4.dp.toPx()
+                        val currentRatio = animRatio.value
 
                         // 绘制背景渐变
                         val points = data.mapIndexed { index, (_, value) ->
                             val x = index * spacing + spacing / 2
-                            val y = baseline - (value.toFloat() / maxMinutes * baseline * 0.9f)
+                            val y = baseline - (value.toFloat() / maxMinutes * baseline * 0.9f * currentRatio)
                             Offset(x, y)
                         }
 

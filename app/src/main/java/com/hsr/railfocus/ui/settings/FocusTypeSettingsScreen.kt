@@ -16,10 +16,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.DoNotDisturbOn
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.ScreenLockPortrait
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -90,6 +98,7 @@ fun FocusTypeSettingsScreen(
     ) { innerPadding ->
         val removableFocusTypes = focusTypes.filter { it.isRemovable }
         var typeToDelete by remember { mutableStateOf<FocusType?>(null) }
+        var typeToEdit by remember { mutableStateOf<FocusType?>(null) }
 
         if (removableFocusTypes.isEmpty()) {
             Box(
@@ -118,9 +127,22 @@ fun FocusTypeSettingsScreen(
                     FocusTypeItem(
                         type = type,
                         modifier = Modifier.animateItem(),
-                    ) { typeToDelete = type }
+                        onEdit = { typeToEdit = type },
+                        onDelete = { typeToDelete = type }
+                    )
                 }
             }
+        }
+
+        typeToEdit?.let { type ->
+            EditFocusTypeDialog(
+                focusType = type,
+                onDismiss = { typeToEdit = null },
+                onSave = { updated ->
+                    viewModel.addFocusType(updated)
+                    typeToEdit = null
+                }
+            )
         }
 
         typeToDelete?.let { type ->
@@ -173,9 +195,11 @@ fun FocusTypeSettingsScreen(
 private fun FocusTypeItem(
     type: FocusType,
     modifier: Modifier = Modifier,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
+        onClick = onEdit,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = type.containerColor)
@@ -185,7 +209,7 @@ private fun FocusTypeItem(
                 .padding(16.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Surface(
                 modifier = Modifier.size(44.dp),
@@ -209,6 +233,39 @@ private fun FocusTypeItem(
                     fontWeight = FontWeight.Bold,
                     color = type.color
                 )
+                Spacer(modifier = Modifier.height(2.dp))
+                val dndSummary = when (type.dndMode) {
+                    "OFF" -> "勿扰关"
+                    "ALARMS_ONLY" -> "仅闹钟"
+                    "TOTAL_SILENCE" -> "全静音"
+                    else -> "优先勿扰"
+                }
+                val callSummary = when (type.callFilter) {
+                    "EVERYONE" -> "所有人"
+                    "CONTACTS" -> "通讯录"
+                    "NONE" -> "静音来电"
+                    else -> "特别关注"
+                }
+                val notifSummary = if (!type.allowNotifications) {
+                    "通知静音"
+                } else {
+                    val appCount = if (type.allowedAppPackages.isBlank()) 0 else type.allowedAppPackages.split(",").filter { it.isNotBlank() }.size
+                    if (appCount > 0) "放行${appCount}款应用" else "通知过滤"
+                }
+                Text(
+                    text = "$dndSummary · 来电:$callSummary · $notifSummary",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = type.color.copy(alpha = 0.78f)
+                )
+            }
+
+            // 编辑按钮（每个专注场景均可点击编辑进行通知筛选、勿扰模式与通话设置）
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = stringResource(R.string.settings_edit_scene),
+                    tint = type.color
+                )
             }
 
             if (type.isRemovable) {
@@ -220,6 +277,628 @@ private fun FocusTypeItem(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * 专注场景编辑弹窗：支持通知过滤、勿扰等级、通话白名单及屏幕常亮等全套管理
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EditFocusTypeDialog(
+    focusType: FocusType,
+    onDismiss: () -> Unit,
+    onSave: (FocusType) -> Unit,
+) {
+    var displayName by remember { mutableStateOf(focusType.displayName) }
+    var allowNotifications by remember { mutableStateOf(focusType.allowNotifications) }
+    var muteNotificationPreview by remember { mutableStateOf(focusType.muteNotificationPreview) }
+
+    var allowedCategories by remember {
+        mutableStateOf(
+            if (focusType.allowedNotificationCategories.isBlank()) emptySet()
+            else focusType.allowedNotificationCategories.split(",").map { it.trim() }.toSet()
+        )
+    }
+
+    var dndMode by remember { mutableStateOf(focusType.dndMode) }
+    var callFilter by remember { mutableStateOf(focusType.callFilter) }
+    var allowRepeatedCalls by remember { mutableStateOf(focusType.allowRepeatedCalls) }
+    var autoReplySms by remember { mutableStateOf(focusType.autoReplySms) }
+    var keepScreenOn by remember { mutableStateOf(focusType.keepScreenOn) }
+
+    var selectedAppPackages by remember {
+        mutableStateOf(
+            if (focusType.allowedAppPackages.isBlank()) emptySet()
+            else focusType.allowedAppPackages.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        )
+    }
+    var showAppPicker by remember { mutableStateOf(false) }
+
+    if (showAppPicker) {
+        AppPickerDialog(
+            initialSelectedPackages = selectedAppPackages,
+            themeColor = focusType.color,
+            onDismiss = { showAppPicker = false },
+            onConfirm = { updatedSet ->
+                selectedAppPackages = updatedSet
+                showAppPicker = false
+            }
+        )
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.94f)
+                .fillMaxHeight(0.88f),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 10.dp,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // 顶部标题栏
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(38.dp),
+                            shape = CircleShape,
+                            color = focusType.color.copy(alpha = 0.2f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = focusType.icon,
+                                    contentDescription = null,
+                                    tint = focusType.color,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Column {
+                            Text(
+                                text = stringResource(R.string.settings_edit_scene_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = focusType.displayName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = focusType.color,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.settings_cancel),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                // 可滚动内容区域
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    // ====== 模块 1：通知筛选 (Notification Filtering) ======
+                    SectionCard(
+                        title = stringResource(R.string.settings_notif_filter_title),
+                        icon = if (allowNotifications) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                        tint = focusType.color
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.settings_allow_notif),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_allow_notif_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = allowNotifications,
+                                onCheckedChange = { allowNotifications = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = focusType.color)
+                            )
+                        }
+
+                        if (allowNotifications) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // ===== 放行应用白名单 =====
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                border = BorderStroke(1.dp, focusType.color.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Apps,
+                                                contentDescription = null,
+                                                tint = focusType.color,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.settings_app_whitelist_card_title),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = focusType.color.copy(alpha = 0.15f),
+                                            modifier = Modifier.clickable { showAppPicker = true }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "去设置",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = focusType.color,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
+                                                Icon(
+                                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                                    contentDescription = null,
+                                                    tint = focusType.color,
+                                                    modifier = Modifier.size(11.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Text(
+                                        text = if (selectedAppPackages.isEmpty()) {
+                                            stringResource(R.string.settings_app_whitelist_all_apps)
+                                        } else {
+                                            stringResource(R.string.settings_app_whitelist_selected_count, selectedAppPackages.size)
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (selectedAppPackages.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else focusType.color,
+                                        fontWeight = if (selectedAppPackages.isEmpty()) FontWeight.Normal else FontWeight.Medium
+                                    )
+
+                                    if (selectedAppPackages.isNotEmpty()) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            selectedAppPackages.take(8).forEach { pkg ->
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = focusType.color.copy(alpha = 0.12f),
+                                                    border = BorderStroke(1.dp, focusType.color.copy(alpha = 0.25f))
+                                                ) {
+                                                    Text(
+                                                        text = pkg.substringAfterLast('.'),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = focusType.color,
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+                                            }
+                                            if (selectedAppPackages.size > 8) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHighest
+                                                ) {
+                                                    Text(
+                                                        text = "+${selectedAppPackages.size - 8}",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.settings_mute_preview),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.settings_mute_preview_desc),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = muteNotificationPreview,
+                                    onCheckedChange = { muteNotificationPreview = it }
+                                )
+                            }
+                        }
+                    }
+
+                    // ====== 模块 2：勿扰模式 (DND) ======
+                    SectionCard(
+                        title = stringResource(R.string.settings_dnd_section),
+                        icon = Icons.Default.DoNotDisturbOn,
+                        tint = focusType.color
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_dnd_mode_label),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        val dndOptions = listOf(
+                            "OFF" to "关闭勿扰",
+                            "PRIORITY" to "优先提醒",
+                            "ALARMS_ONLY" to "仅闹钟",
+                            "TOTAL_SILENCE" to "全面静音",
+                        )
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            dndOptions.chunked(2).forEach { rowOptions ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    rowOptions.forEach { (modeKey, label) ->
+                                        val isSelected = (dndMode == modeKey)
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { dndMode = modeKey },
+                                            label = {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                        maxLines = 1,
+                                                        softWrap = false,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = focusType.color.copy(alpha = 0.2f),
+                                                selectedLabelColor = focusType.color,
+                                            ),
+                                            border = FilterChipDefaults.filterChipBorder(
+                                                enabled = true,
+                                                selected = isSelected,
+                                                borderColor = if (isSelected) focusType.color else MaterialTheme.colorScheme.outlineVariant
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ====== 模块 3：通话与呼叫过滤 ======
+                    SectionCard(
+                        title = stringResource(R.string.settings_call_section),
+                        icon = Icons.Default.Phone,
+                        tint = focusType.color
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_call_filter_label),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        val callOptions = listOf(
+                            "STARRED" to "特别关注",
+                            "CONTACTS" to "仅通讯录",
+                            "EVERYONE" to "所有人",
+                            "NONE" to "静音来电",
+                        )
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            callOptions.chunked(2).forEach { rowOptions ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    rowOptions.forEach { (callKey, label) ->
+                                        val isSelected = (callFilter == callKey)
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { callFilter = callKey },
+                                            label = {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                        maxLines = 1,
+                                                        softWrap = false,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = focusType.color.copy(alpha = 0.2f),
+                                                selectedLabelColor = focusType.color,
+                                            ),
+                                            border = FilterChipDefaults.filterChipBorder(
+                                                enabled = true,
+                                                selected = isSelected,
+                                                borderColor = if (isSelected) focusType.color else MaterialTheme.colorScheme.outlineVariant
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // 允许重复来电
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.settings_call_repeat),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_call_repeat_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = allowRepeatedCalls,
+                                onCheckedChange = { allowRepeatedCalls = it }
+                            )
+                        }
+
+                        // 自动短信回复
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.settings_auto_reply_sms),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_auto_reply_sms_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = autoReplySms,
+                                onCheckedChange = { autoReplySms = it }
+                            )
+                        }
+                    }
+
+                    // ====== 模块 4：屏幕设置 ======
+                    SectionCard(
+                        title = "屏幕显示策略",
+                        icon = Icons.Default.ScreenLockPortrait,
+                        tint = focusType.color
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.settings_keep_screen_on_label),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "旅程运行期间保持屏幕常亮",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = keepScreenOn,
+                                onCheckedChange = { keepScreenOn = it }
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                // 底部操作按钮
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(stringResource(R.string.settings_cancel))
+                    }
+                    Button(
+                        onClick = {
+                            val updated = focusType.copy(
+                                displayName = displayName,
+                                allowNotifications = allowNotifications,
+                                allowedNotificationCategories = allowedCategories.joinToString(","),
+                                muteNotificationPreview = muteNotificationPreview,
+                                dndMode = dndMode,
+                                callFilter = callFilter,
+                                allowRepeatedCalls = allowRepeatedCalls,
+                                autoReplySms = autoReplySms,
+                                keepScreenOn = keepScreenOn,
+                                allowedAppPackages = selectedAppPackages.joinToString(","),
+                            )
+                            onSave(updated)
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text(stringResource(R.string.settings_save_settings), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    title: String,
+    icon: ImageVector,
+    tint: Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+        tonalElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = tint.copy(alpha = 0.15f),
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = tint,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            content()
         }
     }
 }

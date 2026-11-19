@@ -1003,21 +1003,26 @@ private fun DrawScope.drawSoftCloudCluster(
         CloudPuffDef(0.14f, 0.14f, 0.34f, 3.0f, 0.75f, 0.85f),
     )
 
+    val effectiveAlpha = if (isNight) alpha * 0.70f else alpha
+    val color1 = if (isNight) Color(0xFFECEFF1) else Color.White
+    val color2 = if (isNight) Color(0xFFCFD8DC) else Color(0xFFFFFDF8)
+    val color3 = if (isNight) Color(0xFFB0BEC5) else Color(0xFFF9FBFB)
+
     for (p in puffs) {
         val px = centerX + p.dx * puffWidth
         val py = centerY + p.dy * puffHeight
         val radius = puffHeight * p.radiusFraction
-        val currentAlpha = (alpha * p.alphaFactor).coerceIn(0f, 1f)
+        val currentAlpha = (effectiveAlpha * p.alphaFactor).coerceIn(0f, 1f)
 
         withTransform({
             scale(scaleX = p.scaleX, scaleY = p.scaleY, pivot = Offset(px, py))
         }) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    0.0f to Color.White.copy(alpha = currentAlpha),
-                    0.38f to Color(0xFFFFFDF8).copy(alpha = currentAlpha * 0.90f),
-                    0.68f to Color(0xFFF9FBFB).copy(alpha = currentAlpha * 0.55f),
-                    0.86f to Color.White.copy(alpha = currentAlpha * 0.20f),
+                    0.0f to color1.copy(alpha = currentAlpha),
+                    0.38f to color2.copy(alpha = currentAlpha * 0.90f),
+                    0.68f to color3.copy(alpha = currentAlpha * 0.55f),
+                    0.86f to color1.copy(alpha = currentAlpha * 0.20f),
                     1.0f to Color.Transparent,
                     center = Offset(px, py),
                     radius = radius,
@@ -1058,64 +1063,85 @@ private fun CinematicCloudyCanvas(isNight: Boolean = false) {
 
         val density = density
 
-        // 1. 右上天际破云暖阳与天幕日晕
-        val sunCenter = Offset(w * 0.88f, h * 0.07f)
-        val breath = (sin(timeSeconds * 0.5f) + 1f) * 0.5f
+        if (!isNight) {
+            // 1. 右上天际破云暖阳与天幕日晕（仅日间展示）
+            val sunCenter = Offset(w * 0.88f, h * 0.07f)
+            val breath = (sin(timeSeconds * 0.5f) + 1f) * 0.5f
 
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFFFFF9C4).copy(alpha = 0.38f + breath * 0.10f),
-                    Color(0xFFFFECB3).copy(alpha = 0.20f + breath * 0.06f),
-                    Color(0xFFFFE082).copy(alpha = 0.08f + breath * 0.03f),
-                    Color.Transparent,
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFFFFF9C4).copy(alpha = 0.38f + breath * 0.10f),
+                        Color(0xFFFFECB3).copy(alpha = 0.20f + breath * 0.06f),
+                        Color(0xFFFFE082).copy(alpha = 0.08f + breath * 0.03f),
+                        Color.Transparent,
+                    ),
+                    center = sunCenter,
+                    radius = w * 0.72f,
                 ),
-                center = sunCenter,
                 radius = w * 0.72f,
-            ),
-            radius = w * 0.72f,
-            center = sunCenter,
-        )
+                center = sunCenter,
+            )
 
-        // 2. 破云斜射透光光柱（明显而柔和的丁达尔天光）
-        val godRayAlpha = (0.16f + breath * 0.06f).coerceIn(0f, 0.25f)
-        val rayPath1 = Path().apply {
-            moveTo(sunCenter.x - 45f * density, sunCenter.y)
-            lineTo(sunCenter.x + 25f * density, sunCenter.y)
-            lineTo(w * 0.15f, h * 0.58f)
-            lineTo(w * -0.05f, h * 0.54f)
-            close()
-        }
-        drawPath(
-            path = rayPath1,
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    Color(0xFFFFFDE7).copy(alpha = godRayAlpha),
-                    Color.Transparent,
+            // 2. 破云斜射透光光柱（明显而柔和的丁达尔天光，仅日间展示）
+            val godRayAlpha = (0.16f + breath * 0.06f).coerceIn(0f, 0.25f)
+            val rayPath1 = Path().apply {
+                moveTo(sunCenter.x - 45f * density, sunCenter.y)
+                lineTo(sunCenter.x + 25f * density, sunCenter.y)
+                lineTo(w * 0.15f, h * 0.58f)
+                lineTo(w * -0.05f, h * 0.54f)
+                close()
+            }
+            drawPath(
+                path = rayPath1,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFFFFDE7).copy(alpha = godRayAlpha),
+                        Color.Transparent,
+                    ),
+                    start = sunCenter,
+                    end = Offset(w * 0.06f, h * 0.56f),
                 ),
-                start = sunCenter,
-                end = Offset(w * 0.06f, h * 0.56f),
-            ),
-        )
+            )
 
-        val rayPath2 = Path().apply {
-            moveTo(sunCenter.x - 15f * density, sunCenter.y + 10f * density)
-            lineTo(sunCenter.x + 50f * density, sunCenter.y + 10f * density)
-            lineTo(w * 0.58f, h * 0.68f)
-            lineTo(w * 0.42f, h * 0.65f)
-            close()
-        }
-        drawPath(
-            path = rayPath2,
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    Color(0xFFFFF9C4).copy(alpha = godRayAlpha * 0.90f),
-                    Color.Transparent,
+            val rayPath2 = Path().apply {
+                moveTo(sunCenter.x - 15f * density, sunCenter.y + 10f * density)
+                lineTo(sunCenter.x + 50f * density, sunCenter.y + 10f * density)
+                lineTo(w * 0.58f, h * 0.68f)
+                lineTo(w * 0.42f, h * 0.65f)
+                close()
+            }
+            drawPath(
+                path = rayPath2,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFFFF9C4).copy(alpha = godRayAlpha * 0.90f),
+                        Color.Transparent,
+                    ),
+                    start = sunCenter,
+                    end = Offset(w * 0.50f, h * 0.66f),
                 ),
-                start = sunCenter,
-                end = Offset(w * 0.50f, h * 0.66f),
-            ),
-        )
+            )
+        } else {
+            // 夜间多云：右上云间月华清辉（静谧冷调漫射，杜绝刺眼日晕与生硬斜射光束，消除箭头伪影）
+            val moonCenter = Offset(w * 0.86f, h * 0.08f)
+            val breath = (sin(timeSeconds * 0.45f) + 1f) * 0.5f
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFFE0F7FA).copy(alpha = 0.20f + breath * 0.05f),
+                        Color(0xFF80DEEA).copy(alpha = 0.08f + breath * 0.02f),
+                        Color(0xFF283593).copy(alpha = 0.02f),
+                        Color.Transparent,
+                    ),
+                    center = moonCenter,
+                    radius = w * 0.45f,
+                ),
+                radius = w * 0.45f,
+                center = moonCenter,
+            )
+        }
 
         // 3. 全局多层次自然漫游白云群（覆盖上空、中空与地面上方，全屏皆有生动可见的浮云漫步）
         // 云群 1：上空主积云（清晰饱满，舒缓自左向右漂移）

@@ -42,6 +42,10 @@
     <string name="focus_stop_keep">继续专注</string>
     <string name="focus_error_title">出错了</string>
     <string name="focus_ok">确定</string>
+    <string name="focus_route_progress_title">行车经由路线</string>
+    <string name="focus_ambient_playing">车厢白噪音</string>
+    <string name="focus_ambient_muted">车厢静音</string>
+    <string name="checkin_tap_prompt">轻触车票 · 检票发车</string>
 
     <!-- Completion Overlay -->
     <string name="completion_welcome">欢迎来到</string>
@@ -371,4 +375,68 @@
     <string name="ticket_bunk_upper">上铺</string>
     <string name="ticket_bunk_lower">下铺</string>
     <string name="ticket_bunk_format">%1$s车%2$d%3$s</string>
+    <!-- 华夏铁路足迹文牒与枢纽 -->
+    <string name="all_journeys_footprint_title">华夏铁路足迹 · 通关文牒</string>
+    <string name="all_journeys_provinces_lit">已点亮 %1$d / 34 个省级行政区</string>
+    <string name="all_journeys_stat_trips">累计旅程</string>
+    <string name="all_journeys_stat_distance">铁路里程</string>
+    <string name="all_journeys_stat_focus">专注时光</string>
+    <string name="all_journeys_stat_stations">打卡车站</string>
+    <string name="all_journeys_collapse">收起文牒</string>
+    <string name="all_journeys_expand">查看足迹文牒</string>
+    <string name="dest_hub_badge">枢纽</string>
+
+    <!-- 专注场景编辑与通知勿扰 -->
+    <string name="settings_edit_scene">编辑场景</string>
+    <string name="settings_edit_scene_title">编辑专注场景</string>
+    <string name="settings_notif_filter_title">通知筛选与管理</string>
+    <string name="settings_allow_notif">允许应用通知</string>
+    <string name="settings_allow_notif_desc">开启后仅放行白名单中所选应用的通知</string>
+    <string name="settings_notif_cat_im">即时通讯与社媒</string>
+    <string name="settings_notif_cat_im_desc">微信、QQ、短信等重要社交消息</string>
+    <string name="settings_notif_cat_work">办公与邮件</string>
+    <string name="settings_notif_cat_work_desc">钉钉、飞书、企业微信、工作邮箱</string>
+    <string name="settings_notif_cat_system">日程与系统提醒</string>
+    <string name="settings_notif_cat_system_desc">日历日程、待办提醒与系统警报</string>
+    <string name="settings_notif_cat_media">资讯与娱乐推送</string>
+    <string name="settings_notif_cat_media_desc">视频媒体、资讯快报与营销通知</string>
+    <string name="settings_mute_preview">隐藏通知详情预览</string>
+    <string name="settings_mute_preview_desc">专注期间仅提示有新消息，隐藏正文摘要</string>
+    <string name="settings_dnd_section">勿扰模式 (DND)</string>
+    <string name="settings_dnd_mode_label">勿扰等级</string>
+    <string name="settings_dnd_off">不开启</string>
+    <string name="settings_dnd_priority">仅优先提醒</string>
+    <string name="settings_dnd_alarms">仅闹钟</string>
+    <string name="settings_dnd_total_silence">全面静音</string>
+    <string name="settings_call_section">通话与呼叫过滤</string>
+    <string name="settings_call_filter_label">允许来电范围</string>
+    <string name="settings_call_everyone">所有人</string>
+    <string name="settings_call_contacts">仅通讯录联系人</string>
+    <string name="settings_call_starred">仅特别关注/收藏联系人</string>
+    <string name="settings_call_none">静音所有来电</string>
+    <string name="settings_call_repeat">允许重复来电</string>
+    <string name="settings_call_repeat_desc">3分钟内同一号码再次呼叫时正常响铃</string>
+    <string name="settings_auto_reply_sms">自动短信回复</string>
+    <string name="settings_auto_reply_sms_desc">拒接时自动回复“正在高铁专注中，稍后联系您”</string>
+    <string name="settings_keep_screen_on_label">专注时屏幕保持常亮</string>
+    <string name="settings_save_settings">保存设置</string>
+
+    <!-- 应用选择器与白名单 -->
+    <string name="settings_app_picker_title">选择放行应用</string>
+    <string name="settings_app_picker_subtitle">仅允许所选应用在专注期间接收或弹出通知</string>
+    <string name="settings_app_picker_search_hint">搜索应用名称或包名...</string>
+    <string name="settings_app_picker_cat_all">全部</string>
+    <string name="settings_app_picker_cat_selected">已选</string>
+    <string name="settings_app_picker_cat_user">常用应用</string>
+    <string name="settings_app_picker_cat_system">系统应用</string>
+    <string name="settings_app_picker_select_all">全选</string>
+    <string name="settings_app_picker_clear_all">清空</string>
+    <string name="settings_app_picker_empty">未找到匹配的应用</string>
+    <string name="settings_app_picker_loading">正在读取已安装应用...</string>
+    <string name="settings_app_picker_confirm">确认 (%1$d)</string>
+    <string name="settings_app_whitelist_card_title">放行应用白名单</string>
+    <string name="settings_app_whitelist_btn">选择放行应用</string>
+    <string name="settings_app_whitelist_all_apps">未限制应用（默认放行所有通知）</string>
+    <string name="settings_app_whitelist_selected_count">已放行 %1$d 款应用</string>
+    <string name="settings_app_whitelist_open_picker">设置应用名单</string>
 </resources>

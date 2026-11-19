@@ -12,17 +12,23 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.HistoryEdu
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
@@ -41,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -62,18 +70,83 @@ import com.hsr.railfocus.ui.theme.RailColors
 
 @Composable
 fun CountdownDisplay(remainingSeconds: Int, modifier: Modifier = Modifier) {
-    val minutes = remainingSeconds / 60
-    val seconds = remainingSeconds % 60
-    val text = "%02d:%02d".format(minutes, seconds)
+    val minutes = (remainingSeconds / 60).coerceAtLeast(0)
+    val seconds = (remainingSeconds % 60).coerceAtLeast(0)
 
-    Text(
-        text = text,
-        style = MaterialTheme.typography.displayLarge,
-        fontWeight = FontWeight.Black,
-        color = MaterialTheme.colorScheme.primary,
-        textAlign = TextAlign.Center,
-        modifier = modifier
+    val minTens = minutes / 10
+    val minOnes = minutes % 10
+    val secTens = seconds / 10
+    val secOnes = seconds % 10
+
+    val infiniteTransition = rememberInfiniteTransition(label = "colon_blink")
+    val colonAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "colon_alpha"
     )
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.68f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 26.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            RollingDigit(minTens)
+            RollingDigit(minOnes)
+            Text(
+                text = ":",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontFeatureSettings = "tnum",
+                    fontWeight = FontWeight.Black
+                ),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = colonAlpha),
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .offset(y = (-2).dp)
+            )
+            RollingDigit(secTens)
+            RollingDigit(secOnes)
+        }
+    }
+}
+
+@Composable
+private fun RollingDigit(digit: Int) {
+    AnimatedContent(
+        targetState = digit,
+        transitionSpec = {
+            if (targetState < initialState) {
+                (slideInVertically(animationSpec = tween(240, easing = FastOutSlowInEasing)) { -it / 2 } + fadeIn(tween(180)))
+                    .togetherWith(slideOutVertically(animationSpec = tween(240, easing = FastOutSlowInEasing)) { it / 2 } + fadeOut(tween(140)))
+            } else {
+                (slideInVertically(animationSpec = tween(240, easing = FastOutSlowInEasing)) { it / 2 } + fadeIn(tween(180)))
+                    .togetherWith(slideOutVertically(animationSpec = tween(240, easing = FastOutSlowInEasing)) { -it / 2 } + fadeOut(tween(140)))
+            }
+        },
+        label = "digit_slide"
+    ) { d ->
+        Text(
+            text = d.toString(),
+            style = MaterialTheme.typography.displayLarge.copy(
+                fontFeatureSettings = "tnum",
+                letterSpacing = (-1).sp
+            ),
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 @Composable
@@ -294,6 +367,365 @@ fun StationLabel(
     }
 }
 
+/**
+ * 高铁车厢经由路线示意条 (Route Progression Strip)
+ *
+ * 模仿中国高铁车厢门上方的动态站点全景示意条：
+ * - 实时显示整条专注旅程的所有停靠站/经由站；
+ * - 已通过车站标记为实心绿色对勾；
+ * - 当前区间/正在停靠车站有迷你高铁动车组图标与动态脉冲指示；
+ * - 即将到达的下一站与终点站清晰可见，赋予用户强烈的空间前行感。
+ */
+@Composable
+fun RouteProgressionStrip(
+    stations: List<Station>,
+    currentStation: Station?,
+    nextStation: Station?,
+    overallProgress: Float,
+    isDwelling: Boolean,
+    modifier: Modifier = Modifier
+) {
+    if (stations.size < 2) return
+
+    val currentStationIndex = remember(stations, currentStation) {
+        val idx = stations.indexOfFirst { it.id == currentStation?.id }
+        if (idx >= 0) idx else 0
+    }
+    val progressClamped = overallProgress.coerceIn(0f, 1f)
+    val scrollState = rememberScrollState()
+
+    // 当站点较多时，自动随进度平滑滚动居中当前车站
+    LaunchedEffect(currentStationIndex) {
+        if (stations.size > 5) {
+            val targetScroll = (scrollState.maxValue * (currentStationIndex.toFloat() / (stations.size - 1))).toInt()
+            scrollState.animateScrollTo(targetScroll)
+        }
+    }
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 2.dp,
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // 头部标题与进度百分比
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    BulletTrainIcon(
+                        size = 15.dp,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.focus_route_progress_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (isDwelling) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.padding(end = 4.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.focus_dwelling_label),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = "${(progressClamped * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            // 站点轨道示意图
+            val infiniteTransition = rememberInfiniteTransition(label = "pulse_train")
+            val pulseAlpha by infiniteTransition.animateFloat(
+                initialValue = 0.6f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(900, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulse_train_alpha"
+            )
+
+            val isCompact = stations.size <= 5
+            val contentModifier = if (isCompact) {
+                Modifier.fillMaxWidth()
+            } else {
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState)
+            }
+
+            Row(
+                modifier = contentModifier.padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if (isCompact) Arrangement.SpaceBetween else Arrangement.spacedBy(0.dp)
+            ) {
+                stations.forEachIndexed { index, station ->
+                    val isEnd = index == stations.size - 1
+                    val isPassed = index < currentStationIndex
+                    val isCurrent = index == currentStationIndex
+
+                    val itemWidth = if (isCompact) Modifier.weight(1f, fill = false) else Modifier.widthIn(min = 68.dp)
+
+                    Column(
+                        modifier = itemWidth,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // 节点图标
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(22.dp)
+                        ) {
+                            when {
+                                isPassed -> {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Done,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.padding(2.dp)
+                                        )
+                                    }
+                                }
+                                isCurrent -> {
+                                    if (isDwelling) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = pulseAlpha * 0.35f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(12.dp)
+                                            ) {}
+                                        }
+                                    } else {
+                                        BulletTrainIcon(
+                                            size = 20.dp,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    Surface(
+                                        shape = CircleShape,
+                                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                                        color = MaterialTheme.colorScheme.surface,
+                                        modifier = Modifier.size(12.dp)
+                                    ) {}
+                                }
+                            }
+                        }
+
+                        // 站名
+                        Text(
+                            text = station.name,
+                            style = if (isCurrent) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Medium,
+                            color = when {
+                                isCurrent -> MaterialTheme.colorScheme.primary
+                                isPassed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 站与站之间的连线
+                    if (!isEnd) {
+                        val isSegmentPassed = index < currentStationIndex
+                        val isSegmentCurrent = index == currentStationIndex
+                        val lineColor = when {
+                            isSegmentPassed -> MaterialTheme.colorScheme.primary
+                            isSegmentCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        }
+
+                        val lineModifier = if (isCompact) {
+                            Modifier
+                                .weight(1f)
+                                .height(2.5.dp)
+                                .padding(horizontal = 2.dp)
+                                .offset(y = (-11).dp)
+                                .background(lineColor, RoundedCornerShape(1.dp))
+                        } else {
+                            Modifier
+                                .width(32.dp)
+                                .height(2.5.dp)
+                                .offset(y = (-11).dp)
+                                .background(lineColor, RoundedCornerShape(1.dp))
+                        }
+
+                        Box(modifier = lineModifier)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 车厢电子内屏状态条 (Carriage Status HUD)
+ *
+ * 仿中国高铁车厢两端数字显示屏：
+ * 呈现车型车次编号、车厢席位、实时运行状态，以及快捷车厢环境音切换按钮。
+ */
+@Composable
+fun CarriageStatusHud(
+    trainSeriesName: String,
+    trainNumber: String,
+    carriageNumber: String?,
+    seatNumber: String?,
+    focusType: FocusType?,
+    speed: Float,
+    isDwelling: Boolean,
+    isPaused: Boolean,
+    isAmbientEnabled: Boolean,
+    onToggleAmbient: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // 左侧：列车车次与车厢信息
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Text(
+                        text = "$trainSeriesName $trainNumber",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                    )
+                }
+
+                val seatClean = seatNumber?.replace("号", "")?.replace(Regex("^[0-9]+车"), "")
+                val seatDisplay = if (carriageNumber != null && seatClean != null) {
+                    "${carriageNumber}车 $seatClean"
+                } else if (carriageNumber != null) {
+                    "${carriageNumber}车"
+                } else null
+
+                seatDisplay?.let { seat ->
+                    Text(
+                        text = seat,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                focusType?.let { ft ->
+                    Text(
+                        text = "· ${ft.displayName}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            // 右侧：车厢白噪音快捷控制微胶囊
+            Surface(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleAmbient()
+                },
+                shape = RoundedCornerShape(12.dp),
+                color = if (isAmbientEnabled) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                },
+                contentColor = if (isAmbientEnabled) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                },
+                tonalElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isAmbientEnabled) Icons.Default.Headphones else Icons.Default.VolumeOff,
+                        contentDescription = stringResource(R.string.settings_ambient_sound),
+                        modifier = Modifier.size(15.dp),
+                        tint = if (isAmbientEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Text(
+                        text = if (isAmbientEnabled) stringResource(R.string.focus_ambient_playing) else stringResource(R.string.focus_ambient_muted),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun CompletionOverlay(
     startStation: String,
@@ -402,10 +834,8 @@ fun CompletionOverlay(
                             )
                         }
                         
-                        val density = LocalDensity.current
-                        val dotOffset = with(density) { 36.dp.toPx() }
                         val infiniteTransition = rememberInfiniteTransition(label = "dots_orbit")
-                        val baseAngle by infiniteTransition.animateFloat(
+                        val baseAngle = infiniteTransition.animateFloat(
                             initialValue = 0f,
                             targetValue = 360f,
                             animationSpec = infiniteRepeatable(
@@ -414,32 +844,38 @@ fun CompletionOverlay(
                             ),
                             label = "base_angle"
                         )
-                        repeat(6) { i ->
-                            val angle = baseAngle + i * 60f
-                            Surface(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .graphicsLayer {
-                                        translationX = dotOffset * kotlin.math.cos(Math.toRadians(angle.toDouble())).toFloat()
-                                        translationY = dotOffset * kotlin.math.sin(Math.toRadians(angle.toDouble())).toFloat()
-                                    },
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
-                            ) {}
+                        val orbitColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                        Canvas(modifier = Modifier.size(80.dp)) {
+                            val orbitRadius = 36.dp.toPx()
+                            val dotRadius = 4.dp.toPx()
+                            val angle = baseAngle.value
+                            for (i in 0 until 6) {
+                                val rad = Math.toRadians((angle + i * 60f).toDouble())
+                                val x = center.x + (orbitRadius * kotlin.math.cos(rad)).toFloat()
+                                val y = center.y + (orbitRadius * kotlin.math.sin(rad)).toFloat()
+                                drawCircle(color = orbitColor, radius = dotRadius, center = Offset(x, y))
+                            }
                         }
                     }
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         if (completed) {
                             Text(
                                 text = stringResource(R.string.completion_welcome),
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                            )
+                            PlatformStationSign(
+                                stationName = endStation,
+                                modifier = Modifier.padding(vertical = 4.dp)
                             )
                             Text(
                                 text = city,
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Black,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         } else {
@@ -774,6 +1210,47 @@ fun InfoItem(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+/**
+ * 经典中国铁路站台站名牌 (国铁蓝底白字)
+ */
+@Composable
+fun PlatformStationSign(
+    stationName: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF103A70), // 经典国铁站牌钴蓝
+        border = BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 3.dp,
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "◀",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.65f)
+            )
+            Text(
+                text = stationName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                letterSpacing = 2.sp
+            )
+            Text(
+                text = "▶",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.65f)
             )
         }
     }

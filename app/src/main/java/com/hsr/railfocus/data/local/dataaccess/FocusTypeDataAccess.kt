@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface FocusTypeDataAccess {
+    @Query("SELECT * FROM focus_types WHERE id = :id LIMIT 1")
+    suspend fun getById(id: String): FocusTypeEntity?
+
     @Query("SELECT * FROM focus_types ORDER BY `order` ASC")
     fun getAllFlow(): Flow<List<FocusTypeEntity>>
 

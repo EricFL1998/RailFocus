@@ -1,5 +1,6 @@
 package com.hsr.railfocus.ui.timeselection.components
 
+import kotlinx.coroutines.launch
 import androidx.compose.animation.*
 import kotlin.math.absoluteValue
 
@@ -41,6 +42,7 @@ import com.hsr.railfocus.ui.theme.RailFocusTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+
 /**
  * 横向滚动数字刻度条时间选择器
  *
@@ -55,6 +57,7 @@ fun TimeDurationPicker(
     minDuration: Int = 15,
     maxDuration: Int = 300,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val snapStep = 1
     val tickSpacing = 20.dp // 增加间距 (从 14dp -> 20dp)，提供更大的精细调节空间
@@ -63,6 +66,7 @@ fun TimeDurationPicker(
     fun indexToDuration(index: Int): Int = minDuration + (index * snapStep)
     fun durationToIndex(duration: Int): Int = (duration - minDuration) / snapStep
     fun isMajorTick(duration: Int): Boolean = ((duration - minDuration) % 5 == 0)
+
 
     val totalSnapCount = (((maxDuration - minDuration) / snapStep) + 1)
 
@@ -104,12 +108,17 @@ fun TimeDurationPicker(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(82.dp)
-            .onSizeChanged { size -> viewportWidthPx = size.width },
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(82.dp)
+                .onSizeChanged { size -> viewportWidthPx = size.width },
+        ) {
         // 当前选中时间药丸，使用当前可见页实时更新，滑动时即时变化
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -184,6 +193,7 @@ fun TimeDurationPicker(
             )
         }
     }
+}
 }
 
 @Composable

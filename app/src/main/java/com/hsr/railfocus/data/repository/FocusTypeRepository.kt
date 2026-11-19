@@ -49,8 +49,9 @@ class FocusTypeRepository @Inject constructor(
     /**
      * 添加或更新专注类型
      */
-    suspend fun saveFocusType(focusType: FocusType, order: Int = 0) {
-        focusTypeDataAccess.insert(focusType.toEntity(order))
+    suspend fun saveFocusType(focusType: FocusType, order: Int? = null) {
+        val targetOrder = order ?: (focusTypeDataAccess.getById(focusType.id)?.order ?: focusTypeDataAccess.getCount())
+        focusTypeDataAccess.insert(focusType.toEntity(targetOrder))
     }
 
     /**

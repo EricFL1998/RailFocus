@@ -859,6 +859,24 @@ private fun allowedHomeCenterRange(
     return (minLat to maxLat) to (minLng to maxLng)
 }
 
+private class StyleLayerStateHolder {
+    var routeKey: String? = null
+    var routeColor: Int = 0
+    var routeOpacity: Float = -1f
+    var destinationId: String? = null
+    var destinationOpacity: Float = -1f
+    var pillsKey: String? = null
+    var pillsColor: Int = 0
+    var pillsOpacity: Float = -1f
+    var markersKey: String? = null
+    var markersOpacity: Float = -1f
+    var currentLocation: LatLng? = null
+    var overlayKey: Int = 0
+    var overlayOpacity: Float = -1f
+}
+
+private val styleStateHolders = java.util.WeakHashMap<Style, StyleLayerStateHolder>()
+
 private fun updateMapLayers(
     style: Style,
     context: android.content.Context,
@@ -878,55 +896,117 @@ private fun updateMapLayers(
     // 透明度始终跟随转场进度：进入时淡入，返回时随缩放一起渐出，
     // 这样路线和站点元素会在动画过程中慢慢消失，而不是在结束时瞬间消失。
     val contentOpacity = transitionProgress.coerceIn(0f, 1f)
-    
-    android.util.Log.d("MapLayers", "RENDER: opacity=$contentOpacity")
+    val holder = styleStateHolders.getOrPut(style) { StyleLayerStateHolder() }
+
+    val currentRouteKey = if (latchedStations.size >= 2) {
+        latchedStations.joinToString(separator = ",") { it.id }
+    } else null
+
+    // 1. 路线 Polyline：仅当站点或主颜色变化时重新序列化 GeoJson；仅透明度变化时直接属性更新
     if (latchedStations.size >= 2) {
-        addRoutePolyline(style, latchedStations, primaryArgb, contentOpacity)
+        if (holder.routeKey != currentRouteKey || holder.routeColor != primaryArgb) {
+            holder.routeKey = currentRouteKey
+            holder.routeColor = primaryArgb
+            holder.routeOpacity = contentOpacity
+            addRoutePolyline(style, latchedStations, primaryArgb, contentOpacity)
+        } else if (holder.routeOpacity != contentOpacity) {
+            holder.routeOpacity = contentOpacity
+            style.getLayer("route-layer")?.setProperties(PropertyFactory.lineOpacity(contentOpacity))
+        }
     } else {
-        removeSourceAndLayer(style, "route-source", "route-layer")
+        if (holder.routeKey != null) {
+            holder.routeKey = null
+            removeSourceAndLayer(style, "route-source", "route-layer")
+        }
     }
-    // 多线路叠加层（总旅程视图）：与单条路线互斥使用，两者同时传时以各自图层共存
+
+    // 2. 多线路叠加层（总旅程视图）
+    val currentOverlayKey = overlayRoutes.hashCode()
     if (overlayRoutes.isNotEmpty()) {
-        addOverlayRoutes(style, overlayRoutes, primaryArgb, contentOpacity)
+        if (holder.overlayKey != currentOverlayKey || holder.routeColor != primaryArgb) {
+            holder.overlayKey = currentOverlayKey
+            holder.overlayOpacity = contentOpacity
+            addOverlayRoutes(style, overlayRoutes, primaryArgb, contentOpacity)
+        } else if (holder.overlayOpacity != contentOpacity) {
+            holder.overlayOpacity = contentOpacity
+            style.getLayer("overlay-routes-layer")?.setProperties(PropertyFactory.lineOpacity(contentOpacity))
+        }
     } else {
-        removeSourceAndLayer(
-            style, "overlay-routes-source",
-            "overlay-routes-layer",
-        )
+        if (holder.overlayKey != 0) {
+            holder.overlayKey = 0
+            removeSourceAndLayer(style, "overlay-routes-source", "overlay-routes-layer")
+        }
     }
-    updateCurrentLocationMarker(style, initialPosition)
-    // 修正：确保在有 routeStations 时，即使整体 showStationMarkers 为 false，
-    // 依然显示起始站、终点站和中间站
+
+    // 3. 当前位置标点：仅在定位变化时更新
+    if (holder.currentLocation != initialPosition) {
+        holder.currentLocation = initialPosition
+        updateCurrentLocationMarker(style, initialPosition)
+    }
+
+    // 4. 站点标记：仅在站点列表或显示模式变化时重新解析
     val startStationId = latchedStations.firstOrNull()?.id
     val endStationId = latchedStations.lastOrNull()?.id
     val intermediateStations = if (latchedStations.size > 2) {
         latchedStations.subList(1, latchedStations.size - 1)
     } else emptyList()
-    
-    // 如果 showStationMarkers 为 true，显示所有 background stations + intermediate
-    // 如果为 false，仅显示中间站 (用于路线高亮)
+
     val backgroundMarkers = if (showStationMarkers) {
         stations.filter { station ->
-            station.id != startStationId && 
+            station.id != startStationId &&
             station.id != endStationId &&
             (station.lat != initialPosition.latitude || station.lng != initialPosition.longitude)
         }
     } else emptyList()
-    
-    val allMarkersToShow = (intermediateStations + backgroundMarkers).distinctBy { it.id }
-    addStationMarkers(context, style, allMarkersToShow, true, contentOpacity) // 强制为 true，由 list 控制显示内容
 
-    if (latchedStations.size >= 2) {
-        val destination = latchedStations.last()
-        addDestinationMarker(context, style, destination, contentOpacity)
-    } else {
-        removeSourceAndLayer(style, "destination-source", "destination-layer")
+    val allMarkersToShow = (intermediateStations + backgroundMarkers).distinctBy { it.id }
+    val currentMarkersKey = "${allMarkersToShow.size}-$startStationId-$endStationId-$showStationMarkers"
+    if (holder.markersKey != currentMarkersKey) {
+        holder.markersKey = currentMarkersKey
+        holder.markersOpacity = contentOpacity
+        addStationMarkers(context, style, allMarkersToShow, true, contentOpacity)
+    } else if (holder.markersOpacity != contentOpacity) {
+        holder.markersOpacity = contentOpacity
+        style.getLayer("stations-layer")?.setProperties(PropertyFactory.iconOpacity(contentOpacity))
     }
-    if (latchedStations.size >= 2) {
-        addRouteStationPills(context, style, latchedStations, primaryContainerArgb, onPrimaryContainerArgb, primaryArgb, primaryArgb, contentOpacity)
+
+    // 5. 终点图钉标记
+    val currentDestination = latchedStations.lastOrNull()
+    if (latchedStations.size >= 2 && currentDestination != null) {
+        if (holder.destinationId != currentDestination.id) {
+            holder.destinationId = currentDestination.id
+            holder.destinationOpacity = contentOpacity
+            addDestinationMarker(context, style, currentDestination, contentOpacity)
+        } else if (holder.destinationOpacity != contentOpacity) {
+            holder.destinationOpacity = contentOpacity
+            style.getLayer("destination-layer")?.setProperties(PropertyFactory.iconOpacity(contentOpacity))
+        }
     } else {
-        removeSourceAndLayer(style, "highlighted-pill-source", "highlighted-pill-layer")
+        if (holder.destinationId != null) {
+            holder.destinationId = null
+            removeSourceAndLayer(style, "destination-source", "destination-layer")
+        }
     }
+
+    // 6. 路线高亮车站药丸 (Pills)
+    if (latchedStations.size >= 2) {
+        if (holder.pillsKey != currentRouteKey || holder.pillsColor != primaryArgb) {
+            holder.pillsKey = currentRouteKey
+            holder.pillsColor = primaryArgb
+            holder.pillsOpacity = contentOpacity
+            addRouteStationPills(context, style, latchedStations, primaryContainerArgb, onPrimaryContainerArgb, primaryArgb, primaryArgb, contentOpacity)
+        } else if (holder.pillsOpacity != contentOpacity) {
+            holder.pillsOpacity = contentOpacity
+            style.getLayer("highlighted-pill-layer")?.setProperties(PropertyFactory.iconOpacity(contentOpacity))
+        }
+    } else {
+        if (holder.pillsKey != null) {
+            holder.pillsKey = null
+            removeSourceAndLayer(style, "highlighted-pill-source", "highlighted-pill-layer")
+        }
+    }
+
+    // 7. 动态列车标点：随 trainProgress 持续平滑更新（不触发上方任何静态图层重建）
     if (showTrainMarker && latchedStations.size >= 2) {
         updateTrainMarker(context, style, latchedStations, trainProgress, showTrainMarker, contentOpacity)
     } else {

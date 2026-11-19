@@ -325,12 +325,12 @@ private fun CardStack(
                 2 -> -0.8f
                 else -> 1.2f
             }
-            val rotation by animateFloatAsState(
+            val rotationAnim = animateFloatAsState(
                 targetValue = if (isExpanded) 0f else defaultRotation,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                 label = "ticket_rotation"
             )
-            val scale by animateFloatAsState(
+            val scaleAnim = animateFloatAsState(
                 targetValue = if (isExpanded) 1.02f else 1f,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                 label = "ticket_scale"
@@ -344,9 +344,10 @@ private fun CardStack(
                 modifier = Modifier
                     .animateItem()
                     .graphicsLayer {
-                        rotationZ = rotation
-                        scaleX = scale
-                        scaleY = scale
+                        // 将动画状态读取下沉至 graphicsLayer lambda 内部，完全规避展开/收起时的全列表重组
+                        rotationZ = rotationAnim.value
+                        scaleX = scaleAnim.value
+                        scaleY = scaleAnim.value
                     }
                     .zIndex(if (isExpanded) 100f else index.toFloat())
             )

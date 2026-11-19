@@ -545,10 +545,75 @@ fun TrainTicketCard(
                 }
             }
         }
+
+        // 真实中国铁路验票红色印章（在已完成或已终止的车票右下侧印刻专属检票印记）
+        if (ticket.completionStatus != statusPending && ticket.completionStatus != statusCheckedIn) {
+            TicketInspectionStamp(
+                isCompleted = ticket.isCompleted,
+                isDark = isDark,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 42.dp)
+                    .graphicsLayer { rotationZ = -12f }
+            )
+        }
         }
         }
 
 
+    }
+}
+
+/**
+ * 中国铁路客票风格检票印章 (验讫印章)
+ */
+@Composable
+private fun TicketInspectionStamp(
+    isCompleted: Boolean,
+    isDark: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val stampColor = if (isCompleted) {
+        if (isDark) Color(0xFFEF5350).copy(alpha = 0.82f) else Color(0xFFD32F2F).copy(alpha = 0.85f)
+    } else {
+        if (isDark) Color(0xFF90A4AE).copy(alpha = 0.7f) else Color(0xFF78909C).copy(alpha = 0.75f)
+    }
+    val titleText = if (isCompleted) "中国铁路" else "客票作废"
+    val mainText = if (isCompleted) "检票讫" else "已终止"
+    val subText = if (isCompleted) "准点到达" else "未达成"
+
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.5.dp, stampColor),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            Text(
+                text = titleText,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                color = stampColor,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = mainText,
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                color = stampColor,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.sp
+            )
+            Text(
+                text = subText,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp),
+                color = stampColor,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 

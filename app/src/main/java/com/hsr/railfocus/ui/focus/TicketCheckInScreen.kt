@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.*
@@ -147,6 +148,8 @@ fun TicketCheckInScreen(
     val ticketSlideAnim = remember { Animatable(0f) }
     // 车票过闸推入站台动画 (0f -> 1f)
     val ticketDepartAnim = remember { Animatable(0f) }
+    // 打孔掉落纸屑物理动画 (0f -> 1f)
+    val scrapAnim = remember { Animatable(0f) }
 
     // 呼吸悬浮动效
     val infiniteTransition = rememberInfiniteTransition(label = "checkin_pulse")
@@ -179,9 +182,12 @@ fun TicketCheckInScreen(
                 isPunched = true
                 TicketFeedbackHelper.playPunchSound(context)
                 TicketFeedbackHelper.performPunchHaptic(context)
+                launch {
+                    scrapAnim.animateTo(1f, tween(360, easing = LinearOutSlowInEasing))
+                }
 
-                // 2. 停顿 150ms 呈现打孔效果，随后直接动画收入车票
-                delay(150)
+                // 2. 停顿 180ms 充分呈现纸屑掉落与印章弹性下压，随后平滑滑出车票
+                delay(180)
 
                 // 3. 动画直接收入车票，进入专注页面。
                 // 先把启动服务、初始化旅程等重活抛给宿主在动画期间完成，
@@ -210,12 +216,13 @@ fun TicketCheckInScreen(
         val departOffsetY = -ticketDepartAnim.value * 450f
         val departAlpha = 1f - (ticketDepartAnim.value * 0.85f)
         val departScale = 1f - (ticketDepartAnim.value * 0.08f)
-        val idleScale = if (!isPunchingInProgress && ticketSlideAnim.value >= 1f) pulseScale else 1f
 
         Box(
             modifier = Modifier
                 .padding(horizontal = 24.dp)
                 .graphicsLayer {
+                    // 将动画状态读取下沉至 graphicsLayer 内部，消除 Composition 阶段的高频重组
+                    val idleScale = if (!isPunchingInProgress && ticketSlideAnim.value >= 1f) pulseScale else 1f
                     translationY = enterOffsetY + departOffsetY
                     alpha = departAlpha
                     scaleX = departScale * idleScale
@@ -238,18 +245,40 @@ fun TicketCheckInScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 检票打孔时的复古官方印章动效
+            // 打孔切落的微粒纸屑物理抛落动效
+            if (isPunched && scrapAnim.value > 0f) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(
+                            x = (scrapAnim.value * 22).dp - 6.dp,
+                            y = (-45).dp + (scrapAnim.value * 120).dp
+                        )
+                        .graphicsLayer {
+                            alpha = (1f - scrapAnim.value * 0.95f).coerceIn(0f, 1f)
+                            rotationZ = scrapAnim.value * 160f
+                            scaleX = 1f - scrapAnim.value * 0.25f
+                            scaleY = 1f - scrapAnim.value * 0.25f
+                        }
+                        .size(13.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFFFDF8))
+                        .border(0.6.dp, Color(0xFFCBD5E1), CircleShape)
+                )
+            }
+
+            // 检票打孔时的复古官方印章动效（带弹性下压回弹）
             if (isPunched) {
                 val stampScale by animateFloatAsState(
                     targetValue = 1f,
                     animationSpec = spring(
-                        dampingRatio = 0.58f,
+                        dampingRatio = 0.52f,
                         stiffness = Spring.StiffnessMedium
                     ),
                     label = "stamp_scale"
                 )
                 val stampAlpha by animateFloatAsState(
-                    targetValue = 0.92f,
+                    targetValue = 0.95f,
                     animationSpec = tween(120),
                     label = "stamp_alpha"
                 )
@@ -285,6 +314,33 @@ fun TicketCheckInScreen(
                             color = Color(0xFFD32F2F)
                         )
                     }
+                }
+            }
+
+            // 底部轻触引导提示胶囊
+            if (!isPunchingInProgress && !isCompleted) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(y = 48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.Black.copy(alpha = 0.52f))
+                        .padding(horizontal = 16.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.TouchApp,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.92f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.checkin_tap_prompt),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.95f)
+                    )
                 }
             }
 

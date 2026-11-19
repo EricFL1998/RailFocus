@@ -13,6 +13,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.EventSeat
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,10 +48,33 @@ fun FocusSessionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val keepScreenOnEnabled by viewModel.keepScreenOnEnabled.collectAsState()
+    val ambientEnabled by viewModel.ambientSoundEnabled.collectAsState()
     val context = LocalContext.current
     val view = LocalView.current
     var showStopConfirm by remember { mutableStateOf(false) }
     var showJournalDialog by remember { mutableStateOf(false) }
+
+    val plannedMinutes = (uiState.totalSeconds / 60).coerceAtLeast(1)
+    val (trainSeries, prefix) = remember(plannedMinutes, uiState.focusType) {
+        com.hsr.railfocus.ui.history.TrainTicketHelper.determineTrainSeries(
+            plannedMinutes,
+            focusType = uiState.focusType?.displayName
+        )
+    }
+    val trainSeriesName = when (trainSeries) {
+        com.hsr.railfocus.ui.history.TrainSeries.G_SERIES -> "复兴号"
+        com.hsr.railfocus.ui.history.TrainSeries.D_SERIES -> "和谐号"
+        com.hsr.railfocus.ui.history.TrainSeries.C_SERIES -> "城际"
+        com.hsr.railfocus.ui.history.TrainSeries.SLEEPER -> "动卧"
+    }
+    val trainNumber = remember(prefix, uiState.startStation, uiState.endStation, plannedMinutes) {
+        com.hsr.railfocus.ui.history.TrainTicketHelper.synthesizeTrainNumber(
+            prefix,
+            uiState.startStation,
+            uiState.endStation,
+            plannedMinutes
+        )
+    }
 
     // 屏幕常亮：当用户开启设置且旅程处于进行中时保持屏幕常亮
     DisposableEffect(keepScreenOnEnabled, uiState.isRunning) {
@@ -119,10 +146,42 @@ fun FocusSessionScreen(
                     .navigationBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 顶部标题 + 右上角小圆形控制按钮
+                val haptic = LocalHapticFeedback.current
+
+                // 顶部控制与目的地信息区域
                 Box(modifier = Modifier.fillMaxWidth()) {
+                    // 左上角：简洁微型白噪音快捷开关
+                    Surface(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.toggleAmbientSound()
+                        },
+                        shape = CircleShape,
+                        color = if (ambientEnabled) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                        },
+                        contentColor = if (ambientEnabled) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        },
+                        tonalElevation = 2.dp,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    ) {
+                        Icon(
+                            imageVector = if (ambientEnabled) Icons.Default.Headphones else Icons.Default.VolumeOff,
+                            contentDescription = stringResource(R.string.settings_ambient_sound),
+                            modifier = Modifier.padding(11.dp).size(22.dp)
+                        )
+                    }
+
+                    // 居中：标题与简洁列车信息（无面板、极简文字）
                     Column(
-                        modifier = Modifier.align(Alignment.TopCenter),
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 48.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -136,48 +195,29 @@ fun FocusSessionScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        uiState.seatNumber?.let { seat ->
-                            Spacer(modifier = Modifier.height(6.dp))
-                            val seatClean = seat.replace("号", "").replace(Regex("^[0-9]+车"), "")
-                            val seatDisplay = if (uiState.carriageNumber != null) {
-                                "${uiState.carriageNumber}车 $seatClean"
-                            } else {
-                                stringResource(R.string.focus_seat, seatClean)
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.EventSeat,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(13.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = seatDisplay,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    uiState.focusType?.let { ft ->
-                                        Text(
-                                            text = "· ${ft.displayName}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                        )
-                                    }
-                                }
-                            }
+
+                        // 简洁列车信息
+                        val seatClean = uiState.seatNumber?.replace("号", "")?.replace(Regex("^[0-9]+车"), "")
+                        val seatDisplay = if (uiState.carriageNumber != null && seatClean != null) {
+                            "${uiState.carriageNumber}车 $seatClean"
+                        } else if (uiState.carriageNumber != null) {
+                            "${uiState.carriageNumber}车"
+                        } else null
+
+                        val trainSubtitle = buildString {
+                            append("$trainSeriesName $trainNumber")
+                            if (seatDisplay != null) append(" · $seatDisplay")
+                            uiState.focusType?.let { append(" · ${it.displayName}") }
                         }
+                        Text(
+                            text = trainSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
                     }
 
+                    // 右上角：暂停与结束小圆形控制按钮
                     FocusTopControls(
                         isPaused = uiState.isPaused,
                         onPause = viewModel::pause,
@@ -187,14 +227,7 @@ fun FocusSessionScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 倒计时
-                CountdownDisplay(
-                    remainingSeconds = uiState.remainingSeconds,
-                )
-
-                Spacer(modifier = Modifier.heightIn(min = 24.dp).weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
 
                 // 当前站 / 下一站（支持中途到站停靠面板与巡航面板平滑动画切换）
                 StationInfoCard(
@@ -204,7 +237,7 @@ fun FocusSessionScreen(
                     isDwelling = uiState.isDwelling
                 )
 
-                // 底部不留大按钮，控制已移到右上角
+                // 底部留白
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
