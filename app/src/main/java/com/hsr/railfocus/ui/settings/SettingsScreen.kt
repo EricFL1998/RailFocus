@@ -256,6 +256,13 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
+            // 专注页密度设置
+            FocusDensitySection(
+                currentDensity = viewModel.focusDensity.collectAsState().value,
+                onDensitySelected = viewModel::setFocusDensity,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+
             SettingsSection(
                 modifier = Modifier.padding(horizontal = 16.dp),
             ) {
@@ -830,6 +837,64 @@ private fun SettingsSection(
     ) {
         Column(modifier = Modifier.padding(4.dp)) {
             content()
+        }
+    }
+}
+
+@Composable
+private fun FocusDensitySection(
+    currentDensity: String,
+    onDensitySelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CenterFocusStrong,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = stringResource(R.string.settings_focus_density),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            val densities = listOf(
+                "pure" to stringResource(R.string.focus_density_pure),
+                "standard" to stringResource(R.string.focus_density_standard),
+                "full" to stringResource(R.string.focus_density_full),
+            )
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                densities.forEachIndexed { index, (density, label) ->
+                    SegmentedButton(
+                        selected = currentDensity == density,
+                        onClick = { onDensitySelected(density) },
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = densities.size,
+                        ),
+                    ) {
+                        Text(label)
+                    }
+                }
+            }
         }
     }
 }

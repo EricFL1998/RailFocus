@@ -192,6 +192,18 @@ fun TrainTicketCard(
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Canvas(modifier = Modifier.matchParentSize()) {
+                    // 轻纸纹：固定随机种子，避免重组闪烁；只在浅色票面可见
+                    if (!isDark && !isSleeper) {
+                        val paperRandom = java.util.Random(ticket.record.id.hashCode().toLong())
+                        val grain = if (ticket.trainSeries == TrainSeries.G_SERIES) 0xFF8D6E63 else 0xFF64748B
+                        repeat(52) {
+                            drawCircle(
+                                color = Color(grain).copy(alpha = 0.022f),
+                                radius = 0.55.dp.toPx(),
+                                center = Offset(paperRandom.nextFloat() * size.width, paperRandom.nextFloat() * size.height),
+                            )
+                        }
+                    }
                     if (isSleeper) {
                         // 动卧专属星空粒子背景与微弱极光流动
                         val starCount = 38
@@ -538,7 +550,7 @@ fun TrainTicketCard(
                     Text(stringResource(R.string.history_arrival), style = MaterialTheme.typography.labelSmall, color = labelTextColor)
                     Text(
                         ticket.arrivalTime,
-                        style = MaterialTheme.typography.bodyMedium, 
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = arrivalTextColor
                     )

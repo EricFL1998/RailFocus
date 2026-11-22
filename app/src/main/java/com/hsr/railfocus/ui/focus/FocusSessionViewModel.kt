@@ -62,6 +62,9 @@ class FocusSessionViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FocusSessionUiState())
     val uiState: StateFlow<FocusSessionUiState> = _uiState.asStateFlow()
 
+    val focusDensity: StateFlow<String> = preferencesRepository.focusDensity
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), "standard")
+
     val keepScreenOnEnabled: StateFlow<Boolean> = preferencesRepository.keepScreenOnEnabled
         .stateIn(
             scope = viewModelScope,
@@ -225,7 +228,7 @@ class FocusSessionViewModel @Inject constructor(
     private fun recoverExistingSession() {
         val progress = timerService.progress.value ?: return
         val remaining = timerService.getRemainingSeconds()
-        
+
         // We don't have the full DestinationOption here, but we can reconstruct enough for UI
         // In a real app, we might want to persist the destination JSON in the service or a DB
         _uiState.update {
@@ -311,7 +314,7 @@ class FocusSessionViewModel @Inject constructor(
                         saveLastLocation()
                         // 应用在前台展示完成卡片时，撤掉"已到达"通知，避免通知残留
                         dismissCompletionNotification()
-                        
+
                         // Stop the foreground service to dismiss notification
                         context.stopService(Intent(context, FocusTimerService::class.java))
                     }
@@ -468,7 +471,7 @@ class FocusSessionViewModel @Inject constructor(
             try {
                 val state = _uiState.value
                 val jId = state.journeyId ?: journeyRepository.getJourneyHistoryFlow().first().firstOrNull()?.id ?: return@launch
-                
+
                 val savedImagePaths = images.mapNotNull { uri ->
                     JournalImageManager.saveImageFromUri(context, jId, uri)
                 }

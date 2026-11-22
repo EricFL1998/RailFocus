@@ -7,12 +7,14 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -51,16 +53,17 @@ fun LocationHeader(
         shape = MaterialTheme.shapes.medium, // 使用中等圆角 (28.dp)
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
         tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
+        shadowElevation = 8.dp,
     ) {
         Row(
             modifier = Modifier
                 .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+
             // 车站定位信标动画（使用 drawBehind 在绘制层重绘，消除 recomposition 开销）
             val infiniteTransition = rememberInfiniteTransition(label = "beacon")
-            val pulseProgress = infiniteTransition.animateFloat(
+            val pulseProgress by infiniteTransition.animateFloat(
                 initialValue = 0f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
@@ -75,7 +78,7 @@ fun LocationHeader(
                 modifier = Modifier
                     .size(28.dp)
                     .drawBehind {
-                        val p = pulseProgress.value
+                        val p = pulseProgress
                         val maxRadius = size.minDimension / 2f
                         val currentRadius = maxRadius * (0.35f + 0.65f * p)
                         val alpha = (1f - p).coerceIn(0f, 0.45f)
@@ -97,6 +100,7 @@ fun LocationHeader(
             Spacer(modifier = Modifier.width(6.dp))
 
             Column(
+                modifier = Modifier.padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 // 问候语
@@ -106,7 +110,7 @@ fun LocationHeader(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
 
-                // 城市 + 车站
+                // 城市 + 车站（站名用等宽数字字体，避免数字跳动）
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -125,7 +129,7 @@ fun LocationHeader(
                     )
                     Text(
                         text = stationName,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

@@ -41,7 +41,9 @@ import com.hsr.railfocus.ui.timeselection.TimeSelectionScreen
 @Composable
 fun RailFocusNavGraph(
     navController: NavHostController,
-    sharedTransitionScope: SharedTransitionScope
+    sharedTransitionScope: SharedTransitionScope,
+    onHomePhaseChanged: (String) -> Unit = {},
+    onSeatSelectionVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val viewModel: StartDestinationViewModel = hiltViewModel()
     val startDestination by viewModel.startDestination.collectAsState()
@@ -78,7 +80,9 @@ fun RailFocusNavGraph(
                     onSettingsClick = { navController.navigate(Screen.Settings) },
                     onAllJourneysClick = { navController.navigate(Screen.AllJourneys) },
                     onFocusTypeSettingsClick = { navController.navigate(Screen.FocusTypeSettings) },
-                    sharedTransitionScope = sharedTransitionScope
+                    sharedTransitionScope = sharedTransitionScope,
+                    onPhaseChanged = onHomePhaseChanged,
+                    onSeatSelectionVisibilityChanged = onSeatSelectionVisibilityChanged,
                 )
             }
 

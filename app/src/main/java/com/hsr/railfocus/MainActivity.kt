@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -56,6 +57,8 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val currentBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = currentBackStackEntry?.destination
+                    var focusPhase by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("None") }
+                    var seatSelectionVisible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
                     // 设置、专注场景管理、总旅程视图为独立管理或历史报表页面，不覆盖动态天气粒子
                     val isWeatherExcluded = currentDestination?.let { dest ->
@@ -69,7 +72,9 @@ class MainActivity : ComponentActivity() {
                         SharedTransitionLayout {
                             RailFocusNavGraph(
                                 navController = navController,
-                                sharedTransitionScope = this
+                                sharedTransitionScope = this,
+                                onHomePhaseChanged = { focusPhase = it },
+                                onSeatSelectionVisibilityChanged = { seatSelectionVisible = it },
                             )
                         }
 
@@ -78,7 +83,8 @@ class MainActivity : ComponentActivity() {
                         // 仅以真实物理时钟（19:00~06:00）作为夜间气象动效触发源，不将应用深色外观偏好与自然昼夜混淆
                         val isNight = com.hsr.railfocus.domain.model.isNightNow()
                         WeatherAnimationOverlay(
-                            condition = if (!isWeatherExcluded) activeWeatherCondition else null,
+                            // 选座与检票属于强聚焦弹层，不叠加天气粒子
+                            condition = if (!isWeatherExcluded && focusPhase != "CheckIn" && !seatSelectionVisible) activeWeatherCondition else null,
                             isNight = isNight,
                             modifier = Modifier.fillMaxSize(),
                         )

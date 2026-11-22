@@ -72,13 +72,19 @@ fun MapLibreView(
     // 缩到最小 + 居中到全部线路），落位后不再干预，交给手势自由缩放拖动。
     // 与 cameraTargetBounds 互斥使用：传了框选目标时不要再用它。
     overviewCamera: Pair<LatLng, Double>? = null,
+    // 专注页：隐藏当前位置点（你在车上，不在街上）
+    showLocationMarker: Boolean = true,
+    // 专注页：限制途经站标签数量，只保留关键站点
+    maxStationLabels: Int = Int.MAX_VALUE,
+    // 专注页：底图地名透明度（0~1），默认 1，专注页传 0.45 让地名退到背景
+    basemapLabelOpacity: Float = 1.0f,
     onMapReady: (MapLibreMap) -> Unit = {},
     onMapLoaded: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val colorScheme = MaterialTheme.colorScheme
-    
+
     val isDarkMode = colorScheme.background.toArgb().let { argb ->
         val r = (argb shr 16) and 0xff
         val g = (argb shr 8) and 0xff
@@ -718,21 +724,21 @@ fun MapLibreView(
                 // 会强制放大并把相机锁死在边界中心。改为手动夹取（见下方监听器）。
 
                 val currentStyle = map.style
-                val needsStyleReload = currentStyle == null || 
-                                     !currentStyle.isFullyLoaded || 
+                val needsStyleReload = currentStyle == null ||
+                                     !currentStyle.isFullyLoaded ||
                                      styleLoaded != isDarkMode ||
                                      lastAppliedDarkMode != isDarkMode
 
                 if (needsStyleReload) {
                     android.util.Log.d("MapLibreView", "Reloading style: isDarkMode=$isDarkMode")
                     lastAppliedDarkMode = isDarkMode
-                    map.setStyle(Style.Builder().fromJson(createMinimalOSMStyle(isDarkMode))) { style ->
+                    map.setStyle(Style.Builder().fromJson(createMinimalOSMStyle(isDarkMode, basemapLabelOpacity))) { style ->
                         styleLoaded = isDarkMode
                         pooledStyleIsDark = isDarkMode
                         updateMapLayers(
                             style = style,
                             context = context,
-                            initialPosition = locationMarkerPosition ?: initialPosition,
+                            initialPosition = if (showLocationMarker) (locationMarkerPosition ?: initialPosition) else LatLng(0.0, 0.0),
                             stations = stations,
                             showStationMarkers = showStationMarkers,
                             latchedStations = latchedStations,
@@ -751,7 +757,7 @@ fun MapLibreView(
                     updateMapLayers(
                         style = currentStyle,
                         context = context,
-                        initialPosition = locationMarkerPosition ?: initialPosition,
+                        initialPosition = if (showLocationMarker) (locationMarkerPosition ?: initialPosition) else LatLng(0.0, 0.0),
                         stations = stations,
                         showStationMarkers = showStationMarkers,
                         latchedStations = latchedStations,
@@ -912,11 +918,13 @@ private fun updateMapLayers(
         } else if (holder.routeOpacity != contentOpacity) {
             holder.routeOpacity = contentOpacity
             style.getLayer("route-layer")?.setProperties(PropertyFactory.lineOpacity(contentOpacity))
+            style.getLayer("route-glow-mid")?.setProperties(PropertyFactory.lineOpacity(contentOpacity * 0.28f))
+            style.getLayer("route-glow-outer")?.setProperties(PropertyFactory.lineOpacity(contentOpacity * 0.10f))
         }
     } else {
         if (holder.routeKey != null) {
             holder.routeKey = null
-            removeSourceAndLayer(style, "route-source", "route-layer")
+            removeSourceAndLayer(style, "route-source", "route-layer", "route-glow-mid", "route-glow-outer")
         }
     }
 
@@ -947,7 +955,7 @@ private fun updateMapLayers(
     // 4. 站点标记：仅在站点列表或显示模式变化时重新解析
     val startStationId = latchedStations.firstOrNull()?.id
     val endStationId = latchedStations.lastOrNull()?.id
-    val intermediateStations = if (latchedStations.size > 2) {
+    val intermediateStations = if (showStationMarkers && latchedStations.size > 2) {
         latchedStations.subList(1, latchedStations.size - 1)
     } else emptyList()
 
@@ -994,7 +1002,16 @@ private fun updateMapLayers(
             holder.pillsKey = currentRouteKey
             holder.pillsColor = primaryArgb
             holder.pillsOpacity = contentOpacity
-            addRouteStationPills(context, style, latchedStations, primaryContainerArgb, onPrimaryContainerArgb, primaryArgb, primaryArgb, contentOpacity)
+            addRouteStationPills(
+                context,
+                style,
+                if (showTrainMarker) listOf(latchedStations.last()) else latchedStations,
+                primaryContainerArgb,
+                onPrimaryContainerArgb,
+                primaryArgb,
+                primaryArgb,
+                contentOpacity,
+            )
         } else if (holder.pillsOpacity != contentOpacity) {
             holder.pillsOpacity = contentOpacity
             style.getLayer("highlighted-pill-layer")?.setProperties(PropertyFactory.iconOpacity(contentOpacity))
@@ -1028,7 +1045,7 @@ private fun frameCamera(
     forcedZoom: Double? = null
 ) {
     if (cameraTargetBounds.isEmpty()) return
-    
+
     val density = context.resources.displayMetrics.density
 
     // 增加内部基础边距，确保即使在极窄屏幕上也不贴边
@@ -1106,7 +1123,16 @@ private fun removeSourceAndLayer(style: Style, sourceId: String, vararg layerIds
 }
 
 private fun updateCurrentLocationMarker(style: Style, position: LatLng) {
-    if (position.latitude == 0.0 && position.longitude == 0.0) return // 防止在位置未加载时显示在原点
+    if (position.latitude == 0.0 && position.longitude == 0.0) {
+        // 专注页通过 (0,0) 表示隐藏；必须移除复用地图上的旧标记
+        removeSourceAndLayer(
+            style,
+            "current-location-source",
+            "current-location-outer",
+            "current-location-inner",
+        )
+        return
+    }
 
     val geoJson = JSONObject().apply {
         put("type", "Point")
@@ -1241,17 +1267,34 @@ private fun addRoutePolyline(
     } else {
         val source = GeoJsonSource("route-source", geoJson)
         style.addSource(source)
-        val lineLayer = LineLayer("route-layer", "route-source")
-        lineLayer.withProperties(
+        // 三层辉光：外圈宽而淡 + 中层 + 亮芯，伪造「光 = 进度」的能量感
+        style.addLayer(LineLayer("route-glow-outer", "route-source").withProperties(
             PropertyFactory.lineColor(lineColor),
-            PropertyFactory.lineWidth(3f),
-            PropertyFactory.lineOpacity(opacity * 0.6f),
+            PropertyFactory.lineWidth(18f),
+            PropertyFactory.lineOpacity(opacity * 0.10f),
+            PropertyFactory.lineBlur(8f),
             PropertyFactory.lineCap("round"),
             PropertyFactory.lineJoin("round"),
-        )
-        style.addLayer(lineLayer)
+        ))
+        style.addLayer(LineLayer("route-glow-mid", "route-source").withProperties(
+            PropertyFactory.lineColor(lineColor),
+            PropertyFactory.lineWidth(7f),
+            PropertyFactory.lineOpacity(opacity * 0.28f),
+            PropertyFactory.lineBlur(2f),
+            PropertyFactory.lineCap("round"),
+            PropertyFactory.lineJoin("round"),
+        ))
+        style.addLayer(LineLayer("route-layer", "route-source").withProperties(
+            PropertyFactory.lineColor(lineColor),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineOpacity(opacity),
+            PropertyFactory.lineCap("round"),
+            PropertyFactory.lineJoin("round"),
+        ))
     }
-    style.getLayer("route-layer")?.setProperties(PropertyFactory.lineOpacity(opacity * 0.6f))
+    style.getLayer("route-layer")?.setProperties(PropertyFactory.lineOpacity(opacity))
+    style.getLayer("route-glow-mid")?.setProperties(PropertyFactory.lineOpacity(opacity * 0.28f))
+    style.getLayer("route-glow-outer")?.setProperties(PropertyFactory.lineOpacity(opacity * 0.10f))
     return stations
 }
 
@@ -1426,10 +1469,19 @@ private fun addRouteStationPills(
     textColor: Int,
     dotColor: Int,
     borderColor: Int,
-    opacity: Float = 1.0f
+    opacity: Float = 1.0f,
+    maxLabels: Int = Int.MAX_VALUE,
 ) {
     if (stations.isEmpty()) { removeSourceAndLayer(style, "highlighted-pill-source", "highlighted-pill-layer"); return }
-    stations.forEach { station ->
+    // 专注页只保留关键站点标签：起点、当前站、下一站、终点
+    val keyStations = if (maxLabels < stations.size) {
+        val indices = mutableSetOf(0, stations.lastIndex)
+        // 当前站与下一站由调用方通过 stations 列表顺序体现，取前 2 个作为近似
+        if (stations.size > 2) indices.add(1)
+        if (stations.size > 3) indices.add(2)
+        stations.filterIndexed { i, _ -> i in indices }
+    } else stations
+    keyStations.forEach { station ->
         val imageId = "pill-${station.id}-$backgroundColor-$textColor"
         if (style.getImage(imageId) == null) {
             val bitmap = createPillBitmap(context, station.name, backgroundColor, textColor, dotColor, borderColor)
@@ -1437,7 +1489,7 @@ private fun addRouteStationPills(
         }
     }
     val features = JSONArray().apply {
-        stations.forEach { station ->
+        keyStations.forEach { station ->
             val imageId = "pill-${station.id}-$backgroundColor-$textColor"
             put(JSONObject().apply {
                 put("type", "Feature")
@@ -1510,19 +1562,19 @@ private fun createPillBitmap(
     return bitmap
 }
 
-private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
-    // 矢量底图（OSM 数据经 Planetiler 生成，z0-10，asset 离线打包）。
-    // 亮色为米色纸感：浅蓝水系、浅灰道路、深灰铁路、灰色行政边界虚线、城市名标注；
-    // 暗色整体压暗。中文标注依赖 localIdeographFontFamily 用系统字体渲染。
-    val bgColor = if (isDarkMode) "#1a1a1a" else "#f5f0e8"
-    val waterColor = if (isDarkMode) "#16303c" else "#c8dfe8"
-    val waterwayColor = if (isDarkMode) "#234a5c" else "#a8c8d8"
-    val roadColor = if (isDarkMode) "#3a3a3a" else "#d9d1c5"
-    val railColor = if (isDarkMode) "#8a8a8a" else "#969696"
-    val boundaryCountryColor = if (isDarkMode) "#909090" else "#7a7268"
-    val boundaryProvinceColor = if (isDarkMode) "#5a5a5a" else "#a8a098"
-    val boundaryCityColor = if (isDarkMode) "#484848" else "#c0b8ae"
-    val labelColor = if (isDarkMode) "#d8d8d8" else "#4a4a4a"
+private fun createMinimalOSMStyle(isDarkMode: Boolean, labelOpacity: Float = 1.0f): String {
+    // 矢量底图 v2：浅色为纸感（暖底 + 提亮铁路 + 植被），暗色为夜行地图。
+    // 铁路是产品语义核心，与公路拉开色阶；地名可降透明度退到背景。
+    val bgColor = if (isDarkMode) "#0B0F0C" else "#F3EEE4"
+    val waterColor = if (isDarkMode) "#0F2A30" else "#B8D4E0"
+    val waterwayColor = if (isDarkMode) "#1A3A44" else "#9FC4D4"
+    val roadColor = if (isDarkMode) "#2A2E28" else "#D9D1C5"
+    val railColor = if (isDarkMode) "#C9A227" else "#7C6F5F"
+    val parkColor = if (isDarkMode) "#0D1A12" else "#E4EDDF"
+    val boundaryCountryColor = if (isDarkMode) "#6A7A6E" else "#7A7268"
+    val boundaryProvinceColor = if (isDarkMode) "#3A4A3E" else "#A8A098"
+    val boundaryCityColor = if (isDarkMode) "#2A3A2E" else "#C0B8AE"
+    val labelColor = if (isDarkMode) "#C9D1C4" else "#4A4A4A"
     return JSONObject().apply {
         put("version", 8)
         // 字形 URL 指向不存在的 asset 目录：请求 404 后 MapLibre 回退到
@@ -1537,6 +1589,17 @@ private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
         })
         put("layers", JSONArray().apply {
             put(JSONObject().apply { put("id", "background"); put("type", "background"); put("paint", JSONObject().apply { put("background-color", bgColor) }) })
+            // 植被与城市肌理（v2 新增）
+            put(JSONObject().apply {
+                put("id", "landuse-park"); put("type", "fill"); put("source", "base"); put("source-layer", "landuse")
+                put("filter", JSONArray().apply {
+                    put("any")
+                    put(JSONArray().apply { put("=="); put("class"); put("park") })
+                    put(JSONArray().apply { put("=="); put("class"); put("forest") })
+                    put(JSONArray().apply { put("=="); put("class"); put("wood") })
+                })
+                put("paint", JSONObject().apply { put("fill-color", parkColor); put("fill-opacity", 0.6) })
+            })
             put(JSONObject().apply {
                 put("id", "water"); put("type", "fill"); put("source", "base"); put("source-layer", "water")
                 put("paint", JSONObject().apply { put("fill-color", waterColor) })
@@ -1660,6 +1723,7 @@ private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
                 })
                 put("paint", JSONObject().apply {
                     put("text-color", labelColor)
+                    put("text-opacity", labelOpacity.toDouble())
                     put("text-halo-color", bgColor)
                     put("text-halo-width", 1.2)
                 })
@@ -1676,6 +1740,7 @@ private fun createMinimalOSMStyle(isDarkMode: Boolean): String {
                 })
                 put("paint", JSONObject().apply {
                     put("text-color", labelColor)
+                    put("text-opacity", labelOpacity.toDouble())
                     put("text-halo-color", bgColor)
                     put("text-halo-width", 1.0)
                 })

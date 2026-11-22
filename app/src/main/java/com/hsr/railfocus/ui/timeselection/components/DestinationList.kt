@@ -183,13 +183,15 @@ private fun DestinationSnapPicker(
             modifier = Modifier
                 .width(boxWidth)
                 .graphicsLayer {
-                    // 将分页偏移量计算下沉至绘制阶段，完全避免滑动时的整页高频重组
+                    // 绘制阶段计算视差、缩放与旋转：像翻动一叠实体票卡
                     val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                    val scale = 1f - (pageOffset.absoluteValue * 0.08f).coerceIn(0f, 0.08f)
-                    val a = 1f - (pageOffset.absoluteValue * 0.35f).coerceIn(0f, 0.35f)
+                    val distance = pageOffset.absoluteValue
+                    val scale = 1f - (distance * 0.08f).coerceIn(0f, 0.08f)
                     scaleX = scale
                     scaleY = scale
-                    alpha = a
+                    alpha = 1f - (distance * 0.35f).coerceIn(0f, 0.35f)
+                    translationX = pageOffset * size.width * 0.08f
+                    rotationZ = (pageOffset * 2f).coerceIn(-2f, 2f)
                 },
         )
     }

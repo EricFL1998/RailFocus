@@ -16,6 +16,7 @@ import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.TargetedFlingBehavior
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
@@ -29,6 +30,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -92,7 +94,7 @@ fun TimeDurationPicker(
     val hapticFeedback = LocalHapticFeedback.current
     LaunchedEffect(pagerState.currentPage) {
         // 只要页面索引变了（无论是否在滑动中），都震动一下
-        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
     // 同步外部 selectedDuration 到 pager (主要用于初始加载)
@@ -126,7 +128,20 @@ fun TimeDurationPicker(
             tonalElevation = 2.dp,
             shadowElevation = 4.dp,
             modifier = Modifier
-                .align(Alignment.TopCenter),
+                .align(Alignment.TopCenter)
+                .pointerInput(totalSnapCount) {
+                    detectTapGestures {
+                        val page = pagerState.currentPage
+                        if (page in 0 until totalSnapCount) {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    page,
+                                    animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                                )
+                            }
+                        }
+                    }
+                },
         ) {
             AnimatedContent(
                 targetState = indexToDuration(pagerState.currentPage),
@@ -203,7 +218,7 @@ private fun rememberNearestTickFlingBehavior(pagerState: PagerState): TargetedFl
         NearestTickFlingBehavior(
             state = pagerState,
             decaySpec = decaySpec,
-            snapSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            snapSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
         )
     }
 }

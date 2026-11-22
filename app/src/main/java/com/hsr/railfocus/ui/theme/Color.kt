@@ -62,4 +62,23 @@ object RailColors {
     val InverseSurface = Color(0xFF2E2E2E)
     val InverseOnSurface = Color(0xFFF5F5F5)
     val InversePrimary = Color(0xFF81C784)
+
+    // 信号色（高能，每屏最多一个）
+    val SignalYellow = Color(0xFFF2A93B)      // 到站/成就
+    val SignalRed = Color(0xFFD9432F)         // 警报/中断
+
+    // 地图专用色（浅色）
+    val MapLand = Color(0xFFF3EEE4)           // 纸感陆地
+    val MapWater = Color(0xFFB8D4E0)          // 水系渐变起点
+    val MapWaterDeep = Color(0xFF9FC4D4)      // 水系渐变终点
+    val MapRail = Color(0xFF7C6F5F)           // 铁路线（比公路更暖更深）
+    val MapRoad = Color(0xFFD9D1C5)           // 公路
+    val MapPark = Color(0xFFE4EDDF)           // 植被
+
+    // 地图专用色（夜行模式）
+    val MapNightLand = Color(0xFF0B0F0C)
+    val MapNightWater = Color(0xFF0F2A30)
+    val MapNightRail = Color(0xFFC9A227)      // 信号金铁路
+    val MapNightRoad = Color(0xFF2A2E28)
+    val MapNightLabel = Color(0xFFC9D1C4)
 }

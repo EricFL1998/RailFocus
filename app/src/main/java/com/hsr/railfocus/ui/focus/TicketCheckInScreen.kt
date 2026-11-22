@@ -67,8 +67,19 @@ fun TicketCheckInScreen(
     val (trainSeries, prefix, maxSpeed) = remember(plannedMinutes, focusType) {
         TrainTicketHelper.determineTrainSeries(plannedMinutes, focusType = focusType?.displayName)
     }
+    val trainSeriesName = when (trainSeries) {
+        com.hsr.railfocus.ui.history.TrainSeries.G_SERIES -> "复兴号"
+        com.hsr.railfocus.ui.history.TrainSeries.D_SERIES -> "和谐号"
+        com.hsr.railfocus.ui.history.TrainSeries.C_SERIES -> "城际"
+        com.hsr.railfocus.ui.history.TrainSeries.SLEEPER -> "动卧"
+    }
     val trainNumber = remember(prefix, startStation, endStation, plannedMinutes) {
-        TrainTicketHelper.synthesizeTrainNumber(prefix, startStation, endStation, plannedMinutes)
+        com.hsr.railfocus.ui.history.TrainTicketHelper.synthesizeTrainNumber(
+            prefix,
+            startStation,
+            endStation,
+            plannedMinutes
+        )
     }
     val now = remember { System.currentTimeMillis() }
     val arrivalMillis = remember(now, plannedMinutes) { now + plannedMinutes * 60 * 1000 }
@@ -151,16 +162,11 @@ fun TicketCheckInScreen(
     // 打孔掉落纸屑物理动画 (0f -> 1f)
     val scrapAnim = remember { Animatable(0f) }
 
-    // 呼吸悬浮动效
-    val infiniteTransition = rememberInfiniteTransition(label = "checkin_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.99f,
-        targetValue = 1.01f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
+    // 车票仅在入场后做一次轻微回弹，不持续呼吸，减少装饰噪点
+    val pulseScale by animateFloatAsState(
+        targetValue = if (ticketSlideAnim.value >= 1f && !isPunchingInProgress) 1f else 0.99f,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMediumLow),
+        label = "ticket_settle",
     )
 
     // 预加载音效资源与车票滑入
@@ -244,6 +250,31 @@ fun TicketCheckInScreen(
                 onClick = handleTicketClick,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // 车次与座位信息（从专注页移来，作为「登机前确认」）
+            if (!isPunched) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-56).dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.52f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.checkin_train_info, trainSeriesName, trainNumber, focusType?.displayName ?: ""),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.95f),
+                    )
+                    Text(
+                        text = stringResource(R.string.checkin_seat_info, seatInfo),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.75f),
+                    )
+                }
+            }
 
             // 打孔切落的微粒纸屑物理抛落动效
             if (isPunched && scrapAnim.value > 0f) {

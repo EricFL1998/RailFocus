@@ -6,7 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -41,6 +44,8 @@ fun WeatherAnimationOverlay(
     condition: WeatherCondition?,
     modifier: Modifier = Modifier,
     isNight: Boolean = com.hsr.railfocus.domain.model.isNightNow(),
+    /** 专注页：true 时只画在地图区（上 62%），加渐变遮罩，不压 UI */
+    boundedToMap: Boolean = false,
 ) {
     val isVisible = condition != null && condition != WeatherCondition.UNKNOWN
 
@@ -50,8 +55,15 @@ fun WeatherAnimationOverlay(
         exit = fadeOut(tween(240)),
         modifier = modifier,
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            when (condition) {
+        // 天气粒子按原场景铺满全屏；不增加任何矩形暗色遮罩或高度裁切。
+        // 页面是否展示天气由 MainActivity / HomeScreen 的层级与开关负责。
+        condition?.let { WeatherContent(it, isNight) }
+    }
+}
+
+@Composable
+private fun WeatherContent(condition: WeatherCondition, isNight: Boolean) {
+    when (condition) {
                 WeatherCondition.CLEAR -> {
                     if (isNight) {
                         CinematicMoonlightCanvas()
@@ -240,8 +252,6 @@ fun WeatherAnimationOverlay(
 
                 else -> Unit
             }
-        }
-    }
 }
 
 /* ========================================================================= */
@@ -284,9 +294,9 @@ private fun CinematicRainCanvas(
     enableAtmosphere: Boolean = true,
 ) {
     val density = LocalDensity.current
-    val bgCount = (45 * densityMultiplier).toInt()
-    val midCount = (35 * densityMultiplier).toInt()
-    val fgCount = (12 * densityMultiplier).toInt()
+    val bgCount = (36 * densityMultiplier).toInt()
+    val midCount = (28 * densityMultiplier).toInt()
+    val fgCount = (9 * densityMultiplier).toInt()
     val totalDrops = bgCount + midCount + fgCount
 
     val drops = remember(densityMultiplier) {
@@ -495,15 +505,15 @@ private fun CinematicRainCanvas(
                 brush = Brush.linearGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFF37474F).copy(alpha = d.alpha * 0.45f),
-                        Color(0xFF0277BD).copy(alpha = d.alpha * 0.75f),
+                        Color(0xFF37474F).copy(alpha = d.alpha * 0.20f),
+                        Color(0xFF0277BD).copy(alpha = d.alpha * 0.42f),
                     ),
                     start = startOffset,
                     end = endOffset,
                 ),
                 start = startOffset,
                 end = endOffset,
-                strokeWidth = d.strokeWidth * 1.15f,
+                strokeWidth = d.strokeWidth * 1.05f,
                 cap = StrokeCap.Round,
             )
 
@@ -512,8 +522,8 @@ private fun CinematicRainCanvas(
                 brush = Brush.linearGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFF4FC3F7).copy(alpha = d.alpha * 0.50f),
-                        Color(0xFFE1F5FE).copy(alpha = d.alpha * 0.95f),
+                        Color(0xFF4FC3F7).copy(alpha = d.alpha * 0.32f),
+                        Color(0xFFE1F5FE).copy(alpha = d.alpha * 0.68f),
                     ),
                     start = startOffset,
                     end = endOffset,
@@ -547,9 +557,9 @@ private fun CinematicSnowCanvas(
     speedMultiplier: Float = 1.0f,
 ) {
     val density = LocalDensity.current
-    val bgCount = (72 * flakeMultiplier).toInt()
-    val midCount = (52 * flakeMultiplier).toInt()
-    val fgCount = (18 * flakeMultiplier).toInt()
+    val bgCount = (56 * flakeMultiplier).toInt()
+    val midCount = (38 * flakeMultiplier).toInt()
+    val fgCount = (14 * flakeMultiplier).toInt()
     val totalFlakes = bgCount + midCount + fgCount
 
     val flakes = remember(flakeMultiplier) {
@@ -672,13 +682,13 @@ private fun CinematicSnowCanvas(
 
             // 1. 极微弱冷灰反差底晕（比晶核仅多 0.45dp 极窄外缘，白色地图与米黄浅色底图上清晰可辨，绝不发胀）
             drawCircle(
-                color = shadowRim.copy(alpha = f.alpha * 0.35f),
+                color = shadowRim.copy(alpha = f.alpha * 0.24f),
                 radius = f.radius + 0.45f * density.density,
                 center = center,
             )
             // 2. 微弱晶莹反光漫射层
             drawCircle(
-                color = rimBlue.copy(alpha = f.alpha * 0.25f),
+                color = rimBlue.copy(alpha = f.alpha * 0.18f),
                 radius = f.radius * 1.12f,
                 center = center,
             )
@@ -731,10 +741,10 @@ private fun CinematicSunbeamCanvas() {
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.45f + breath * 0.10f),
-                    Color(0xFFFFF9C4).copy(alpha = 0.30f + breath * 0.08f),
-                    Color(0xFFFFE082).copy(alpha = 0.16f + breath * 0.05f),
-                    Color(0xFFFFCA28).copy(alpha = 0.05f + breath * 0.03f),
+                    Color.White.copy(alpha = 0.38f + breath * 0.06f),
+                    Color(0xFFFFF9C4).copy(alpha = 0.24f + breath * 0.05f),
+                    Color(0xFFFFE082).copy(alpha = 0.12f + breath * 0.04f),
+                    Color(0xFFFFCA28).copy(alpha = 0.025f + breath * 0.02f),
                     Color.Transparent,
                 ),
                 center = sunOrigin,
@@ -765,7 +775,7 @@ private fun CinematicSunbeamCanvas() {
 
         val haloRadius2 = w * 0.72f + breath * 20f
         drawCircle(
-            color = Color(0xFFFFE082).copy(alpha = 0.04f + breath * 0.02f),
+            color = Color(0xFFFFE082).copy(alpha = 0.018f + breath * 0.01f),
             radius = haloRadius2,
             center = sunOrigin,
             style = Stroke(width = 24.dp.toPx()),
@@ -889,7 +899,7 @@ private fun CinematicMoonlightCanvas() {
             val sy = ratio.y * (h * 0.65f)
             val distToMoon = (Offset(sx, sy) - moonOrigin).getDistance()
             if (distToMoon > w * 0.28f) {
-                val starAlpha = (0.18f + sin(timeSeconds * blinkSpeed + i * 1.3f) * 0.35f).coerceIn(0f, 0.60f)
+                val starAlpha = (0.16f + sin(timeSeconds * blinkSpeed + i * 1.3f) * 0.22f).coerceIn(0f, 0.42f)
                 drawCircle(
                     color = Color(0xFFE0F7FA).copy(alpha = starAlpha),
                     radius = (0.75f + (i % 3) * 0.35f) * density.density,
@@ -1003,7 +1013,7 @@ private fun DrawScope.drawSoftCloudCluster(
         CloudPuffDef(0.14f, 0.14f, 0.34f, 3.0f, 0.75f, 0.85f),
     )
 
-    val effectiveAlpha = if (isNight) alpha * 0.70f else alpha
+    val effectiveAlpha = (if (isNight) alpha * 0.62f else alpha * 0.82f).coerceIn(0f, 1f)
     val color1 = if (isNight) Color(0xFFECEFF1) else Color.White
     val color2 = if (isNight) Color(0xFFCFD8DC) else Color(0xFFFFFDF8)
     val color3 = if (isNight) Color(0xFFB0BEC5) else Color(0xFFF9FBFB)
@@ -1020,9 +1030,9 @@ private fun DrawScope.drawSoftCloudCluster(
             drawCircle(
                 brush = Brush.radialGradient(
                     0.0f to color1.copy(alpha = currentAlpha),
-                    0.38f to color2.copy(alpha = currentAlpha * 0.90f),
-                    0.68f to color3.copy(alpha = currentAlpha * 0.55f),
-                    0.86f to color1.copy(alpha = currentAlpha * 0.20f),
+                    0.34f to color2.copy(alpha = currentAlpha * 0.88f),
+                    0.64f to color3.copy(alpha = currentAlpha * 0.42f),
+                    0.84f to color1.copy(alpha = currentAlpha * 0.10f),
                     1.0f to Color.Transparent,
                     center = Offset(px, py),
                     radius = radius,
@@ -1268,8 +1278,8 @@ private fun CinematicOvercastAtmosphereCanvas() {
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xFF37474F).copy(alpha = 0.12f),
-                    Color(0xFF455A64).copy(alpha = 0.06f),
+                    Color(0xFF37474F).copy(alpha = 0.08f),
+                    Color(0xFF455A64).copy(alpha = 0.035f),
                     Color.Transparent,
                 ),
                 startY = 0f,
@@ -1288,7 +1298,7 @@ private fun CinematicOvercastAtmosphereCanvas() {
             centerY = 110f * density,
             baseWidth = c1Width,
             baseHeight = 150f * density,
-            alpha = 0.52f,
+            alpha = 0.42f,
             time = timeSeconds,
         )
 
@@ -1301,7 +1311,7 @@ private fun CinematicOvercastAtmosphereCanvas() {
             centerY = 220f * density,
             baseWidth = c2Width,
             baseHeight = 140f * density,
-            alpha = 0.46f,
+            alpha = 0.36f,
             time = timeSeconds + 15f,
         )
 
@@ -1314,7 +1324,7 @@ private fun CinematicOvercastAtmosphereCanvas() {
             centerY = 350f * density,
             baseWidth = c3Width,
             baseHeight = 110f * density,
-            alpha = 0.38f,
+            alpha = 0.28f,
             time = timeSeconds + 28f,
         )
     }
@@ -1417,7 +1427,7 @@ private fun CinematicMistCanvas(
 
         // 1. 全局轻柔薄雾微光晕层（轻透呼吸感，完全无色块边缘）
         val breath = (sin(timeSeconds * 0.4f) + 1f) * 0.5f
-        val currentAmbient = (ambientAlpha * (0.85f + breath * 0.30f)).coerceIn(0f, 0.4f)
+        val currentAmbient = (ambientAlpha * (0.65f + breath * 0.20f)).coerceIn(0f, 0.30f)
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
@@ -1492,10 +1502,10 @@ private fun DrawScope.drawMistRibbon(
     }) {
         drawCircle(
             brush = Brush.radialGradient(
-                0.0f to Color.White.copy(alpha = alpha),
-                0.35f to Color(0xFFF5F9FA).copy(alpha = alpha * 0.75f),
-                0.65f to tintColor.copy(alpha = alpha * 0.35f),
-                0.88f to tintColor.copy(alpha = alpha * 0.08f),
+                0.0f to Color.White.copy(alpha = alpha * 0.72f),
+                0.35f to Color(0xFFF5F9FA).copy(alpha = alpha * 0.58f),
+                0.65f to tintColor.copy(alpha = alpha * 0.24f),
+                0.88f to tintColor.copy(alpha = alpha * 0.04f),
                 1.0f to Color.Transparent,
                 center = Offset(centerX, actualY),
                 radius = height * 0.65f,
@@ -1523,9 +1533,9 @@ private fun CinematicSandstormCanvas(
     isDust: Boolean = false,
 ) {
     val density = LocalDensity.current
-    val particleCount = if (isDust) 36 else 70
+    val particleCount = if (isDust) 26 else 48
     val speedScale = if (isDust) 0.65f else 1.25f
-    val bgTintAlpha = if (isDust) 0.05f else 0.09f
+    val bgTintAlpha = if (isDust) 0.035f else 0.065f
     val sandColor = if (isDust) Color(0xFFD7CCC8) else Color(0xFFFFCC80)
 
     val sands = remember(isDust) {
@@ -1586,7 +1596,7 @@ private fun CinematicSandstormCanvas(
                 color = sandColor.copy(alpha = s.alpha),
                 start = Offset(s.x, s.y),
                 end = Offset(s.x + s.length * 1.35f, s.y + s.length * 0.35f),
-                strokeWidth = 1.6f * density.density,
+                strokeWidth = 1.3f * density.density,
                 cap = StrokeCap.Round,
             )
         }

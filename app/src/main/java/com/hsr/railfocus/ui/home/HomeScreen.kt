@@ -51,6 +51,7 @@ import com.hsr.railfocus.ui.focus.FocusSessionScreen
 import com.hsr.railfocus.ui.focus.FocusSessionViewModel
 import com.hsr.railfocus.ui.focus.FocusTypeSelectionPopup
 import com.hsr.railfocus.ui.focus.TicketCheckInScreen
+import com.hsr.railfocus.ui.theme.pressScale
 import com.hsr.railfocus.util.TicketFeedbackHelper
 import com.hsr.railfocus.ui.home.components.DataBottomSheet
 import com.hsr.railfocus.ui.home.components.LocationHeader
@@ -72,12 +73,15 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     viewModel: HomeViewModel = hiltViewModel(),
     focusSessionViewModel: FocusSessionViewModel = hiltViewModel(),
+    onPhaseChanged: (String) -> Unit = {},
+    onSeatSelectionVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusUiState by focusSessionViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
     var phase by rememberSaveable { mutableStateOf(HomePhase.None) }
+    LaunchedEffect(phase) { onPhaseChanged(phase.name) }
     var activeDestinationJson by rememberSaveable { mutableStateOf("") }
     var pendingDestination by remember { mutableStateOf<DestinationOption?>(null) }
     var showFocusTypePopup by remember { mutableStateOf(false) }
@@ -205,10 +209,20 @@ fun HomeScreen(
                 showTrainMarker = (phase == HomePhase.FocusSession),
                 enableGestures = (phase == HomePhase.None || phase == HomePhase.JourneySelection),
                 cameraInsetLeftDp = 32,
-                cameraInsetTopDp = if (phase == HomePhase.FocusSession) 300 else 100,
+                cameraInsetTopDp = if (phase == HomePhase.FocusSession) 120 else 100,
                 cameraInsetRightDp = 32,
-                cameraInsetBottomDp = if (phase == HomePhase.FocusSession) 180 else bottomPanelHeightWithMargin,
+                cameraInsetBottomDp = if (phase == HomePhase.FocusSession) 220 else bottomPanelHeightWithMargin,
+                showLocationMarker = phase != HomePhase.FocusSession,
+                basemapLabelOpacity = if (phase == HomePhase.FocusSession) 0.45f else 1.0f,
             )
+
+            // 活地图效果层：昼夜色温 + 当前站呼吸环
+            if (phase == HomePhase.None) {
+                com.hsr.railfocus.ui.components.map.LivingMapEffects(
+                    currentStationScreenPos = null, // TODO: 从 MapLibre 投影当前站屏幕坐标
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
 
             val isPanelActive = phase == HomePhase.MyJourneys || phase == HomePhase.Data
             // 首页层不能一离开 HomePhase.None 就退出组合：那样 location-header /
@@ -372,9 +386,13 @@ fun HomeScreen(
             val focusTypes by viewModel.focusTypes.collectAsState()
 
             LaunchedEffect(showFocusTypePopup) {
+                onSeatSelectionVisibilityChanged(showFocusTypePopup)
                 if (showFocusTypePopup) {
                     TicketFeedbackHelper.preload(context)
                 }
+            }
+            DisposableEffect(Unit) {
+                onDispose { onSeatSelectionVisibilityChanged(false) }
             }
 
             if (showFocusTypePopup && pendingDestination != null) {
@@ -455,7 +473,7 @@ private fun computeCameraState(
     }
 
     val bounds = currentRoute.map { LatLng(it.lat, it.lng) }
-    
+
     // 注意：始终以 homeTarget 为基准位置，地图组件内部会根据 bounds 自动切换视角
     return CameraState(homeTarget, 4.0, bounds, currentRoute)
 }
@@ -520,28 +538,8 @@ private fun HomeMenuContent(
 ) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val startInteractionSource = remember { MutableInteractionSource() }
-    val isStartPressed by startInteractionSource.collectIsPressedAsState()
-    val startScale by animateFloatAsState(
-        targetValue = if (isStartPressed) 0.96f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "start_press"
-    )
-
     val myJourneysInteractionSource = remember { MutableInteractionSource() }
-    val isMyJourneysPressed by myJourneysInteractionSource.collectIsPressedAsState()
-    val myJourneysScale by animateFloatAsState(
-        targetValue = if (isMyJourneysPressed) 0.96f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "my_journeys_press"
-    )
-
     val dataInteractionSource = remember { MutableInteractionSource() }
-    val isDataPressed by dataInteractionSource.collectIsPressedAsState()
-    val dataScale by animateFloatAsState(
-        targetValue = if (isDataPressed) 0.96f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "data_press"
-    )
 
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -558,7 +556,7 @@ private fun HomeMenuContent(
             with(sharedTransitionScope) {
                 Button(
                     onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                         onStartJourney()
                     },
                     interactionSource = startInteractionSource,
@@ -576,17 +574,14 @@ private fun HomeMenuContent(
                         Modifier
                             .fillMaxWidth()
                             .height(64.dp)
-                    }).graphicsLayer {
-                        scaleX = startScale
-                        scaleY = startScale
-                    },
+                    }).pressScale(startInteractionSource),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
                     elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 3.dp,
-                        pressedElevation = 1.dp
+                        defaultElevation = 6.dp,
+                        pressedElevation = 2.dp
                     )
                 ) {
                     Row(
@@ -617,7 +612,7 @@ private fun HomeMenuContent(
                 // 左侧：“我的”色调胶囊按钮（与主按钮完全同构的次级填充样式，去边框）
                 FilledTonalButton(
                     onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                         onMyJourneysClick()
                     },
                     interactionSource = myJourneysInteractionSource,
@@ -630,10 +625,7 @@ private fun HomeMenuContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(54.dp)
-                        .graphicsLayer {
-                            scaleX = myJourneysScale
-                            scaleY = myJourneysScale
-                        }
+                        .pressScale(myJourneysInteractionSource)
                 ) {
                     BulletTrainIcon(
                         contentDescription = null,
@@ -651,7 +643,7 @@ private fun HomeMenuContent(
                 // 右侧：“数据”色调胶囊按钮（与主按钮完全同构的次级填充样式，去边框）
                 FilledTonalButton(
                     onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                         onDataClick()
                     },
                     interactionSource = dataInteractionSource,
@@ -664,10 +656,7 @@ private fun HomeMenuContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(54.dp)
-                        .graphicsLayer {
-                            scaleX = dataScale
-                            scaleY = dataScale
-                        }
+                        .pressScale(dataInteractionSource)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Public,

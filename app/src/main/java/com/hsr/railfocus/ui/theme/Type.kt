@@ -54,7 +54,7 @@ val RailTypography = Typography(
         lineHeight = 44.sp,
         letterSpacing = 0.sp,
     ),
-    
+
     // Headline - 用于页面标题
     headlineLarge = TextStyle(
         fontFamily = RobotoFlexFontFamily,
@@ -77,7 +77,7 @@ val RailTypography = Typography(
         lineHeight = 32.sp,
         letterSpacing = 0.sp,
     ),
-    
+
     // Title - 用于组件标题
     titleLarge = TextStyle(
         fontFamily = RobotoFlexFontFamily,
@@ -100,7 +100,7 @@ val RailTypography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
-    
+
     // Body - 用于正文
     bodyLarge = TextStyle(
         fontFamily = RobotoFlexFontFamily,
@@ -123,7 +123,7 @@ val RailTypography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp,
     ),
-    
+
     // Label - 用于按钮和标签
     labelLarge = TextStyle(
         fontFamily = RobotoFlexFontFamily,
@@ -146,4 +146,23 @@ val RailTypography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
     ),
+)
+
+/** 专注页主计时器：72sp 等宽数字，唯一视觉主角 */
+val TimerDisplay = TextStyle(
+    fontFamily = RobotoFlexFontFamily,
+    fontWeight = FontWeight.Black,
+    fontSize = 72.sp,
+    lineHeight = 76.sp,
+    letterSpacing = (-2).sp,
+    fontFeatureSettings = "tnum",
+)
+
+/** 专注页语境行：起终点 + 时间，等宽数字不换行 */
+val ContextLine = TextStyle(
+    fontFamily = RobotoFlexFontFamily,
+    fontWeight = FontWeight.Medium,
+    fontSize = 13.sp,
+    lineHeight = 18.sp,
+    fontFeatureSettings = "tnum",
 )

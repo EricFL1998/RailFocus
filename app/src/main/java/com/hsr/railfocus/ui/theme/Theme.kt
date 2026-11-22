@@ -94,7 +94,7 @@ private val RailDarkColorScheme = darkColorScheme(
 @Composable
 fun RailFocusTheme(
     darkTheme: Boolean = false,
-    dynamicColor: Boolean = true, // 默认开启动态色彩
+    dynamicColor: Boolean = false, // 默认关闭动态取色，保持品牌铁道绿
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -119,6 +119,7 @@ fun RailFocusTheme(
             // 在主题根部提供语义正确的默认内容色。
             CompositionLocalProvider(
                 LocalContentColor provides colorScheme.onBackground,
+                LocalReduceMotion provides rememberReduceMotion(),
                 content = content,
             )
         },

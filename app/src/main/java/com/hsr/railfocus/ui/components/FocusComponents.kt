@@ -78,24 +78,10 @@ fun CountdownDisplay(remainingSeconds: Int, modifier: Modifier = Modifier) {
     val secTens = seconds / 10
     val secOnes = seconds % 10
 
-    val infiniteTransition = rememberInfiniteTransition(label = "colon_blink")
-    val colonAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "colon_alpha"
-    )
-
-    Surface(
+    // 去噪：去掉冒号闪烁、边框、阴影，只留玻璃底 + 数字
+    com.hsr.railfocus.ui.theme.RailMaterial.GlassSurface(
         modifier = modifier,
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.68f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
-        tonalElevation = 2.dp,
-        shadowElevation = 2.dp
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 26.dp, vertical = 8.dp),
@@ -110,7 +96,7 @@ fun CountdownDisplay(remainingSeconds: Int, modifier: Modifier = Modifier) {
                     fontFeatureSettings = "tnum",
                     fontWeight = FontWeight.Black
                 ),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = colonAlpha),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(horizontal = 4.dp)
                     .offset(y = (-2).dp)
@@ -833,24 +819,13 @@ fun CompletionOverlay(
                                 }
                             )
                         }
-                        
-                        val infiniteTransition = rememberInfiniteTransition(label = "dots_orbit")
-                        val baseAngle = infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 360f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(12000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "base_angle"
-                        )
-                        val orbitColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                        // 去噪：去掉 dots_orbit 无限动画，保留静态光环
+                        val orbitColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
                         Canvas(modifier = Modifier.size(80.dp)) {
                             val orbitRadius = 36.dp.toPx()
                             val dotRadius = 4.dp.toPx()
-                            val angle = baseAngle.value
                             for (i in 0 until 6) {
-                                val rad = Math.toRadians((angle + i * 60f).toDouble())
+                                val rad = Math.toRadians((i * 60f).toDouble())
                                 val x = center.x + (orbitRadius * kotlin.math.cos(rad)).toFloat()
                                 val y = center.y + (orbitRadius * kotlin.math.sin(rad)).toFloat()
                                 drawCircle(color = orbitColor, radius = dotRadius, center = Offset(x, y))
@@ -943,7 +918,7 @@ fun CompletionOverlay(
                                 } else {
                                     stringResource(R.string.selection_duration_minutes, duration)
                                 }
-                                
+
                                 InfoItem(
                                     label = stringResource(R.string.completion_duration_label),
                                     value = formattedDuration
@@ -1047,7 +1022,7 @@ fun CompletionOverlay(
                             "漫游" -> Icons.Default.TravelExplore
                             else -> Icons.Default.Lightbulb
                         }
-                        
+
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
                             shape = RoundedCornerShape(16.dp),

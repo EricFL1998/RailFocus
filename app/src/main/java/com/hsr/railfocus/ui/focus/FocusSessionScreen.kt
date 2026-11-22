@@ -1,41 +1,54 @@
 package com.hsr.railfocus.ui.focus
 
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.EventSeat
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hsr.railfocus.R
 import com.hsr.railfocus.service.FocusTimerService
+import com.hsr.railfocus.ui.components.CompletionOverlay
+import com.hsr.railfocus.ui.components.MapLibreView
 import com.hsr.railfocus.ui.journal.JournalEditDialog
-import com.hsr.railfocus.ui.components.*
 import org.maplibre.android.geometry.LatLng
 
 /**
- * 专注旅程页面
+ * 专注旅程页面（去噪版）
+ *
+ * 单焦点设计：中心只有地图 + 列车，底部一个 72sp 主数字 + 一条进度线。
+ * 车次号/座位号移到打卡页，顶部三行标题改为一行语境。
+ * 双击进入纯净模式，30 秒无操作边缘控件自动淡出。
  */
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -49,49 +62,28 @@ fun FocusSessionScreen(
     val uiState by viewModel.uiState.collectAsState()
     val keepScreenOnEnabled by viewModel.keepScreenOnEnabled.collectAsState()
     val ambientEnabled by viewModel.ambientSoundEnabled.collectAsState()
+    val focusDensity by viewModel.focusDensity.collectAsState()
     val context = LocalContext.current
     val view = LocalView.current
     var showStopConfirm by remember { mutableStateOf(false) }
     var showJournalDialog by remember { mutableStateOf(false) }
+    var pureModeOverride by remember { mutableStateOf<Boolean?>(null) }
+    val isPureMode = pureModeOverride ?: (focusDensity == "pure")
 
-    val plannedMinutes = (uiState.totalSeconds / 60).coerceAtLeast(1)
-    val (trainSeries, prefix) = remember(plannedMinutes, uiState.focusType) {
-        com.hsr.railfocus.ui.history.TrainTicketHelper.determineTrainSeries(
-            plannedMinutes,
-            focusType = uiState.focusType?.displayName
-        )
-    }
-    val trainSeriesName = when (trainSeries) {
-        com.hsr.railfocus.ui.history.TrainSeries.G_SERIES -> "复兴号"
-        com.hsr.railfocus.ui.history.TrainSeries.D_SERIES -> "和谐号"
-        com.hsr.railfocus.ui.history.TrainSeries.C_SERIES -> "城际"
-        com.hsr.railfocus.ui.history.TrainSeries.SLEEPER -> "动卧"
-    }
-    val trainNumber = remember(prefix, uiState.startStation, uiState.endStation, plannedMinutes) {
-        com.hsr.railfocus.ui.history.TrainTicketHelper.synthesizeTrainNumber(
-            prefix,
-            uiState.startStation,
-            uiState.endStation,
-            plannedMinutes
-        )
-    }
-
-    // 屏幕常亮：当用户开启设置且旅程处于进行中时保持屏幕常亮
+    // 屏幕常亮
     DisposableEffect(keepScreenOnEnabled, uiState.isRunning) {
         view.keepScreenOn = keepScreenOnEnabled && uiState.isRunning
-        onDispose {
-            view.keepScreenOn = false
-        }
+        onDispose { view.keepScreenOn = false }
     }
 
-    // 启动前台服务，确保后台运行
+    // 启动前台服务
     LaunchedEffect(destinationJson) {
         context.startForegroundService(
             FocusTimerService.createStartIntent(context, destinationJson),
         )
     }
 
-    // 使用 PredictiveBackHandler 提供更现代的手势返回体验
+    // 预测性返回
     PredictiveBackHandler { progressFlow ->
         try {
             progressFlow.collect { _ -> }
@@ -101,7 +93,7 @@ fun FocusSessionScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. 地图背景
+        // 1. 地图背景（去噪：只留关键站点，隐藏定位点，地名降透明度）
         val routeStations = uiState.path?.path ?: emptyList()
         val startLatLng = LatLng(uiState.startStation.lat, uiState.startStation.lng)
         val routePoints = routeStations.map { LatLng(it.lat, it.lng) }
@@ -115,131 +107,72 @@ fun FocusSessionScreen(
             initialPosition = startLatLng,
             initialZoom = 4.0,
             transitionProgress = 1f,
-            stations = routeStations.drop(1),
+            stations = emptyList(),
+            showStationMarkers = false,
             cameraTargetBounds = cameraTargetBounds,
             routeStations = routeStations,
             trainProgress = uiState.overallProgress,
             showTrainMarker = (routeStations.size >= 2),
             enableGestures = false,
             cameraInsetLeftDp = 32,
-            cameraInsetTopDp = 300,
+            cameraInsetTopDp = 120,
             cameraInsetRightDp = 32,
-            cameraInsetBottomDp = 180,
+            cameraInsetBottomDp = 220,
+            showLocationMarker = false,
+            basemapLabelOpacity = 0.45f,
         )
 
-        // 2. 前景 UI
-        var visible by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) { visible = true }
+        // 2. 边缘控件（44dp 玻璃圆，30s 自动淡出，双击纯净）
+        FocusEdgeControls(
+            isPaused = uiState.isPaused,
+            isPureMode = isPureMode,
+            onPauseToggle = { if (uiState.isPaused) viewModel.resume() else viewModel.pause() },
+            onStop = { showStopConfirm = true },
+            onToggleAmbient = viewModel::toggleAmbientSound,
+            ambientEnabled = ambientEnabled,
+            onDoubleTap = { pureModeOverride = !isPureMode },
+        )
 
+        // 3. 纯净模式只保留剩余时间 + 进度线
+        if (isPureMode) {
+            com.hsr.railfocus.ui.focus.PureFocusHud(
+                remainingSeconds = uiState.remainingSeconds,
+                progress = uiState.overallProgress,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp),
+            )
+        }
+
+        // 全量档补充可折叠的站序信息，不影响默认与纯净档
+        if (focusDensity == "full" && !isPureMode && uiState.path != null) {
+            com.hsr.railfocus.ui.components.RouteProgressionStrip(
+                stations = routeStations,
+                currentStation = uiState.currentStation,
+                nextStation = uiState.nextStation,
+                overallProgress = uiState.overallProgress,
+                isDwelling = uiState.isDwelling,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 76.dp, start = 24.dp, end = 24.dp),
+            )
+        }
+
+        // 4. 标准 HUD（语境行 + 进度线 + 主数字 + 副信息）
         AnimatedVisibility(
-            visible = visible,
+            visible = !isPureMode,
             enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 2 },
             exit = fadeOut(tween(300)) + slideOutVertically(tween(300)) { it / 2 },
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            val scrollState = rememberScrollState()
-            Column(
+            FocusHud(
+                state = uiState,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(24.dp)
-                    .statusBarsPadding()
-                    .navigationBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val haptic = LocalHapticFeedback.current
-
-                // 顶部控制与目的地信息区域
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    // 左上角：简洁微型白噪音快捷开关
-                    Surface(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.toggleAmbientSound()
-                        },
-                        shape = CircleShape,
-                        color = if (ambientEnabled) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
-                        },
-                        contentColor = if (ambientEnabled) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        },
-                        tonalElevation = 2.dp,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    ) {
-                        Icon(
-                            imageVector = if (ambientEnabled) Icons.Default.Headphones else Icons.Default.VolumeOff,
-                            contentDescription = stringResource(R.string.settings_ambient_sound),
-                            modifier = Modifier.padding(11.dp).size(22.dp)
-                        )
-                    }
-
-                    // 居中：标题与简洁列车信息（无面板、极简文字）
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(horizontal = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.focus_heading),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                        )
-                        Text(
-                            text = uiState.endStation.displayName,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-
-                        // 简洁列车信息
-                        val seatClean = uiState.seatNumber?.replace("号", "")?.replace(Regex("^[0-9]+车"), "")
-                        val seatDisplay = if (uiState.carriageNumber != null && seatClean != null) {
-                            "${uiState.carriageNumber}车 $seatClean"
-                        } else if (uiState.carriageNumber != null) {
-                            "${uiState.carriageNumber}车"
-                        } else null
-
-                        val trainSubtitle = buildString {
-                            append("$trainSeriesName $trainNumber")
-                            if (seatDisplay != null) append(" · $seatDisplay")
-                            uiState.focusType?.let { append(" · ${it.displayName}") }
-                        }
-                        Text(
-                            text = trainSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-
-                    // 右上角：暂停与结束小圆形控制按钮
-                    FocusTopControls(
-                        isPaused = uiState.isPaused,
-                        onPause = viewModel::pause,
-                        onResume = viewModel::resume,
-                        onStop = { showStopConfirm = true },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // 当前站 / 下一站（支持中途到站停靠面板与巡航面板平滑动画切换）
-                StationInfoCard(
-                    currentStation = uiState.currentStation,
-                    nextStation = uiState.nextStation,
-                    speed = uiState.currentSpeed,
-                    isDwelling = uiState.isDwelling
-                )
-
-                // 底部留白
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp),
+            )
         }
 
         // 完成覆盖层
@@ -278,6 +211,7 @@ fun FocusSessionScreen(
                 }
             )
         }
+
         // 取消后的"未完成"车票
         if (uiState.isStopped && !uiState.isCompleted) {
             CompletionOverlay(
@@ -306,6 +240,7 @@ fun FocusSessionScreen(
                 text = { Text(error) }
             )
         }
+
         // 取消旅程确认弹窗
         if (showStopConfirm) {
             AlertDialog(
@@ -330,74 +265,6 @@ fun FocusSessionScreen(
                         Text(stringResource(R.string.focus_stop_keep))
                     }
                 },
-            )
-        }
-    }
-}
-
-@Composable
-private fun FocusTopControls(
-    isPaused: Boolean,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    onStop: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    val infiniteTransition = rememberInfiniteTransition(label = "pause_pulse")
-    val pausedAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.7f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-        ),
-        label = "paused_pulse_alpha"
-    )
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // 暂停 / 继续
-        Surface(
-            onClick = {
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                if (isPaused) onResume() else onPause()
-            },
-            shape = CircleShape,
-            color = if (isPaused) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = pausedAlpha)
-            } else {
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
-            },
-            contentColor = if (isPaused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            tonalElevation = 2.dp
-        ) {
-            Icon(
-                imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                contentDescription = stringResource(if (isPaused) R.string.focus_resume else R.string.focus_pause),
-                modifier = Modifier.padding(12.dp).size(22.dp),
-                tint = if (isPaused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        // 结束旅程
-        Surface(
-            onClick = {
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                onStop()
-            },
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            tonalElevation = 2.dp
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = stringResource(R.string.focus_stop),
-                modifier = Modifier.padding(12.dp).size(22.dp),
-                tint = MaterialTheme.colorScheme.error
             )
         }
     }

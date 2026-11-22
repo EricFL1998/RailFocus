@@ -46,6 +46,21 @@
     <string name="focus_ambient_playing">车厢白噪音</string>
     <string name="focus_ambient_muted">车厢静音</string>
     <string name="checkin_tap_prompt">轻触车票 · 检票发车</string>
+    <string name="checkin_train_info">%1$s %2$s · %3$s</string>
+    <string name="checkin_seat_info">座位 %1$s</string>
+
+    <!-- Focus HUD (decluttered) -->
+    <string name="focus_km_done">已行进 %1$d / %2$d km</string>
+    <string name="focus_dwelling_context">停靠 %1$s</string>
+    <string name="focus_paused_badge">已暂停</string>
+    <string name="focus_approaching">即将抵达 %1$s</string>
+    <string name="focus_more">更多</string>
+    <string name="focus_pure_mode_hint">双击进入纯净模式</string>
+    <string name="focus_pure_mode_exit_hint">双击退出纯净模式</string>
+    <string name="focus_density_pure">纯净</string>
+    <string name="focus_density_standard">标准</string>
+    <string name="focus_density_full">全量</string>
+    <string name="settings_focus_density">专注页信息密度</string>
 
     <!-- Completion Overlay -->
     <string name="completion_welcome">欢迎来到</string>

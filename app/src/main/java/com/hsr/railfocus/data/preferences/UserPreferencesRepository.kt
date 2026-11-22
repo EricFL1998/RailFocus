@@ -24,7 +24,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 /**
  * 用户偏好存储
- * 
+ *
  * 使用 DataStore 持久化：
  * - 上次旅行终点的经纬度和车站信息
  * - 是否首次使用标记
@@ -55,6 +55,7 @@ class UserPreferencesRepository @Inject constructor(
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val UNLOCKED_CITY_FACTS = stringSetPreferencesKey("unlocked_city_facts")
         val WEATHER_DISPLAY_ENABLED = booleanPreferencesKey("weather_display_enabled")
+        val FOCUS_DENSITY = stringPreferencesKey("focus_density")
     }
 
     /**
@@ -400,6 +401,17 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setWeatherDisplayEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.WEATHER_DISPLAY_ENABLED] = enabled
+        }
+    }
+
+    /** 专注页信息密度："pure" / "standard" / "full" */
+    val focusDensity: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[Keys.FOCUS_DENSITY] ?: "standard"
+    }
+
+    suspend fun setFocusDensity(density: String) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.FOCUS_DENSITY] = density
         }
     }
 }
